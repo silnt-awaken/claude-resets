@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "claude-resets",
+  "main": "src/index.tsx",
+  "compatibility_date": "2026-08-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "claude-resets",
+      "database_id": "replace-with-your-d1-database-id",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": { "crons": ["*/2 * * * *"] },
+  "observability": { "enabled": true },
+  // Public, non-secret settings. Secrets go in .dev.vars locally and `wrangler secret put` in production.
+  "vars": {
+    "SITE_NAME": "Claude Resets",
+    "SITE_URL": "http://localhost:8787",
+    "OWNER_NAME": "Mike",
+    "OWNER_X_URL": "",
+    "PROJECT_X_URL": "",
+    "SUPPORT_URL": "",
+    "SUPPORT_CONTACT_EMAIL": "",
+    "TELEGRAM_CHANNEL_URL": "",
+    "BROWSER_ALERTS_ENABLED": "false",
+    "VAPID_PUBLIC_KEY": "",
+    "VAPID_SUBJECT": "",
+    "ALERTS_PAUSED": "false",
+    "REACTION_COOLDOWN_HOURS": "24",
+    "ALERT_MAX_AGE_HOURS": "72"
+  }
+}

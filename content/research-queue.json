@@ -1,0 +1,28 @@
+[
+  {
+    "id": "coverage-start",
+    "url": "https://x.com/claudeai/status/2044779666477646187",
+    "note": "Coverage begins with @ClaudeDevs joining X on April 16, 2026. Resets announced before that date, or only on other channels (Discord, email, status page), have not been researched and are outside documented coverage.",
+    "status": "unresolved"
+  },
+  {
+    "id": "bcherny-2026-04-23",
+    "url": "https://x.com/bcherny/status/2047375800945783056",
+    "note": "Boris Cherny's post links a post-mortem; the post itself does not mention a reset.",
+    "status": "resolved",
+    "resolution": "The t.co link resolves to https://x.com/ClaudeDevs/status/2047371123185287223, which states usage limits were reset for all subscribers. Published as event 2026-04-23-all-subscribers with Boris Cherny recorded as a relay."
+  },
+  {
+    "id": "july-15-16-uncertainty",
+    "url": "https://x.com/ClaudeDevs/status/2077603834453770467",
+    "note": "Aggregators disagreed between July 15 and July 16.",
+    "status": "resolved",
+    "resolution": "The post ID decodes to 2026-07-16T03:58:48Z (July 15 evening in US time zones). The UTC calendar day is July 16."
+  },
+  {
+    "id": "newer-than-sep-4",
+    "url": "https://x.com/ClaudeDevs",
+    "note": "A web search on 2026-09-17 found no reset announcement newer than September 4, 2026 from the tracked accounts. X search is not automated; recheck manually before each publish.",
+    "status": "unresolved"
+  }
+]

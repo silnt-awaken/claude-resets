@@ -1,0 +1,55 @@
+{
+  "name": "claude-resets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Independent tracker for publicly announced Claude usage-limit resets.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p scripts/tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:migrate": "wrangler d1 migrations apply claude-resets --local",
+    "db:migrate:remote": "wrangler d1 migrations apply claude-resets --remote",
+    "content:new": "tsx scripts/content-new.ts",
+    "content:validate": "tsx scripts/content-validate.ts",
+    "content:preview": "tsx scripts/content-preview.ts",
+    "content:publish": "tsx scripts/content-publish.ts",
+    "content:backfill": "tsx scripts/content-publish.ts --backfill",
+    "content:correct": "tsx scripts/content-publish.ts --correct",
+    "content:export": "tsx scripts/content-export.ts",
+    "sources:review": "tsx scripts/sources-review.ts",
+    "x:draft": "tsx scripts/x-draft.ts",
+    "outbox": "tsx scripts/outbox.ts",
+    "readiness": "tsx scripts/readiness.ts",
+    "screenshots": "tsx scripts/screenshots.ts",
+    "check": "npm run typecheck && npm run content:validate && npm test && npm run build",
+    "types": "wrangler types"
+  },
+  "dependencies": {
+    "@block65/webcrypto-web-push": "^2.0.0",
+    "@hono/mcp": "^0.3.2",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "hono": "^4.13.8",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/workers-types": "^5.20260917.0",
+    "@types/node": "^22.20.3",
+    "playwright": "^1.63.0",
+    "tsx": "^4.23.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.134.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "allowScripts": {
+    "workerd@1.20260815.1": true,
+    "workerd@1.20260917.1": true
+  }
+}

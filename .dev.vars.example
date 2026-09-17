@@ -1,0 +1,7 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+# Private token used by `npm run content:publish` to call the private publication endpoint.
+CONTENT_PUBLISH_TOKEN=change-me-to-a-long-random-string
+# Web Push (generate with `npx tsx scripts/vapid-keys.ts`). Public key also goes in wrangler.jsonc vars.
+VAPID_PRIVATE_KEY=
+# Secret used to sign anonymous reaction identifiers.
+REACTION_SECRET=change-me-too

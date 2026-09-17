@@ -1,0 +1,157 @@
+[
+  {
+    "id": "claudedevs",
+    "handle": "ClaudeDevs",
+    "displayName": "ClaudeDevs",
+    "profileUrl": "https://x.com/ClaudeDevs",
+    "classification": "official",
+    "priority": "primary",
+    "relevance": "Official Claude developer updates account. It has posted most of the direct reset announcements in this collection.",
+    "relevanceTranslations": {
+      "zh-CN": "Claude 官方开发者更新账号。本记录中的大多数重置公告都由它直接发布。",
+      "zh-TW": "Claude 官方開發者更新帳號。本紀錄中的大多數重置公告都由它直接發布。",
+      "ja": "Claude の公式デベロッパー向けアカウント。このコレクションの直接的なリセット発表の大半を投稿しています。",
+      "ko": "Claude 공식 개발자 업데이트 계정입니다. 이 기록에 있는 대부분의 직접적인 초기화 공지를 게시했습니다."
+    },
+    "affiliationEvidenceUrl": "https://x.com/claudeai/status/2044779666477646187",
+    "affiliationEvidenceNote": "Introduced by Claude's official product account (@claudeai) on April 16, 2026.",
+    "resetEvidenceUrls": [
+      "https://x.com/ClaudeDevs/status/2094856679250919746",
+      "https://x.com/ClaudeDevs/status/2064464557951852643",
+      "https://x.com/ClaudeDevs/status/2055347539923308703"
+    ],
+    "verificationMethod": "Introduction post and reset posts retrieved through X's public oEmbed endpoint on 2026-09-17; author names matched the handle.",
+    "lastReviewedAt": "2026-09-17",
+    "active": true
+  },
+  {
+    "id": "lydiahallie",
+    "handle": "lydiahallie",
+    "displayName": "Lydia Hallie",
+    "profileUrl": "https://x.com/lydiahallie",
+    "classification": "team_member",
+    "priority": "primary",
+    "relevance": "Anthropic team member who announced the September 4, 2026 weekly-limit reset for Max plans.",
+    "relevanceTranslations": {
+      "zh-CN": "Anthropic 团队成员，宣布了 2026 年 9 月 4 日面向 Max 计划的每周额度重置。",
+      "zh-TW": "Anthropic 團隊成員，宣布了 2026 年 9 月 4 日面向 Max 方案的每週額度重置。",
+      "ja": "Anthropic のチームメンバー。2026 年 9 月 4 日の Max プラン向け週間上限リセットを発表しました。",
+      "ko": "Anthropic 팀원으로, 2026년 9월 4일 Max 플랜 주간 한도 초기화를 발표했습니다."
+    },
+    "affiliationEvidenceUrl": "https://github.com/lydiahallie",
+    "affiliationEvidenceNote": "Her GitHub profile links this X account. No more precise current job title is claimed here.",
+    "resetEvidenceUrls": ["https://x.com/lydiahallie/status/2095967323412930677"],
+    "verificationMethod": "GitHub profile checked for the X link on 2026-09-17; reset post retrieved through X's public oEmbed endpoint.",
+    "lastReviewedAt": "2026-09-17",
+    "active": true,
+    "limitations": "Job title not asserted; affiliation is stated by her own reset post wording (\"we've just reset\") and her public profiles."
+  },
+  {
+    "id": "alexalbert",
+    "handle": "alexalbert__",
+    "displayName": "Alex Albert",
+    "profileUrl": "https://x.com/alexalbert__",
+    "classification": "team_member",
+    "priority": "additional",
+    "relevance": "Anthropic staff member who relayed the June 9, 2026 cross-product reset shortly after the official post.",
+    "relevanceTranslations": {
+      "zh-CN": "Anthropic 员工，在官方帖子发布后不久转述了 2026 年 6 月 9 日的跨产品重置。",
+      "zh-TW": "Anthropic 員工，在官方貼文發布後不久轉述了 2026 年 6 月 9 日的跨產品重置。",
+      "ja": "Anthropic のスタッフ。2026 年 6 月 9 日の製品横断リセットを公式投稿の直後に伝えました。",
+      "ko": "Anthropic 직원으로, 2026년 6월 9일 제품 전반 초기화를 공식 게시물 직후에 전했습니다."
+    },
+    "affiliationEvidenceUrl": "https://www-cdn.anthropic.com/files/4zrzovbb/website/9ea9e1e39a9cddf7a79b164a0ae5341ae4006f01.pdf",
+    "affiliationEvidenceNote": "Anthropic-hosted biography establishes affiliation; its 2025 role wording is not assumed to be current.",
+    "resetEvidenceUrls": ["https://x.com/alexalbert__/status/2064467657483829441"],
+    "verificationMethod": "Reset post retrieved through X's public oEmbed endpoint on 2026-09-17; affiliation URL supplied by project research and not re-parsed.",
+    "lastReviewedAt": "2026-09-17",
+    "active": true,
+    "limitations": "Current role wording unknown; treated as a team member, not the originating account."
+  },
+  {
+    "id": "bcherny",
+    "handle": "bcherny",
+    "displayName": "Boris Cherny",
+    "profileUrl": "https://x.com/bcherny",
+    "classification": "relay",
+    "priority": "additional",
+    "relevance": "Claude Code lead. On April 23, 2026 he linked the post-mortem post that announced a reset for all subscribers; his own post does not state the reset.",
+    "relevanceTranslations": {
+      "zh-CN": "Claude Code 负责人。2026 年 4 月 23 日，他转发了宣布为所有订阅用户重置额度的事后分析帖子；他本人的帖子未提及重置。",
+      "zh-TW": "Claude Code 負責人。2026 年 4 月 23 日，他轉發了宣布為所有訂閱用戶重置額度的事後分析貼文；他本人的貼文未提及重置。",
+      "ja": "Claude Code のリード。2026 年 4 月 23 日、全サブスクライバーのリセットを告知したポストモーテム投稿へのリンクを共有しましたが、本人の投稿はリセットに言及していません。",
+      "ko": "Claude Code 리드. 2026년 4월 23일 모든 구독자 초기화를 알린 사후 분석 게시물을 링크했으며, 본인의 게시물은 초기화를 언급하지 않습니다."
+    },
+    "affiliationEvidenceUrl": "https://www.linkedin.com/in/bcherny",
+    "affiliationEvidenceNote": "Own professional profile supports the role.",
+    "resetEvidenceUrls": ["https://x.com/bcherny/status/2047375800945783056"],
+    "verificationMethod": "Relay post retrieved through X's public oEmbed endpoint on 2026-09-17; its t.co link resolved to the ClaudeDevs reset post.",
+    "lastReviewedAt": "2026-09-17",
+    "active": true,
+    "limitations": "Relays announcements; not established as an originating reset source."
+  },
+  {
+    "id": "claudeai",
+    "handle": "claudeai",
+    "displayName": "Claude",
+    "profileUrl": "https://x.com/claudeai",
+    "classification": "official",
+    "priority": "context",
+    "relevance": "Official Claude product account. Product updates and the introduction of @ClaudeDevs. A temporary limit increase posted here is not evidence of a reset.",
+    "relevanceTranslations": {
+      "zh-CN": "Claude 官方产品账号。发布产品更新并介绍了 @ClaudeDevs。此处发布的临时额度提升不是重置的证据。",
+      "zh-TW": "Claude 官方產品帳號。發布產品更新並介紹了 @ClaudeDevs。此處發布的臨時額度提升不是重置的證據。",
+      "ja": "Claude の公式プロダクトアカウント。製品アップデートや @ClaudeDevs の紹介を投稿しています。ここで告知される一時的な上限引き上げはリセットの証拠にはなりません。",
+      "ko": "Claude 공식 제품 계정입니다. 제품 업데이트와 @ClaudeDevs 소개를 게시했습니다. 여기서 게시되는 일시적 한도 상향은 초기화의 증거가 아닙니다."
+    },
+    "affiliationEvidenceUrl": "https://claude.com/",
+    "affiliationEvidenceNote": "claude.com links to this X account.",
+    "resetEvidenceUrls": [],
+    "verificationMethod": "claude.com footer link checked on 2026-09-17; introduction post retrieved through X's public oEmbed endpoint.",
+    "lastReviewedAt": "2026-09-17",
+    "active": true
+  },
+  {
+    "id": "anthropicai",
+    "handle": "AnthropicAI",
+    "displayName": "Anthropic",
+    "profileUrl": "https://x.com/AnthropicAI",
+    "classification": "official",
+    "priority": "context",
+    "relevance": "Official company account for Anthropic announcements. No claim is made about how often it posts resets.",
+    "relevanceTranslations": {
+      "zh-CN": "Anthropic 官方公司账号，发布公司公告。这里不对其发布重置的频率作任何断言。",
+      "zh-TW": "Anthropic 官方公司帳號，發布公司公告。這裡不對其發布重置的頻率作任何斷言。",
+      "ja": "Anthropic の公式企業アカウント。企業としての発表を行います。リセット投稿の頻度については何も主張しません。",
+      "ko": "Anthropic 공식 회사 계정으로 회사 공지를 게시합니다. 초기화 게시 빈도에 대해서는 어떤 주장도 하지 않습니다."
+    },
+    "affiliationEvidenceUrl": "https://www.anthropic.com/",
+    "affiliationEvidenceNote": "anthropic.com links to this X account.",
+    "resetEvidenceUrls": [],
+    "verificationMethod": "anthropic.com footer link checked on 2026-09-17.",
+    "lastReviewedAt": "2026-09-17",
+    "active": true
+  },
+  {
+    "id": "amorriscode",
+    "handle": "amorriscode",
+    "displayName": "Anton Morris",
+    "profileUrl": "https://x.com/amorriscode",
+    "classification": "team_member",
+    "priority": "optional",
+    "relevance": "Works on Claude Code at Anthropic according to their own GitHub profile. No reset-originating announcement was established in this research.",
+    "relevanceTranslations": {
+      "zh-CN": "根据其 GitHub 个人资料，在 Anthropic 从事 Claude Code 相关工作。本次研究未发现其首发的重置公告。",
+      "zh-TW": "根據其 GitHub 個人資料，在 Anthropic 從事 Claude Code 相關工作。本次研究未發現其首發的重置公告。",
+      "ja": "本人の GitHub プロフィールによれば Anthropic で Claude Code に携わっています。本調査ではリセットを最初に発表した投稿は確認されていません。",
+      "ko": "본인의 GitHub 프로필에 따르면 Anthropic에서 Claude Code 작업을 합니다. 이번 조사에서 초기화를 최초로 알린 게시물은 확인되지 않았습니다."
+    },
+    "affiliationEvidenceUrl": "https://github.com/amorriscode",
+    "affiliationEvidenceNote": "GitHub profile mentions Anthropic and links this X account.",
+    "resetEvidenceUrls": [],
+    "verificationMethod": "GitHub profile checked for the X link and Anthropic mention on 2026-09-17.",
+    "lastReviewedAt": "2026-09-17",
+    "active": true,
+    "limitations": "Optional context only; no reset announcements attributed."
+  }
+]
