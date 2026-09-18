@@ -67,6 +67,7 @@ export interface GoalConfig {
   live: boolean;
   /** Reason the goal is not live (shown only to maintainers). */
   reason: string | null;
+  /** Comma-separated JSON-RPC endpoints, tried in order. */
   rpcUrl: string;
   chainId: number;
   explorerUrl: string;
@@ -104,7 +105,8 @@ export function goalConfig(env: ConfigVars): GoalConfig {
   if (!enabled) reason = 'GOAL_ENABLED is not true';
   else if (!poolAddress) reason = 'GOAL_POOL_ADDRESS is missing or invalid';
   else if (!usdgAddress) reason = 'GOAL_USDG_ADDRESS is missing or invalid';
-  const rpc = httpsUrlOrNull(env.GOAL_CHAIN_RPC) ?? ROBINHOOD_CHAIN.rpc;
+  const rpcList = (env.GOAL_CHAIN_RPC ?? '').split(',').map((u) => httpsUrlOrNull(u.trim())).filter((u): u is string => !!u);
+  const rpc = rpcList.length ? rpcList.join(',') : ROBINHOOD_CHAIN.rpc;
   return {
     live: reason === null,
     reason,

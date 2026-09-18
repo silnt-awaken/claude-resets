@@ -5,7 +5,7 @@
 // tokens and cannot move any. Everything here is idempotent: a burn is queued once per id, sent
 // once, and the contract itself refuses a second burn for the same id.
 
-import { createPublicClient, createWalletClient, defineChain, encodeFunctionData, http, keccak256, stringToBytes } from 'viem';
+import { createPublicClient, createWalletClient, defineChain, encodeFunctionData, fallback, http, keccak256, stringToBytes } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { GoalConfig } from '../config';
 import { siteConfig, type Env } from '../env';
@@ -70,12 +70,9 @@ export function viemSigner(env: Env, cfg: GoalConfig, fetchFn: FetchLike): BurnS
     id: cfg.chainId,
     name: 'Robinhood Chain',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    rpcUrls: { default: { http: [cfg.rpcUrl] } },
+    rpcUrls: { default: { http: cfg.rpcUrl.split(',') } },
   });
-  const transport = http(cfg.rpcUrl, {
-    fetchFn: fetchFn as typeof fetch,
-    timeout: 15_000,
-  });
+  const transport = fallback(cfg.rpcUrl.split(',').map((u) => http(u.trim(), { fetchFn: fetchFn as typeof fetch, timeout: 15_000 })));
   const publicClient = createPublicClient({ chain, transport });
   const wallet = createWalletClient({ account, chain, transport });
   const token = cfg.tokenAddress as `0x${string}`;

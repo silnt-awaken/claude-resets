@@ -51,8 +51,8 @@ app.use('*', async (c, next) => {
   if (!h.has('content-security-policy') && (h.get('content-type') ?? '').includes('text/html')) {
     // The contribution sheet talks to the chain RPC from the browser; allow exactly that origin.
     const goal = siteConfig(c.env).goal;
-    const rpcOrigin = goal.live ? new URL(goal.rpcUrl).origin : null;
-    h.set('content-security-policy', rpcOrigin ? CSP.replace("connect-src 'self'", `connect-src 'self' ${rpcOrigin}`) : CSP);
+    const rpcOrigins = goal.live ? goal.rpcUrl.split(',').map((u) => new URL(u.trim()).origin) : [];
+    h.set('content-security-policy', rpcOrigins.length ? CSP.replace("connect-src 'self'", `connect-src 'self' ${rpcOrigins.join(' ')}`) : CSP);
   }
   h.set('x-content-type-options', 'nosniff');
   h.set('referrer-policy', 'strict-origin-when-cross-origin');

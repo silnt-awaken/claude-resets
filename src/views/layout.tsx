@@ -94,7 +94,7 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
         data-goal-pool={cfg.goal.live ? (cfg.goal.poolAddress ?? '') : ''}
         data-goal-usdg={cfg.goal.usdgAddress ?? ''}
         data-goal-chain-id={String(cfg.goal.chainId)}
-        data-goal-rpc={cfg.goal.rpcUrl}
+        data-goal-rpc={cfg.goal.rpcUrl.split(',')[0]}
         data-goal-explorer={cfg.goal.explorerUrl}
         data-goal-min="1"
       >

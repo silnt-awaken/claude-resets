@@ -19,7 +19,21 @@ function pad32(hexNo0x: string): string {
   return hexNo0x.toLowerCase().padStart(64, '0');
 }
 
+/** `url` may be a comma-separated list; endpoints are tried in order (the first that supports the call wins). */
 export async function rpc<T = string>(fetchFn: FetchLike, url: string, method: string, params: unknown[] = []): Promise<T> {
+  const urls = url.split(',').map((u) => u.trim()).filter(Boolean);
+  let lastError: unknown = new Error('no rpc url');
+  for (const u of urls) {
+    try {
+      return await rpcOne<T>(fetchFn, u, method, params);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
+
+async function rpcOne<T>(fetchFn: FetchLike, url: string, method: string, params: unknown[]): Promise<T> {
   const res = await fetchFn(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
