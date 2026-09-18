@@ -38,6 +38,8 @@
     // GOAL_ENABLED to "true" to open it. GOAL_USDG_ADDRESS is Robinhood Chain's native stablecoin USDG (from
     // docs.robinhood.com/chain/contracts; verified on chain 2026-09-18).
     "GOAL_ENABLED": "true",
+    // The official RPC rate-limits Cloudflare (429); publicnode answers reliably for chain 4663.
+    "GOAL_CHAIN_RPC": "https://robinhood-rpc.publicnode.com",
     "GOAL_POOL_ADDRESS": "0xCA6d06946e498b03112cFE0812C44Ac165dd4747",
     "GOAL_USDG_ADDRESS": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
     "GOAL_TARGET_USD": "200",
