@@ -18,7 +18,7 @@ Mirrors `/goal#roadmap` on the site; the source of truth is `src/goal/roadmap.ts
 ## Launch · Q4 2026 · Next
 
 - Launch RESETS on pons paired with ETH; buy the burn reserve on the curve at launch and move it to the burner wallet.
-- Publish the burner and pool wallets; the curve graduates at 4.2 ETH and the launchpad locks liquidity.
+- Publish the burner and pool wallets; the curve graduates at 4.2 ETH and liquidity moves to a Uniswap v4 pool.
 - Turn on automatic burns: the first confirmed reset after launch burns on chain within two minutes.
 - Open round one: $200 USDG, one month of Claude Max 20x for one contributor.
 

@@ -212,7 +212,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
               </tr>
               <tr>
                 <td>Liquidity</td>
-                <td>When the curve has raised 4.2 ETH it graduates and the launchpad locks the liquidity. Nobody, including us, can pull it.</td>
+                <td>When the curve has raised 4.2 ETH it graduates and the launchpad moves the liquidity into a Uniswap v4 pool. Nobody, including us, can pull it.</td>
               </tr>
               <tr>
                 <td>Trade fee</td>

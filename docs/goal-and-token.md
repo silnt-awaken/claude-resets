@@ -25,7 +25,7 @@ RESETS is launched on the **pons launchpad** (ponsfamily.com) on Robinhood Chain
 | Item | Value |
 | --- | --- |
 | Launch | pons launchpad, ETH pair, no presale, no team allocation, no mint function |
-| Liquidity | Locked by the launchpad at graduation (4.2 ETH raised) |
+| Liquidity | Moved by the launchpad into a Uniswap v4 pool at graduation (4.2 ETH raised) |
 | Trade fee | 3% per trade (launchpad setting); the 2% creator share is routed to RESETS holders by the launchpad (permanent "holder fee sharing"). The goal pool is funded by contributions only |
 | Burn reserve | Bought on the curve at launch (the "developer buy") and transferred to the burner wallet, whose address is published (`RESET_BURNER_ADDRESS`) |
 | Burn schedule | `RESET_BURN_PER_RESET` (default 2,500,000) per published confirmed reset; `RESET_BURN_PER_ROUND` (default 5,000,000) per paid round. Automatic, once per event id |
