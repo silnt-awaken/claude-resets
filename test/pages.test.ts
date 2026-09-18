@@ -189,9 +189,20 @@ describe('pages', () => {
     expect(home).toContain('rel="sponsored noopener noreferrer"');
   });
 
-  it('shows at most one sponsorship invitation with no active sponsors', async () => {
-    const html = await (await request('/')).text();
-    expect(html.match(/data-role="sponsor-open"/g)?.length ?? 0).toBe(1);
-    expect(html).toContain('<dialog id="sponsor-dialog"');
+  it('shows no sponsor placement until sponsorship is open, then at most one invitation', async () => {
+    const closed = await (await request('/', {}, { SUPPORT_CONTACT_EMAIL: '' })).text();
+    expect(closed).not.toContain('data-role="sponsor-open"');
+    expect(closed).not.toContain('<dialog id="sponsor-dialog"');
+    const open = await (await request('/', {}, { SUPPORT_CONTACT_EMAIL: 'hi@example.test' })).text();
+    expect(open.match(/data-role="sponsor-open"/g)?.length ?? 0).toBe(1);
+    expect(open).toContain('<dialog id="sponsor-dialog"');
+    expect(open).toContain('mailto:hi@example.test');
+  });
+
+  it('links the source repository in the header and footer when configured', async () => {
+    const html = await (await request('/', {}, { REPO_URL: 'https://github.com/example/claude-resets' })).text();
+    expect(html.match(/href="https:\/\/github\.com\/example\/claude-resets"/g)?.length).toBe(2);
+    const none = await (await request('/', {}, { REPO_URL: '' })).text();
+    expect(none).not.toContain('aria-label="GitHub"');
   });
 });

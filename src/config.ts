@@ -7,6 +7,7 @@ export interface ConfigVars {
   OWNER_NAME?: string;
   OWNER_X_URL?: string;
   PROJECT_X_URL?: string;
+  REPO_URL?: string;
   SUPPORT_URL?: string;
   SUPPORT_CONTACT_EMAIL?: string;
   TELEGRAM_CHANNEL_URL?: string;
@@ -29,6 +30,7 @@ export interface SiteConfig {
   ownerName: string;
   ownerXUrl: string | null;
   projectXUrl: string | null;
+  repoUrl: string | null;
   supportUrl: string | null;
   supportProvider: string | null;
   supportContactEmail: string | null;
@@ -103,6 +105,7 @@ export function siteConfig(env: ConfigVars): SiteConfig {
     ownerName: env.OWNER_NAME?.trim() || 'Mike',
     ownerXUrl: httpsUrlOrNull(env.OWNER_X_URL),
     projectXUrl: httpsUrlOrNull(env.PROJECT_X_URL),
+    repoUrl: httpsUrlOrNull(env.REPO_URL),
     supportUrl,
     supportProvider: supportProviderFor(supportUrl),
     supportContactEmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(env.SUPPORT_CONTACT_EMAIL ?? '') ? env.SUPPORT_CONTACT_EMAIL!.trim() : null,
@@ -135,6 +138,7 @@ export function readiness(env: ConfigVars, hasDb: boolean): { ok: boolean; items
   add('SUPPORT_URL', cfg.supportUrl ? 'ok' : env.SUPPORT_URL ? 'invalid' : 'missing', cfg.supportUrl ? `${cfg.supportUrl}${cfg.supportProvider ? ` (${cfg.supportProvider})` : ''}` : 'Set your existing https coffee/support page; every Tip for coffee link depends on it.');
   add('OWNER_X_URL', cfg.ownerXUrl ? 'ok' : env.OWNER_X_URL ? 'invalid' : 'off', cfg.ownerXUrl ?? 'Optional owner X link not shown.');
   add('PROJECT_X_URL', cfg.projectXUrl ? 'ok' : env.PROJECT_X_URL ? 'invalid' : 'off', cfg.projectXUrl ?? 'Optional project X link not shown in the header.');
+  add('REPO_URL', cfg.repoUrl ? 'ok' : env.REPO_URL ? 'invalid' : 'off', cfg.repoUrl ?? 'Optional source-code link not shown.');
   add('SUPPORT_CONTACT_EMAIL', cfg.supportContactEmail ? 'ok' : env.SUPPORT_CONTACT_EMAIL ? 'invalid' : 'off', cfg.supportContactEmail ?? 'Optional sponsorship contact not shown.');
   add('TELEGRAM_CHANNEL_URL', cfg.telegramChannelUrl ? 'ok' : env.TELEGRAM_CHANNEL_URL ? 'invalid' : 'off', cfg.telegramChannelUrl ?? 'Telegram pill shows an unavailable state.');
   add('BROWSER_ALERTS', cfg.browserAlerts.enabled ? 'ok' : 'off', cfg.browserAlerts.enabled ? 'Web Push configured.' : `Browser alerts unavailable: ${cfg.browserAlerts.reason}.`);

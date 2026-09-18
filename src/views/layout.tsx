@@ -4,7 +4,7 @@ import { activeSponsors } from '../domain/content';
 import type { Sponsor } from '../domain/types';
 import type { SiteConfig } from '../env';
 import { LOCALES, dict, formatDate, interpolate, localizePath, ogLocale, type Dict, type Locale } from '../i18n';
-import { CloseIcon, CupIcon, GlobeIcon, MoonIcon, ResetMark, SunIcon, XIcon } from './icons';
+import { CloseIcon, CupIcon, GitHubIcon, GlobeIcon, MoonIcon, ResetMark, SunIcon, XIcon } from './icons';
 
 export interface PageContext {
   locale: Locale;
@@ -44,6 +44,8 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
   const active = sponsors === 'rails' ? activeSponsors(ctx.content.sponsors, ctx.now) : [];
   const left = active.filter((_, i) => i % 2 === 0);
   const right = active.filter((_, i) => i % 2 === 1);
+  // Sponsor placements exist only once sponsorship is actually open: a real sponsor or a contact address.
+  const showSponsors = sponsors === 'rails' && (active.length > 0 || !!cfg.supportContactEmail);
   return (
     <html lang={locale} data-theme="light">
       <head>
@@ -96,10 +98,10 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
         <div class="page">
           <Masthead ctx={ctx} />
           <main id="main">{children}</main>
-          {sponsors === 'rails' ? <SponsorRails ctx={ctx} left={left} right={right} /> : null}
+          {showSponsors ? <SponsorRails ctx={ctx} left={left} right={right} /> : null}
           <SiteFooter ctx={ctx} />
         </div>
-        {sponsors === 'rails' ? <SponsorDialog ctx={ctx} /> : null}
+        {showSponsors ? <SponsorDialog ctx={ctx} /> : null}
         <script src="/app.js" defer></script>
       </body>
     </html>
@@ -130,6 +132,11 @@ const Masthead: FC<{ ctx: PageContext }> = ({ ctx }) => {
         {cfg.projectXUrl ? (
           <a class="icon-btn" href={cfg.projectXUrl} target="_blank" rel="noopener noreferrer" aria-label={interpolate(t.nav.projectX, { site: cfg.siteName })} title={interpolate(t.nav.projectX, { site: cfg.siteName })}>
             <XIcon />
+          </a>
+        ) : null}
+        {cfg.repoUrl ? (
+          <a class="icon-btn" href={cfg.repoUrl} target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub">
+            <GitHubIcon />
           </a>
         ) : null}
         <button class="icon-btn" type="button" data-role="theme-toggle" aria-pressed="false" aria-label={t.nav.themeToDark} data-label-light={t.nav.themeToLight} data-label-dark={t.nav.themeToDark} title={t.nav.themeToDark}>
@@ -193,6 +200,11 @@ const SiteFooter: FC<{ ctx: PageContext }> = ({ ctx }) => {
         <a href={localizePath(locale, '/privacy')}>{t.nav.privacy}</a>
         <a href="/feed.xml">{t.nav.feed}</a>
         <a href="/feed.json">{t.nav.jsonFeed}</a>
+        {cfg.repoUrl ? (
+          <a href={cfg.repoUrl} target="_blank" rel="noopener noreferrer">
+            GitHub
+          </a>
+        ) : null}
       </nav>
       <p class="status-line">
         {interpolate(t.footer.lastReview, { date: formatDate(ctx.content.review.lastSourceReviewAt.slice(0, 10), locale) })} {t.footer.design}
