@@ -11,15 +11,12 @@ What the owner still has to supply or do. Everything else is implemented and ver
 - [ ] `npm run deploy`, then `npm run content:backfill -- --all --env production --yes` with `CONTENT_PUBLISH_TOKEN` exported, so the seed history is recorded as history and can never trigger an alert.
 - [ ] `npm run readiness` shows no ✖ items.
 
-## Community goal and RESETS token (infrastructure deployed, not opened)
+## Community goal (USDC on Solana)
 
-- [ ] Pool wallet you control on Robinhood Chain; a little ETH for gas.
-- [ ] `npm run token:burner -- new`, `npx wrangler secret put BURNER_PRIVATE_KEY`, send the burner ~$3 of ETH on Robinhood Chain.
-- [ ] Launch RESETS on pons (USDG pair, developer buy = burn reserve), move the developer-buy RESETS to the burner wallet.
-- [ ] Set RESET_TOKEN_ADDRESS, RESET_BURNER_ADDRESS, GOAL_POOL_ADDRESS, GOAL_ENABLED; check RESET_BURN_PER_RESET against the minted supply.
-- [ ] Apply migration 0004 remotely (`npm run db:migrate:remote`); burns then run automatically on every published reset.
-- [ ] Confirm `GOAL_USDG_ADDRESS` is the USDG contributors hold; set `GOAL_POOL_ADDRESS`, `RESET_TOKEN_ADDRESS`, `GOAL_ENABLED: "true"`; `npm run deploy`; `npm run goal:round -- open --env production --yes`.
-- [ ] Full sequence and per-round commands: `docs/goal-and-token.md`.
+- [ ] `GOAL_WALLET` is a Solana wallet you control and `GOAL_USDC_ACCOUNT` is its USDC token account (check on Solscan under the wallet's token accounts). Keep a little SOL in the wallet for the payout fee.
+- [ ] `npm run db:migrate:remote` (migration 0006 rebuilds the goal tables), then `npm run deploy`. The first cron tick sets the scan cursor and opens round 1 by itself.
+- [ ] Check `https://clauderesets.com/api/v1/goal` shows `enabled: true` and an open round within two minutes.
+- [ ] When a round is drawn: send the target in USDC to the winner from the goal wallet, then `npm run goal:round -- paid --tx <signature> --env production --yes`. Details in `docs/goal.md`.
 
 ## Optional
 

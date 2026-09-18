@@ -34,27 +34,19 @@
     "VAPID_PUBLIC_KEY": "",
     "VAPID_SUBJECT": "",
     "ALERTS_PAUSED": "false",
-    // Community goal on Robinhood Chain (chain id 4663). Set GOAL_POOL_ADDRESS (a wallet you control) and
-    // GOAL_ENABLED to "true" to open it. GOAL_USDG_ADDRESS is Robinhood Chain's native stablecoin USDG (from
-    // docs.robinhood.com/chain/contracts; verified on chain 2026-09-18).
+    // Community goal: readers send USDC on Solana to the operator's wallet; the draw is automatic (finalized
+    // block hash). GOAL_USDC_ACCOUNT is that wallet's USDC token account (verified on chain 2026-09-18).
     "GOAL_ENABLED": "true",
-    // Endpoints tried in order. The official RPC serves eth_getLogs (contributor discovery) but sometimes 429s;
-    // publicnode is the fallback for simple reads (it refuses eth_getLogs without a token).
-    "GOAL_CHAIN_RPC": "https://rpc.mainnet.chain.robinhood.com,https://rpc-robinhood.blockmachine.io,https://robinhood.api.pocket.network,https://robinhood-rpc.publicnode.com",
-    "GOAL_POOL_ADDRESS": "0xCA6d06946e498b03112cFE0812C44Ac165dd4747",
-    "GOAL_USDG_ADDRESS": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+    "GOAL_WALLET": "6N9a6TJhFzGGtRLPkekmwF3xq2ncuXh7Yz7XipU6grBv",
+    "GOAL_USDC_ACCOUNT": "EuMtJBznvR8Sqt2y3pL1nKWmGhp63PaMqfBFG8kmXNiG",
+    "GOAL_USDC_MINT": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    // Endpoints tried in order. api.mainnet-beta.solana.com blocks Cloudflare Workers (it sees the Cf-Worker header),
+    // publicnode serves them without a key. A keyed endpoint can be added as the GOAL_SOLANA_RPC_PRIVATE secret.
+    "GOAL_SOLANA_RPC": "https://solana-rpc.publicnode.com",
+    "GOAL_EXPLORER_URL": "https://solscan.io",
     "GOAL_TARGET_USD": "200",
-    // Operator wallets: counted on the meter, never in the draw (launch wallet, pool, burner).
-    "GOAL_EXCLUDED_WALLETS": "0x110b8901b3d1c561c598586911b2d1ed765a7eb1,0xCA6d06946e498b03112cFE0812C44Ac165dd4747,0xA0599e6b56bC2E605920b370151b7a530E74C51C",
-    "RESET_TOKEN_ADDRESS": "0xd3030f41c8e127992516d1fcd58f36601b878f24",
-    // RESET is launched on the pons launchpad (a standard token), so burns are transfers from the burner wallet
-    // to 0xdEaD ("transfer"). "contract" switches to contracts/ResetToken.sol with burnForReset. Amounts are whole RESET.
-    "RESET_BURN_MODE": "vault",
-    "RESET_VAULT_ADDRESS": "0xdbb534e14534fe392f4606368bd5e9441474963e",
-    "RESET_BURNER_ADDRESS": "0xA0599e6b56bC2E605920b370151b7a530E74C51C",
-    "RESET_BURN_PER_RESET": "250000",
-    "RESET_BURN_PER_ROUND": "500000",
-    "RESET_BUY_URL": "https://www.ponsfamily.com/launchpad/0xD3030F41C8e127992516d1fCD58F36601b878F24",
+    // Operator wallets: counted on the meter, never in the draw. The goal wallet itself is always excluded.
+    "GOAL_EXCLUDED_WALLETS": "",
     "REACTION_COOLDOWN_HOURS": "24",
     "ALERT_MAX_AGE_HOURS": "72"
   }

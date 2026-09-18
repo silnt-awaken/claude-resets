@@ -1,154 +1,355 @@
+// Community goal: USDC on Solana to the operator's wallet, automatic draw by a finalized block hash.
+// Public: status, the draw list, a transaction message for Phantom to sign, and contribution
+// verification. Cron: `tickGoal` syncs transfers from the chain and moves the round along.
+// Maintainer (Bearer CONTENT_PUBLISH_TOKEN): record the payout, cancel, or run a tick now.
+
 import { Hono } from 'hono';
-import { findEvent, isQualifyingReset, loadContent } from '../domain/content';
+import type { GoalConfig } from '../config';
 import { siteConfig, type Env } from '../env';
-import { blockHash, blockNumber, cached, formatUnits, readPool, readToken, summarizeContributors, transfersTo, type ContributorSummary, type FetchLike, type PoolSnapshot, type TokenSnapshot } from '../goal/chain';
-import { burnerConfigured, drainBurns, listBurns, queueBurn, type TokenBurn } from '../goal/burns';
-import { MIN_CONTRIBUTION_UNITS, addContributions, cancelRound, currentRound, freezeRound, latestRound, markPaid, openRound, pastRounds, qualifyingEntries, recordDraw, setSyncedBlock, winnerOf, type GoalRound } from '../goal/rounds';
-import { problem, readJson, timingSafeEqual } from '../util/http';
+import { isSolanaAddress, isSolanaSignature } from '../goal/base58';
+import {
+  DEFAULT_ROUND_TITLE,
+  MIN_CONTRIBUTION_UNITS,
+  cancelRound,
+  contributionCount,
+  currentRound,
+  freezeRound,
+  hasContribution,
+  latestRound,
+  markPaid,
+  openRound,
+  pastRounds,
+  qualifyingEntries,
+  raisedUnits,
+  readSync,
+  recordContribution,
+  recordDraw,
+  writeSync,
+  type GoalRound,
+} from '../goal/rounds';
+import {
+  PRIORITY_FEE_LAMPORTS,
+  SOLANA,
+  base58Encode,
+  blockHashAtOrAfter,
+  buildTransferMessage,
+  feeForMessage,
+  getLatestBlockhash,
+  getSlot,
+  getTransaction,
+  lamports,
+  parseContribution,
+  shortAddress,
+  signaturesSince,
+  associatedTokenAccount,
+  type FetchLike,
+} from '../goal/solana';
+import { clientIp, problem, readJson, timingSafeEqual } from '../util/http';
+import { rateLimit } from '../util/ratelimit';
 
 export const goal = new Hono<{ Bindings: Env }>();
 
+const USDC_UNITS = 1_000_000n;
+/** Sanity cap for the contribution sheet; nothing stops a larger manual transfer. */
+const MAX_SHEET_USD = 10_000;
+/** A wallet needs this much SOL (lamports) to pay the network fee of a transfer. */
+const MIN_LAMPORTS_FOR_FEE = 50_000n;
+/** The chain scan is considered stale when it has not succeeded for this long. */
+const STALE_AFTER_MS = 5 * 60_000;
+
 export interface GoalStatus {
   enabled: boolean;
-  chain: { id: number; name: string; explorer: string };
+  network: { name: string; explorer: string };
   target_usd: number;
   min_contribution_usd: number;
-  pool: { address: string | null; usdg: number | null; eth: string | null; block: number | null; read_at: string | null; stale: boolean };
+  pool: { wallet: string | null; usdc_account: string | null };
   round: null | {
     id: number;
     title: string;
     status: GoalRound['status'];
     opened_at: string;
-    open_block: number | null;
+    target_usd: number;
+    raised_usd: number;
+    contributions: number;
     contributors: number;
     frozen_at: string | null;
+    draw_slot: number | null;
     draw_block: number | null;
     draw_hash: string | null;
     winner: string | null;
+    winner_wallet: string | null;
+    winner_index: number | null;
+    entries: number | null;
     payout_tx: string | null;
+    paid_at: string | null;
   };
-  past_rounds: Array<{ id: number; title: string; status: string; winner: string | null; payout_tx: string | null; paid_at: string | null }>;
-  token: null | { address: string; total_supply: string; burned: string; circulating: string; reserve: string | null; burner: string | null; vault: string | null; burn_per_reset: number; burn_per_round: number; decimals: number; read_at: string };
-  /** Scheduled burns triggered by the site (newest first). Automatic once the burner wallet is configured. */
-  burns: Array<{ kind: TokenBurn['kind']; ref: string; status: TokenBurn['status']; tx: string | null; block: number | null; at: string }>;
+  past_rounds: Array<{ id: number; title: string; status: string; raised_usd: number; winner: string | null; winner_wallet: string | null; draw_block: number | null; draw_hash: string | null; payout_tx: string | null; paid_at: string | null }>;
+  sync: { synced_at: string | null; stale: boolean; error: string | null };
   progress: number; // 0..1
 }
 
-export interface SyncResult {
-  round: number | null;
-  from: number | null;
-  to: number | null;
-  transfers: number;
-  error: string | null;
+function usd(units: bigint): number {
+  return Number(units) / 1e6;
 }
 
-/**
- * Ingest USDG transfers into the pool for the open round, from the last synced block to the chain head.
- * Runs from the cron every minute (and before a freeze). Ranges never overlap, so amounts add up exactly once.
- * Never throws: an RPC problem leaves synced_block where it was and is retried next minute.
- */
-export async function syncOpenRound(env: Env, fetchFn: FetchLike = fetch): Promise<SyncResult> {
-  const cfg = siteConfig(env).goal;
-  const round = await currentRound(env.DB);
-  if (!cfg.live || !round || round.status !== 'open' || round.open_block == null) return { round: round?.id ?? null, from: null, to: null, transfers: 0, error: cfg.live ? null : 'goal not live' };
-  const from = (round.synced_block ?? round.open_block - 1) + 1;
-  try {
-    const head = await blockNumber(fetchFn, cfg.rpcUrl);
-    if (head < from) return { round: round.id, from, to: head, transfers: 0, error: null };
-    const transfers = await transfersTo(fetchFn, cfg.rpcUrl, cfg.usdgAddress!, cfg.poolAddress!, from, head);
-    // Everything in the range counts; the minimum is applied when entries are read.
-    await addContributions(env.DB, round.id, summarizeContributors(transfers, 0n), new Date());
-    await setSyncedBlock(env.DB, round.id, head);
-    return { round: round.id, from, to: head, transfers: transfers.length, error: null };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('goal sync failed', message);
-    return { round: round.id, from, to: null, transfers: 0, error: message };
-  }
-}
-
-/** Shared by the API and the page renderer. Chain reads are cached per isolate for 60 s and never throw. */
-export async function goalStatus(env: Env, fetchFn: FetchLike = fetch): Promise<GoalStatus> {
+/** Shared by the API and the page renderer. D1 only; the chain is read by the cron, never per request. */
+export async function goalStatus(env: Env, now: Date = new Date()): Promise<GoalStatus> {
   const cfg = siteConfig(env).goal;
   const status: GoalStatus = {
     enabled: cfg.live,
-    chain: { id: cfg.chainId, name: 'Robinhood Chain', explorer: cfg.explorerUrl },
+    network: { name: SOLANA.name, explorer: cfg.explorerUrl },
     target_usd: cfg.targetUsd,
     min_contribution_usd: Number(MIN_CONTRIBUTION_UNITS) / 1e6,
-    pool: { address: cfg.poolAddress, usdg: null, eth: null, block: null, read_at: null, stale: false },
+    pool: { wallet: cfg.live ? cfg.wallet : null, usdc_account: cfg.live ? cfg.usdcAccount : null },
     round: null,
     past_rounds: [],
-    token: null,
-    burns: [],
+    sync: { synced_at: null, stale: false, error: null },
     progress: 0,
   };
-  if (cfg.live) {
-    try {
-      const pool = await cached<PoolSnapshot>(`pool:${cfg.poolAddress}`, 60_000, () => readPool(cfg, fetchFn));
-      status.pool = { address: cfg.poolAddress, usdg: pool.usd, eth: formatUnits(pool.ethWei, 18, 4), block: pool.block, read_at: pool.readAt, stale: false };
-      status.progress = Math.min(1, pool.usd / cfg.targetUsd);
-    } catch (err) {
-      console.error('goal pool read failed', err instanceof Error ? err.message : err);
-      status.pool.stale = true;
-    }
-  }
-  if (cfg.tokenAddress) {
-    try {
-      const t = await cached<TokenSnapshot>(`token:${cfg.tokenAddress}`, 60_000, () => readToken(cfg, fetchFn));
-      status.token = { address: t.address, total_supply: t.totalSupply.toString(), burned: t.burned.toString(), circulating: t.circulating.toString(), reserve: t.reserve?.toString() ?? null, burner: cfg.burnerAddress, vault: cfg.vaultAddress, burn_per_reset: cfg.burnPerReset, burn_per_round: cfg.burnPerRound, decimals: t.decimals, read_at: t.readAt };
-    } catch (err) {
-      console.error('token read failed', err instanceof Error ? err.message : err);
-    }
-  }
-  if (cfg.tokenAddress) {
-    try {
-      status.burns = (await listBurns(env.DB, 20)).map((b) => ({ kind: b.kind, ref: b.ref, status: b.status, tx: b.tx_hash, block: b.block, at: b.confirmed_at ?? b.sent_at ?? b.created_at }));
-    } catch (err) {
-      console.error('burn list unavailable', err instanceof Error ? err.message : err);
-    }
-  }
+  if (!env.DB) return status;
   try {
     const round = (await currentRound(env.DB)) ?? (await latestRound(env.DB));
     if (round) {
-      const winner = await winnerOf(env.DB, round);
+      const raised = await raisedUnits(env.DB, round.id);
       status.round = {
         id: round.id,
         title: round.title,
         status: round.status,
         opened_at: round.opened_at,
-        open_block: round.open_block,
-        contributors: (await qualifyingEntries(env.DB, round.id, MIN_CONTRIBUTION_UNITS)).length,
+        target_usd: round.target_usd,
+        raised_usd: usd(raised),
+        contributions: await contributionCount(env.DB, round.id),
+        contributors: (await qualifyingEntries(env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets)).length,
         frozen_at: round.frozen_at,
+        draw_slot: round.draw_slot,
         draw_block: round.draw_block,
         draw_hash: round.draw_hash,
-        winner: winner?.display ?? null,
+        winner: round.winner_wallet ? shortAddress(round.winner_wallet) : null,
+        winner_wallet: round.winner_wallet,
+        winner_index: round.winner_index,
+        entries: round.entries,
         payout_tx: round.payout_tx,
+        paid_at: round.paid_at,
       };
+      status.progress = Math.min(1, usd(raised) / round.target_usd);
     }
-    const past = await pastRounds(env.DB, 10);
-    for (const r of past) {
-      const w = await winnerOf(env.DB, r);
-      status.past_rounds.push({ id: r.id, title: r.title, status: r.status, winner: w?.display ?? null, payout_tx: r.payout_tx, paid_at: r.paid_at });
+    for (const r of await pastRounds(env.DB, 10)) {
+      status.past_rounds.push({ id: r.id, title: r.title, status: r.status, raised_usd: usd(await raisedUnits(env.DB, r.id)), winner: r.winner_wallet ? shortAddress(r.winner_wallet) : null, winner_wallet: r.winner_wallet, draw_block: r.draw_block, draw_hash: r.draw_hash, payout_tx: r.payout_tx, paid_at: r.paid_at });
+    }
+    if (cfg.live) {
+      const sync = await readSync(env.DB);
+      const age = sync?.synced_at ? now.getTime() - Date.parse(sync.synced_at) : Number.POSITIVE_INFINITY;
+      status.sync = { synced_at: sync?.synced_at ?? null, stale: !!sync?.last_error || age > STALE_AFTER_MS, error: sync?.last_error ?? null };
     }
   } catch (err) {
-    console.error('goal rounds unavailable', err instanceof Error ? err.message : err);
+    console.error('goal status unavailable', err instanceof Error ? err.message : err);
   }
   return status;
 }
 
-goal.get('/', async (c) => {
-  const body = await goalStatus(c.env);
-  return c.json(body, 200, { 'cache-control': 'public, max-age=30', 'access-control-allow-origin': '*' });
+// ---------- chain sync (cron) ----------
+
+export interface SyncResult {
+  started: boolean;
+  scanned: number;
+  recorded: number;
+  error: string | null;
+}
+
+/**
+ * Read USDC transfers into the pool's token account that are newer than the cursor and store them as
+ * contributions. The first run only sets the cursor: transfers from before the goal existed never count.
+ * Never throws; an RPC problem leaves the cursor on the last processed signature and is retried next minute.
+ */
+export async function syncContributions(env: Env, fetchFn: FetchLike = fetch, now: Date = new Date()): Promise<SyncResult> {
+  const cfg = siteConfig(env).goal;
+  const db = env.DB;
+  if (!cfg.live) return { started: false, scanned: 0, recorded: 0, error: 'goal not live' };
+  const cursor = await readSync(db);
+  let last = cursor?.last_signature ?? null;
+  let recorded = 0;
+  let scanned = 0;
+  try {
+    if (!cursor) {
+      // First run: remember the newest existing signature and count nothing before it. Written only on
+      // success, so a failed first run is simply retried as a first run and history is never ingested.
+      const head = await signaturesSince(fetchFn, cfg.rpcUrl, cfg.usdcAccount!, null, 1, 1);
+      await writeSync(db, { last_signature: head[0]?.signature ?? null, synced_at: now.toISOString(), last_error: null });
+      console.log('goal sync started', JSON.stringify({ from: head[0]?.signature ?? null }));
+      return { started: true, scanned: head.length, recorded: 0, error: null };
+    }
+    const sigs = await signaturesSince(fetchFn, cfg.rpcUrl, cfg.usdcAccount!, last);
+    scanned = sigs.length;
+    for (const s of [...sigs].reverse()) {
+      if (!s.err) {
+        const tx = await getTransaction(fetchFn, cfg.rpcUrl, s.signature);
+        if (!tx) throw new Error(`transaction ${s.signature} not available yet`);
+        const c = parseContribution(tx, cfg.usdcAccount!);
+        if (c) {
+          const round = await currentRound(db);
+          if (await recordContribution(db, c, round?.status === 'open' ? round.id : null, now)) {
+            recorded++;
+            console.log('goal contribution', JSON.stringify({ signature: c.signature, wallet: c.wallet, units: c.units.toString(), round: round?.status === 'open' ? round.id : null }));
+          }
+        }
+      }
+      last = s.signature;
+    }
+    await writeSync(db, { last_signature: last, synced_at: now.toISOString(), last_error: null });
+    return { started: false, scanned, recorded, error: null };
+  } catch (err) {
+    const message = (err instanceof Error ? err.message : String(err)).slice(0, 300);
+    console.error('goal sync failed', message);
+    if (cursor) await writeSync(db, { last_signature: last, synced_at: cursor.synced_at, last_error: message }).catch(() => {});
+    return { started: false, scanned, recorded, error: message };
+  }
+}
+
+export interface TickResult {
+  sync: SyncResult;
+  round: number | null;
+  action: 'skipped' | 'none' | 'opened' | 'frozen' | 'waiting' | 'drawn' | 'awaiting_payout';
+  detail: string | null;
+}
+
+/**
+ * One cron step: sync, then move the round along. open → (target reached) frozen → (draw slot
+ * finalized) drawn → (operator records the payout) paid → a new round opens on the next tick.
+ * Never throws; every step is idempotent and logged.
+ */
+export async function tickGoal(env: Env, fetchFn: FetchLike = fetch, now: Date = new Date()): Promise<TickResult> {
+  const cfg = siteConfig(env).goal;
+  const sync = await syncContributions(env, fetchFn, now);
+  if (!cfg.live) return { sync, round: null, action: 'skipped', detail: cfg.reason };
+  const db = env.DB;
+  try {
+    let round = await currentRound(db);
+    if (!round) {
+      round = await openRound(db, DEFAULT_ROUND_TITLE, cfg.targetUsd, now);
+      console.log('goal round opened', JSON.stringify({ round: round.id, target: round.target_usd }));
+      return { sync, round: round.id, action: 'opened', detail: null };
+    }
+    if (round.status === 'open') {
+      const raised = await raisedUnits(db, round.id);
+      const entries = await qualifyingEntries(db, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets);
+      if (raised < BigInt(round.target_usd) * USDC_UNITS) return { sync, round: round.id, action: 'none', detail: `${usd(raised)} of ${round.target_usd} USDC` };
+      if (entries.length === 0) return { sync, round: round.id, action: 'none', detail: 'target reached but no eligible contributor yet' };
+      const slot = await getSlot(fetchFn, cfg.rpcUrl, 'confirmed');
+      await freezeRound(db, round.id, slot, slot + SOLANA.drawLeadSlots, now);
+      console.log('goal round frozen', JSON.stringify({ round: round.id, freezeSlot: slot, drawSlot: slot + SOLANA.drawLeadSlots, entries: entries.length }));
+      return { sync, round: round.id, action: 'frozen', detail: `draw at slot ${slot + SOLANA.drawLeadSlots}` };
+    }
+    if (round.status === 'frozen') {
+      const finalized = await getSlot(fetchFn, cfg.rpcUrl, 'finalized');
+      if (finalized < round.draw_slot!) return { sync, round: round.id, action: 'waiting', detail: `finalized slot ${finalized}, draw slot ${round.draw_slot}` };
+      const block = await blockHashAtOrAfter(fetchFn, cfg.rpcUrl, round.draw_slot!);
+      if (!block) return { sync, round: round.id, action: 'waiting', detail: 'draw block not finalized yet' };
+      const entries = await qualifyingEntries(db, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets);
+      const result = await recordDraw(db, round.id, block.slot, block.hash, entries, now);
+      console.log('goal round drawn', JSON.stringify({ round: round.id, block: block.slot, hash: block.hash, index: result.index, entries: entries.length, winner: result.winner.wallet }));
+      return { sync, round: round.id, action: 'drawn', detail: `winner ${result.winner.wallet} (index ${result.index} of ${entries.length})` };
+    }
+    return { sync, round: round.id, action: 'awaiting_payout', detail: `pay ${round.winner_wallet} and run goal:round paid --tx <signature>` };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('goal tick failed', message);
+    return { sync, round: null, action: 'none', detail: message };
+  }
+}
+
+// ---------- public ----------
+
+goal.use('*', async (c, next) => {
+  if (c.req.method === 'POST') {
+    const rl = rateLimit(`goal:${clientIp(c)}`, 30, 60_000);
+    if (!rl.allowed) return problem(c, 429, 'rate_limited', 'Too many requests. Please slow down.', { retryAfter: rl.retryAfterSeconds });
+    c.header('cache-control', 'no-store');
+  }
+  await next();
 });
 
-/** Public contributor list for the current round (addresses shortened), so draws can be verified. */
+goal.get('/', async (c) => {
+  return c.json(await goalStatus(c.env), 200, { 'cache-control': 'public, max-age=30', 'access-control-allow-origin': '*' });
+});
+
+/** The draw list for the current (or latest) round, in draw order, so anyone can recompute `hash mod entries`. */
 goal.get('/contributors', async (c) => {
-  const round = await currentRound(c.env.DB);
-  if (!round) return c.json({ round: null, contributors: [] }, 200, { 'cache-control': 'public, max-age=30' });
   const cfg = siteConfig(c.env).goal;
-  // The public list is the draw list: at or above the minimum, operator wallets excluded, in draw order.
-  const list = (await qualifyingEntries(c.env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets)).map((e, i) => ({ index: i, address: e.identity, usdg: e.amount_units / 1e6 }));
-  return c.json({ round: round.id, status: round.status, synced_block: round.synced_block, min_contribution_usd: Number(MIN_CONTRIBUTION_UNITS) / 1e6, explorer: cfg.explorerUrl, contributors: list }, 200, { 'cache-control': 'public, max-age=30', 'access-control-allow-origin': '*' });
+  const round = (await currentRound(c.env.DB)) ?? (await latestRound(c.env.DB));
+  if (!round) return c.json({ round: null, contributors: [] }, 200, { 'cache-control': 'public, max-age=30', 'access-control-allow-origin': '*' });
+  const list = (await qualifyingEntries(c.env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets)).map((e, i) => ({ index: i, wallet: e.wallet, usdc: usd(e.units), first_slot: e.firstSlot }));
+  return c.json(
+    { round: round.id, status: round.status, min_contribution_usd: Number(MIN_CONTRIBUTION_UNITS) / 1e6, excluded: cfg.excludedWallets, draw_block: round.draw_block, draw_hash: round.draw_hash, winner_index: round.winner_index, explorer: cfg.explorerUrl, contributors: list },
+    200,
+    { 'cache-control': 'public, max-age=30', 'access-control-allow-origin': '*' },
+  );
+});
+
+function openOr409(c: Parameters<typeof problem>[0], cfg: GoalConfig, round: GoalRound | null): Response | null {
+  if (!cfg.live) return problem(c, 409, 'goal_not_open', 'The community goal is not open.');
+  if (!round || round.status !== 'open') return problem(c, 409, 'round_closed', 'Entries are closed while the current round is drawn and paid; the next round opens right after.');
+  return null;
+}
+
+/**
+ * Build the USDC transfer for a contributor: their wallet pays the fee and signs, the pool's token
+ * account receives. Returns the serialized legacy message (base58) for Phantom's signAndSendTransaction.
+ */
+goal.post('/tx', async (c) => {
+  const cfg = siteConfig(c.env).goal;
+  const closed = openOr409(c, cfg, await currentRound(c.env.DB));
+  if (closed) return closed;
+  const body = await readJson(c, 2048);
+  if (!body.ok) return problem(c, 400, 'invalid_body', body.error);
+  const v = body.value as Record<string, unknown>;
+  const from = typeof v.from === 'string' ? v.from.trim() : '';
+  if (!isSolanaAddress(from)) return problem(c, 400, 'invalid_wallet', 'from must be a Solana wallet address', { parameter: 'from' });
+  if (from === cfg.wallet) return problem(c, 409, 'operator_wallet', 'The goal wallet cannot contribute to itself.');
+  const amount = typeof v.amount === 'number' ? v.amount : Number(v.amount);
+  const cents = Math.round(amount * 100);
+  if (!Number.isFinite(amount) || cents < 100 || cents > MAX_SHEET_USD * 100) return problem(c, 400, 'invalid_amount', `amount must be between 1 and ${MAX_SHEET_USD} USDC`, { parameter: 'amount' });
+  const units = BigInt(cents) * 10_000n;
+  try {
+    const source = await associatedTokenAccount(fetch, cfg.rpcUrl, from, cfg.usdcMint);
+    if (!source) return problem(c, 409, 'no_usdc', 'This wallet holds no USDC on Solana.');
+    if (source.amount < units) return problem(c, 409, 'insufficient', `This wallet holds ${usd(source.amount)} USDC.`);
+    if ((await lamports(fetch, cfg.rpcUrl, from)) < MIN_LAMPORTS_FOR_FEE) return problem(c, 409, 'no_sol', 'This wallet needs a little SOL to pay the network fee.');
+    const { blockhash, lastValidBlockHeight } = await getLatestBlockhash(fetch, cfg.rpcUrl);
+    const message = buildTransferMessage({ payer: from, source: source.address, destination: cfg.usdcAccount!, mint: cfg.usdcMint, units, decimals: SOLANA.usdcDecimals, blockhash });
+    const baseFee = (await feeForMessage(fetch, cfg.rpcUrl, message).catch(() => null)) ?? 5000;
+    console.log('goal tx built', JSON.stringify({ from, units: units.toString(), source: source.address }));
+    return c.json({ message: base58Encode(message), from, source: source.address, destination: cfg.usdcAccount, units: units.toString(), usdc: cents / 100, fee_lamports: baseFee + PRIORITY_FEE_LAMPORTS, blockhash, last_valid_block_height: lastValidBlockHeight });
+  } catch (err) {
+    console.error('goal tx failed', err instanceof Error ? err.message : err);
+    return problem(c, 503, 'rpc_unavailable', 'Could not reach Solana right now. Try again in a moment.');
+  }
+});
+
+/** Verify a submitted transaction on chain and record it right away (the cron would find it within a minute anyway). */
+goal.post('/contributions', async (c) => {
+  const cfg = siteConfig(c.env).goal;
+  if (!cfg.live) return problem(c, 409, 'goal_not_open', 'The community goal is not open.');
+  const body = await readJson(c, 2048);
+  if (!body.ok) return problem(c, 400, 'invalid_body', body.error);
+  const signature = typeof (body.value as Record<string, unknown>).signature === 'string' ? ((body.value as Record<string, unknown>).signature as string).trim() : '';
+  if (!isSolanaSignature(signature)) return problem(c, 400, 'invalid_signature', 'signature must be a Solana transaction signature', { parameter: 'signature' });
+  const now = new Date();
+  try {
+    const round = await currentRound(c.env.DB);
+    if (await hasContribution(c.env.DB, signature)) return c.json({ status: 'confirmed', signature, counted: round?.status === 'open', round: round?.id ?? null, contributors: round ? (await qualifyingEntries(c.env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets)).length : 0 });
+    const tx = await getTransaction(fetch, cfg.rpcUrl, signature);
+    if (!tx) return c.json({ status: 'pending', signature }, 202);
+    if (tx.meta?.err) return problem(c, 409, 'failed', 'The transaction failed on chain.');
+    const contribution = parseContribution(tx, cfg.usdcAccount!);
+    if (!contribution) return problem(c, 409, 'not_a_contribution', 'This transaction did not send USDC to the pool.');
+    const counted = round?.status === 'open';
+    await recordContribution(c.env.DB, contribution, counted ? round!.id : null, now);
+    console.log('goal contribution (submitted)', JSON.stringify({ signature, wallet: contribution.wallet, units: contribution.units.toString(), round: counted ? round!.id : null }));
+    return c.json({ status: 'confirmed', signature, wallet: contribution.wallet, usdc: usd(contribution.units), counted, round: round?.id ?? null, contributors: round ? (await qualifyingEntries(c.env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets)).length : 0 });
+  } catch (err) {
+    console.error('goal contribution check failed', err instanceof Error ? err.message : err);
+    return problem(c, 503, 'rpc_unavailable', 'Could not reach Solana right now. Try again in a moment.');
+  }
 });
 
 // ---------- maintainer actions (Bearer CONTENT_PUBLISH_TOKEN) ----------
@@ -165,6 +366,7 @@ goalAdmin.use('*', async (c, next) => {
   await next();
 });
 
+/** actions: paid { tx } (record the operator's USDC payout), cancel { note }, tick (run the cron step now), open { title?, targetUsd? } */
 goalAdmin.post('/rounds', async (c) => {
   const body = await readJson(c, 8192);
   if (!body.ok) return problem(c, 400, 'invalid_body', body.error);
@@ -173,90 +375,33 @@ goalAdmin.post('/rounds', async (c) => {
   const now = new Date();
   try {
     switch (v.action) {
-      case 'open': {
-        if (!cfg.live) return problem(c, 409, 'goal_not_configured', `Goal is not configured: ${cfg.reason}`);
-        const title = typeof v.title === 'string' && v.title.trim() ? v.title.trim().slice(0, 120) : 'One month of Claude Max 20x for a contributor';
-        const target = typeof v.targetUsd === 'number' && v.targetUsd > 0 ? Math.round(v.targetUsd) : cfg.targetUsd;
-        const openBlock = typeof v.openBlock === 'number' ? Math.floor(v.openBlock) : await blockNumber(fetch, cfg.rpcUrl);
-        return c.json({ ok: true, round: await openRound(c.env.DB, title, target, openBlock, now) });
-      }
-      case 'freeze': {
-        const round = await currentRound(c.env.DB);
-        if (!round || round.status !== 'open') return problem(c, 409, 'no_round', 'No open round.');
-        const lead = typeof v.blocksAhead === 'number' && v.blocksAhead >= 10 ? Math.floor(v.blocksAhead) : 600; // ~1 minute at 100 ms blocks
-        // Ingest everything up to the chain head, then the entry list in D1 is the frozen snapshot.
-        const sync = await syncOpenRound(c.env, fetch);
-        if (sync.error || sync.to == null) return problem(c, 503, 'sync_failed', `Could not read the chain: ${sync.error ?? 'unknown'}. Try again in a minute.`);
-        const contributors = await qualifyingEntries(c.env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets);
-        if (contributors.length === 0) return problem(c, 409, 'no_contributors', 'No eligible contributions at or above the minimum yet; nothing to draw from.');
-        await freezeRound(c.env.DB, round.id, sync.to, sync.to + lead, now);
-        return c.json({ ok: true, round: round.id, freezeBlock: sync.to, drawBlock: sync.to + lead, contributors: contributors.length });
-      }
-      case 'draw': {
-        const round = await currentRound(c.env.DB);
-        if (!round || round.status !== 'frozen' || !round.draw_block) return problem(c, 409, 'not_frozen', 'Freeze the round first.');
-        const current = await blockNumber(fetch, cfg.rpcUrl);
-        if (current < round.draw_block) return problem(c, 409, 'too_early', `Draw block ${round.draw_block} not reached yet (current ${current}).`);
-        const hash = await blockHash(fetch, cfg.rpcUrl, round.draw_block);
-        if (!hash) return problem(c, 503, 'block_unavailable', 'Could not read the draw block yet.');
-        const result = await recordDraw(c.env.DB, round.id, hash, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets);
-        return c.json({ ok: true, round: round.id, drawBlock: round.draw_block, drawHash: hash, index: result.index, entries: result.entries, winner: result.winner.display, winnerAddress: result.winner.identity });
-      }
       case 'paid': {
         const round = await currentRound(c.env.DB);
         if (!round) return problem(c, 409, 'no_round', 'No round to mark paid.');
-        if (typeof v.tx !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(v.tx)) return problem(c, 400, 'invalid_tx', 'tx must be a transaction hash');
-        await markPaid(c.env.DB, round.id, v.tx, now);
-        const burnQueued = cfg.tokenAddress ? await queueBurn(c.env.DB, 'round', String(round.id), now) : false;
-        return c.json({ ok: true, round: round.id, burn: cfg.tokenAddress ? (burnQueued ? 'queued; the cron sends burnForRound within 2 minutes' : 'already queued') : 'RESET token not deployed' });
+        if (round.status !== 'drawn') return problem(c, 409, 'not_drawn', `Round ${round.id} is ${round.status}; only a drawn round can be paid.`);
+        if (typeof v.tx !== 'string' || !isSolanaSignature(v.tx.trim())) return problem(c, 400, 'invalid_tx', 'tx must be the Solana signature of the payout transfer');
+        await markPaid(c.env.DB, round.id, v.tx.trim(), now);
+        console.log('goal round paid', JSON.stringify({ round: round.id, tx: v.tx.trim(), winner: round.winner_wallet }));
+        return c.json({ ok: true, round: round.id, winner: round.winner_wallet, next: 'the next round opens on the next cron tick' });
       }
-      case 'sync':
-        return c.json({ ok: true, sync: await syncOpenRound(c.env, fetch) });
       case 'cancel': {
         const round = await currentRound(c.env.DB);
         if (!round) return problem(c, 409, 'no_round', 'No round to cancel.');
         await cancelRound(c.env.DB, round.id, typeof v.note === 'string' ? v.note.slice(0, 300) : 'cancelled');
-        return c.json({ ok: true, round: round.id });
+        return c.json({ ok: true, round: round.id, note: 'its contributions roll into the next round' });
       }
+      case 'open': {
+        if (!cfg.live) return problem(c, 409, 'goal_not_configured', `Goal is not configured: ${cfg.reason}`);
+        const title = typeof v.title === 'string' && v.title.trim() ? v.title.trim().slice(0, 120) : DEFAULT_ROUND_TITLE;
+        const target = typeof v.targetUsd === 'number' && v.targetUsd > 0 ? Math.round(v.targetUsd) : cfg.targetUsd;
+        return c.json({ ok: true, round: await openRound(c.env.DB, title, target, now) });
+      }
+      case 'tick':
+        return c.json({ ok: true, tick: await tickGoal(c.env, fetch, now) });
       default:
-        return problem(c, 400, 'invalid_action', 'action must be open, freeze, draw, paid, sync or cancel');
+        return problem(c, 400, 'invalid_action', 'action must be paid, cancel, open or tick');
     }
   } catch (err) {
     return problem(c, 409, 'round_state', err instanceof Error ? err.message : 'round error');
-  }
-});
-
-// ---------- burns (maintainer) ----------
-
-goalAdmin.get('/burns', async (c) => {
-  const cfg = siteConfig(c.env).goal;
-  return c.json({ token: cfg.tokenAddress, burner: burnerConfigured(c.env), burns: await listBurns(c.env.DB, 100) });
-});
-
-/** actions: drain (run the cron step now), queue { eventId } (a reset published before the token existed), retry { id } */
-goalAdmin.post('/burns', async (c) => {
-  const body = await readJson(c, 8192);
-  if (!body.ok) return problem(c, 400, 'invalid_body', body.error);
-  const v = body.value as Record<string, unknown>;
-  const cfg = siteConfig(c.env).goal;
-  if (!cfg.tokenAddress) return problem(c, 409, 'token_not_configured', 'RESET_TOKEN_ADDRESS is not set.');
-  const now = new Date();
-  switch (v.action) {
-    case 'drain':
-      return c.json({ ok: true, result: await drainBurns(c.env, { limit: 20, now }) });
-    case 'queue': {
-      if (typeof v.eventId !== 'string') return problem(c, 400, 'invalid_event', 'eventId is required');
-      const ev = findEvent(loadContent().events, v.eventId);
-      if (!ev || !isQualifyingReset(ev)) return problem(c, 409, 'not_a_reset', `${v.eventId} is not a published, confirmed usage reset; only real resets burn.`);
-      const queued = await queueBurn(c.env.DB, 'reset', ev.id, now);
-      return c.json({ ok: true, eventId: ev.id, queued, reason: queued ? 'queued' : 'already queued or burned' });
-    }
-    case 'retry': {
-      if (typeof v.id !== 'number') return problem(c, 400, 'invalid_id', 'id is required');
-      const r = await c.env.DB.prepare("UPDATE token_burns SET status = 'queued', attempts = 0, next_attempt_at = ?1, last_error = NULL WHERE id = ?2 AND status = 'failed'").bind(now.toISOString(), v.id).run();
-      return c.json({ ok: true, retried: (r.meta.changes ?? 0) > 0 });
-    }
-    default:
-      return problem(c, 400, 'invalid_action', 'action must be drain, queue or retry');
   }
 });

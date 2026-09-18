@@ -18,6 +18,8 @@ Public settings live in `wrangler.jsonc` under `vars` and are safe to commit. Se
 | `ALERTS_PAUSED` | public | `true` pauses delivery without deleting subscriptions or jobs. |
 | `REACTION_COOLDOWN_HOURS` | public | Default 24. |
 | `ALERT_MAX_AGE_HOURS` | public | Default 72. Older announcements are not alerted unless published with `--late`; pending jobs older than this expire. |
+| `GOAL_ENABLED`, `GOAL_WALLET`, `GOAL_USDC_ACCOUNT`, `GOAL_USDC_MINT`, `GOAL_SOLANA_RPC`, `GOAL_EXPLORER_URL`, `GOAL_TARGET_USD`, `GOAL_EXCLUDED_WALLETS` | public | Community goal (USDC on Solana). See `docs/goal.md`. |
+| `GOAL_SOLANA_RPC_PRIVATE` | secret, optional | Keyed Solana RPC URL tried before the public endpoints. |
 
 Public capability states on the site come from these settings at request time, never from the mere presence of a button.
 
@@ -28,7 +30,7 @@ Channels: **browser push** (implemented, real Web Push with VAPID via `@block65/
 Pipeline:
 
 1. `content:publish` → `/admin/publish` records the publication (`publications`, unique per event+revision) and, for a first confirmed usage reset, inserts one `alerts` row (unique per event, alertRevision, kind) and fans out `push_jobs` for active subscriptions created at or before the cutoff (`INSERT OR IGNORE … SELECT`, unique per alert+subscription).
-2. The cron trigger (`*/2 * * * *`) calls `drainPushJobs`: leases up to 50 due jobs (`UPDATE … RETURNING` with a 5-minute lease so overlapping runs cannot double-send), sends, then marks `sent`, `pending` with exponential backoff (30 s doubling, max 1 h, 6 attempts), `failed`, `skipped` (subscription no longer active or event unpublished) or `expired` (alert older than `ALERT_MAX_AGE_HOURS`). `404`/`410` from the push service deactivates the subscription.
+2. The cron trigger (`* * * * *`) calls `drainPushJobs` (and `tickGoal`, see `docs/goal.md`): leases up to 50 due jobs (`UPDATE … RETURNING` with a 5-minute lease so overlapping runs cannot double-send), sends, then marks `sent`, `pending` with exponential backoff (30 s doubling, max 1 h, 6 attempts), `failed`, `skipped` (subscription no longer active or event unpublished) or `expired` (alert older than `ALERT_MAX_AGE_HOURS`). `404`/`410` from the push service deactivates the subscription.
 3. `npm run outbox` shows the ledger and job states; `npm run outbox -- --drain` runs one batch by hand. Locally, `wrangler dev --test-scheduled` also exposes `/__scheduled`.
 
 Guarantees and limits: enqueueing is idempotent; delivery is at-least-once (a crash after the push service accepted a message but before the row was marked `sent` is retried). Push services do not provide end-to-end idempotency, so exactly-once is not promised. Subscriber endpoints and keys are never logged.
@@ -55,7 +57,7 @@ Pause: set `ALERTS_PAUSED=true` (`npx wrangler deploy` after editing vars, or a 
 
 ## Abuse controls
 
-Per-isolate in-memory sliding windows (best effort, not global): API 120/min per IP, MCP 60/min, push endpoints 30/min, reactions 20/min. Reactions additionally enforce one accepted reaction per signed anonymous cookie per cooldown with a single conditional SQL upsert as the gate. Push subscriptions must use https endpoints on known push-service hosts (Google FCM, Mozilla, Apple, Microsoft WNS, Samsung) with correctly sized keys; private and literal-IP hosts are rejected. Request bodies are capped (8 KB subscriptions, 64 KB MCP, 256 KB admin). Raw IP addresses are not stored.
+Per-isolate in-memory sliding windows (best effort, not global): API 120/min per IP, MCP 60/min, push endpoints 30/min, goal POSTs 30/min, reactions 20/min. Reactions additionally enforce one accepted reaction per signed anonymous cookie per cooldown with a single conditional SQL upsert as the gate. Push subscriptions must use https endpoints on known push-service hosts (Google FCM, Mozilla, Apple, Microsoft WNS, Samsung) with correctly sized keys; private and literal-IP hosts are rejected. Request bodies are capped (8 KB subscriptions, 64 KB MCP, 256 KB admin). Raw IP addresses are not stored.
 
 ## Security headers
 

@@ -1,31 +1,34 @@
 import type { FC } from 'hono/jsx';
-import { formatUnits } from '../goal/chain';
 import { ROADMAP, type PhaseStatus } from '../goal/roadmap';
+import { SOLANA } from '../goal/solana';
 import type { GoalStatus } from '../routes/goal';
 import { formatNumber, interpolate, localizePath } from '../i18n';
 import { ArrowIcon, CloseIcon } from './icons';
 import { Layout, type PageContext } from './layout';
 
-function shortAddr(a: string): string {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
+function shortSig(a: string): string {
+  return `${a.slice(0, 8)}…${a.slice(-6)}`;
 }
 
-/** Compact goal card for the tracker homepage. Honest states: preparing / open / frozen / drawn / paid. */
+/** Compact goal card for the tracker homepage. Honest states: not open / open / frozen / drawn / paid. */
 export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }) => {
   const { t, locale } = ctx;
-  const raised = status.pool.usdg ?? 0;
-  const pct = Math.round(status.progress * 100);
   const round = status.round;
-  const stateLine = !status.enabled
+  const raised = round?.raised_usd ?? 0;
+  const target = round?.target_usd ?? status.target_usd;
+  const pct = Math.round(status.progress * 100);
+  const explorer = status.network.explorer;
+  const stateLine = !status.enabled || !round
     ? t.goal.preparing
     : round?.status === 'frozen'
-      ? interpolate(t.goal.frozen, { block: round.draw_block ?? '' })
+      ? interpolate(t.goal.frozen, { slot: formatNumber(round.draw_slot ?? 0, locale) })
       : round?.status === 'drawn'
         ? interpolate(t.goal.drawn, { winner: round.winner ?? '' })
         : round?.status === 'paid'
           ? interpolate(t.goal.paid, { winner: round.winner ?? '' })
           : null;
-  const open = status.enabled && round?.status === 'open' && !!status.pool.address;
+  const open = status.enabled && round?.status === 'open' && !!status.pool.wallet;
+  const raisedLabel = interpolate(t.goal.raised, { raised: formatNumber(Math.round(raised), locale), target: formatNumber(target, locale) });
   return (
     <section class="section" aria-labelledby="goal-heading">
       <div class="card card--sun goal-card" data-role="goal-card">
@@ -34,23 +37,21 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             <span class="mono">{t.goal.sub}</span>
             <h2 id="goal-heading">{t.goal.heading}</h2>
           </div>
-          {status.token ? (
-            <a class="chip chip--accent" href={`${status.chain.explorer}/token/${status.token.address}`} target="_blank" rel="noopener noreferrer" title={status.token.address}>
-              USDG · {t.goal.token}
-            </a>
-          ) : (
-            <span class="chip chip--accent">USDG · {t.goal.token}</span>
-          )}
+          <span class="chip chip--accent">USDC · {SOLANA.name}</span>
         </div>
         <p class="goal-pitch">{t.goal.pitch}</p>
-        <div class="goal-meter" role="progressbar" aria-valuemin={0} aria-valuemax={status.target_usd} aria-valuenow={Math.round(raised)} aria-label={interpolate(t.goal.raised, { raised: formatNumber(Math.round(raised), locale), target: formatNumber(status.target_usd, locale) })}>
+        <div class="goal-meter" role="progressbar" aria-valuemin={0} aria-valuemax={target} aria-valuenow={Math.round(raised)} aria-label={raisedLabel}>
           <span class="goal-meter-fill" style={`width:${pct}%`}></span>
         </div>
         <div class="goal-figures">
-          <strong class="goal-raised" data-role="goal-raised">{interpolate(t.goal.raised, { raised: formatNumber(Math.round(raised), locale), target: formatNumber(status.target_usd, locale) })}</strong>
-          {status.enabled && round ? <span class="mono">{interpolate(t.goal.entries, { n: formatNumber(round.contributors, locale) })}</span> : null}
+          <strong class="goal-raised" data-role="goal-raised">{raisedLabel}</strong>
+          {status.enabled && round ? (
+            <span class="mono">
+              <span data-role="goal-entries">{formatNumber(round.contributors, locale)}</span> {interpolate(t.goal.entries, { n: '' }).trim()}
+            </span>
+          ) : null}
         </div>
-        {status.pool.stale ? <p class="status-line">{t.goal.stale}</p> : null}
+        {status.enabled && status.sync.stale ? <p class="status-line">{t.goal.stale}</p> : null}
         {stateLine ? <p class="notice notice--warn goal-state">{stateLine}</p> : null}
         {open ? (
           <div class="goal-cta" data-role="goal-contribute">
@@ -64,13 +65,8 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
           <a class="btn" href={localizePath(locale, '/goal')}>
             {t.goal.learn} <ArrowIcon />
           </a>
-          {status.token ? (
-            <a class="status-line goal-ca" href={`${status.chain.explorer}/token/${status.token.address}`} target="_blank" rel="noopener noreferrer">
-              CA <code>{status.token.address}</code>
-            </a>
-          ) : null}
-          {open ? (
-            <a class="status-line" href={`${status.chain.explorer}/address/${status.pool.address}`} target="_blank" rel="noopener noreferrer">
+          {status.enabled && status.pool.wallet ? (
+            <a class="status-line" href={`${explorer}/account/${status.pool.wallet}`} target="_blank" rel="noopener noreferrer">
               {t.goal.viewPool}
             </a>
           ) : null}
@@ -81,83 +77,77 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
   );
 };
 
-/** PerkPond-style contribution sheet: amount → review → wallet approval → submitted → confirmed. */
+/** Contribution sheet: amount → review → Phantom approval → submitted → confirmed. Nothing here holds keys. */
 const GoalSheet: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }) => {
   const s = ctx.t.goal.sheet;
   const w = ctx.t.goal.wallet;
   return (
-    <>
-      <dialog id="goal-sheet" class="goal-sheet" aria-labelledby="goal-sheet-title">
-        <div class="dialog-head">
-          <h2 id="goal-sheet-title">{s.title}</h2>
-          <button class="icon-btn" type="button" data-role="sheet-close" aria-label={s.close}>
-            <CloseIcon />
-          </button>
+    <dialog id="goal-sheet" class="goal-sheet" aria-labelledby="goal-sheet-title">
+      <div class="dialog-head">
+        <h2 id="goal-sheet-title">{s.title}</h2>
+        <button class="icon-btn" type="button" data-role="sheet-close" aria-label={s.close}>
+          <CloseIcon />
+        </button>
+      </div>
+      <div class="dialog-body">
+        <span class="mono">{s.amount}</span>
+        <div class="goal-presets" role="group" aria-label={s.amount}>
+          {[1, 5, 10, 25].map((n) => (
+            <button class="btn" type="button" data-role="preset" data-amount={String(n)} aria-pressed={n === 5 ? 'true' : 'false'}>
+              ${n}
+            </button>
+          ))}
         </div>
-        <div class="dialog-body">
-          <span class="mono">{s.amount}</span>
-          <div class="goal-presets" role="group" aria-label={s.amount}>
-            {[1, 5, 10, 25].map((n) => (
-              <button class="btn" type="button" data-role="preset" data-amount={String(n)} aria-pressed={n === 5 ? 'true' : 'false'}>
-                ${n}
-              </button>
-            ))}
-          </div>
-          <label class="goal-amount">
-            <span aria-hidden="true">$</span>
-            <input data-role="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="5.00" aria-label={s.custom} />
-          </label>
-          <span class="mono">{s.review}</span>
-          <div class="goal-review">
-            <span>{s.contribution}</span>
-            <span data-role="row-contribution"></span>
-            <span>{s.networkFee}</span>
-            <span data-role="row-fee">—</span>
-            <span class="total">{s.total}</span>
-            <span class="total" data-role="row-total"></span>
-            <span class="note">{s.denomination}</span>
-          </div>
-          <button class="btn btn--accent" type="button" data-role="pay">
-            {s.connect}
-          </button>
-          <p class="goal-sheet-status" data-role="sheet-status" role="status" aria-live="polite"></p>
-          <p class="goal-fallback" data-role="receipt" hidden></p>
-          <div class="goal-fallback" data-role="fallback" role="status" hidden>
-            <p>{s.noWallet}</p>
-            <code class="goal-address">{status.pool.address}</code>
-            <div class="goal-cta">
-              <a class="btn" href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer">
-                {w.install} {w.metamask}
-              </a>
-              <a class="btn" href="https://rabby.io/" target="_blank" rel="noopener noreferrer">
-                {w.install} {w.rabby}
-              </a>
-              <a class="btn btn--accent" href="https://metamask.app.link/" data-role="open-in-app" rel="noopener noreferrer" hidden>
-                {w.openInApp}
-              </a>
-              <button class="btn" type="button" data-role="copy-pool">
-                {s.copy}
-              </button>
-            </div>
+        <label class="goal-amount">
+          <span aria-hidden="true">$</span>
+          <input data-role="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="5.00" aria-label={s.custom} />
+        </label>
+        <span class="mono">{s.review}</span>
+        <div class="goal-review">
+          <span>{s.contribution}</span>
+          <span data-role="row-contribution"></span>
+          <span>{s.networkFee}</span>
+          <span data-role="row-fee">—</span>
+          <span class="total">{s.total}</span>
+          <span class="total" data-role="row-total"></span>
+          <span class="note">{s.denomination}</span>
+        </div>
+        <button class="btn btn--accent" type="button" data-role="pay">
+          {s.connect}
+        </button>
+        <p class="goal-sheet-status" data-role="sheet-status" role="status" aria-live="polite"></p>
+        <p class="goal-fallback" data-role="receipt" hidden></p>
+        <div class="goal-fallback" data-role="fallback" role="status" hidden>
+          <p>{s.noWallet}</p>
+          <code class="goal-address">{status.pool.wallet}</code>
+          <div class="goal-cta">
+            <a class="btn" href="https://phantom.com/download" target="_blank" rel="noopener noreferrer">
+              {w.install}
+            </a>
+            <a class="btn btn--accent" href="https://phantom.app/" data-role="open-in-app" rel="noopener noreferrer" hidden>
+              {w.openInApp}
+            </a>
+            <button class="btn" type="button" data-role="copy-pool">
+              {s.copy}
+            </button>
           </div>
         </div>
-      </dialog>
-    </>
+      </div>
+    </dialog>
   );
 };
 
 const ROADMAP_CHIP: Record<PhaseStatus, string> = { done: 'chip--mint', now: 'chip--accent', next: 'chip--sky', later: 'chip--muted' };
 const ROADMAP_LABEL: Record<PhaseStatus, string> = { done: 'Live', now: 'Switching on', next: 'Next', later: 'Later' };
 
-/** Full page: mechanics, tokenomics, burn schedule, roadmap, rules, verification. English, like the technical docs. */
+/** Full page: mechanics, trust, rules, verification, roadmap. English, like the technical docs. */
 export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }) => {
   const { cfg, t, locale } = ctx;
-  const g = cfg.goal;
-  const explorer = status.chain.explorer;
-  const token = status.token;
-  const supplyPct = (n: string) => (token ? `${(Number((BigInt(n) * 10000n) / 1_000_000_000_000_000_000_000_000_000n) / 100).toFixed(2)}%` : '');
+  const explorer = status.network.explorer;
+  const round = status.round;
+  const target = round?.target_usd ?? status.target_usd;
   return (
-    <Layout ctx={ctx} title={`Max 20x for a reader | ${cfg.siteName}`} description="A community-funded goal: readers pool USDG on Robinhood Chain and one contributor wins a month of Claude Max 20x by a verifiable block-hash draw. RESETS token with on-chain burns.">
+    <Layout ctx={ctx} title={`Max 20x for a reader | ${cfg.siteName}`} description="A community goal: readers pool USDC on Solana and one contributor wins a month of Claude Max 20x, drawn automatically by a finalized Solana block hash.">
       <h1 class="page-title">Max 20x for a reader</h1>
       <p class="page-intro">{t.goal.pitch}</p>
       {locale !== 'en' ? (
@@ -172,163 +162,149 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
         <h2>How a round works</h2>
         <ol>
           <li>
-            <strong>Pool.</strong> A public wallet on Robinhood Chain (chain id {status.chain.id}) receives USDG. The meter above is the wallet's live balance read from the chain, not a number we typed.
-            {status.pool.address ? (
+            <strong>Goal wallet.</strong> Contributions are USDC transfers on Solana to a wallet owned by {cfg.ownerName}, who runs this site.
+            {status.pool.wallet ? (
               <>
-                {' '}Pool: <a href={`${explorer}/address/${status.pool.address}`} target="_blank" rel="noopener noreferrer"><code>{status.pool.address}</code></a>.
+                {' '}Wallet: <a href={`${explorer}/account/${status.pool.wallet}`} target="_blank" rel="noopener noreferrer"><code>{status.pool.wallet}</code></a>
+                {status.pool.usdc_account ? (
+                  <>
+                    {' '}(its USDC account: <a href={`${explorer}/account/${status.pool.usdc_account}`} target="_blank" rel="noopener noreferrer"><code>{status.pool.usdc_account}</code></a>).
+                  </>
+                ) : (
+                  '.'
+                )}
               </>
-            ) : null}
+            ) : (
+              ' The address is published here when the goal opens.'
+            )}{' '}
+            The meter is the sum of the transfers the site has read from the chain for the current round; it is not a number anyone typed.
           </li>
           <li>
-            <strong>Contribute to enter.</strong> Send at least {status.min_contribution_usd} USDG to the pool from your own wallet during the round. Your wallet is your entry. Amount does not matter for the draw: a 1 USDG contributor and a 100 USDG contributor have exactly the same chance. One entry per wallet; sending twice does not add a second entry.
+            <strong>Contribute to enter.</strong> Send at least {status.min_contribution_usd} USDC during an open round from a wallet you control, with the Phantom button above or from any wallet or exchange that withdraws USDC on Solana. Your wallet is your entry. Amount does not matter for the draw: a 1 USDC contributor and a 100 USDC contributor have exactly the same chance. One entry per wallet; sending twice does not add a second entry.
           </li>
           <li>
-            <strong>Freeze.</strong> When the pool reaches ${g.targetUsd} USDG, the round closes at a recorded block. The contributor list is snapshotted from the chain's transfer log for that block range and published, and a future <em>draw block</em> is announced (about a minute ahead at 100 ms blocks).
+            <strong>Freeze.</strong> When the round reaches ${target} USDC, the site records the current slot and announces a <em>draw slot</em> {SOLANA.drawLeadSlots} slots later (about a minute). Entries are fixed at that moment; anything that arrives afterwards counts for the next round.
           </li>
           <li>
-            <strong>Draw.</strong> The winner is contributor number <code>uint256(drawBlockHash) mod contributors</code>, with contributors ordered by their first contribution. The hash and the list are public, so anyone can recompute the result. Nobody, including us, can influence a future block hash.
+            <strong>Draw.</strong> The first finalized block at or after the draw slot decides. Winner index = <code>blockhash mod contributors</code>, with the 32-byte block hash read as one big integer and contributors ordered by their first contribution. The hash and the list are public, so anyone can recompute the result; nobody, including us, can influence a future block hash. This runs automatically from the site's cron.
           </li>
           <li>
-            <strong>Payout.</strong> ${g.targetUsd} USDG goes to the winning wallet toward one month of Claude Max 20x (subscriptions cannot be transferred, so the money is paid out, not the account). The transaction hash is published here and on X, then the next round opens.
-          </li>
-          <li>
-            <strong>Burn.</strong> When the payout is recorded, the burner wallet sends {formatNumber(g.burnPerRound, locale)} RESETS to the dead address. Every round makes the supply smaller.
+            <strong>Payout.</strong> {cfg.ownerName} sends ${target} USDC from the goal wallet to the winning wallet by hand (subscriptions cannot be transferred, so the money is paid out, not the account) and records the transaction signature here. The next round opens automatically.
           </li>
         </ol>
         <p>{t.support.noEffect} Winning here does not change anything about anyone's Claude account or Anthropic's limits; it pays for a plan.</p>
       </section>
 
-      <section class="section prose" id="token">
-        <h2>RESETS tokenomics</h2>
+      <section class="section prose" id="trust">
+        <h2>What you are trusting</h2>
         <p>
-          RESETS is the community token behind the goal. Its whole design is one sentence: <strong>supply only goes down, and it goes down every time a real Claude reset is published.</strong>
+          There is no smart contract holding the money. Contributions land in {cfg.ownerName}'s personal wallet, and the payout is a manual transfer from that wallet. The site can read the chain but cannot move a cent. The draw itself needs no trust: the contributor list, the draw slot, the block hash and the winner index are all published, and the block hash is produced by the Solana network, not by us. If trusting one person with the pool is more than you are comfortable with, please do not contribute.
         </p>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Parameter</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Chain</td>
-                <td>Robinhood Chain (Arbitrum L2, chain id {status.chain.id}), standard ERC-20.</td>
-              </tr>
-              <tr>
-                <td>Launch</td>
-                <td>Fair launch on the pons launchpad: a bonding curve paired with ETH, open to everyone at the same time. No presale, no team allocation, no mint function.</td>
-              </tr>
-              <tr>
-                <td>Liquidity</td>
-                <td>When the curve has raised 4.2 ETH it graduates and the launchpad moves the liquidity into a Uniswap v4 pool. Nobody, including us, can pull it.</td>
-              </tr>
-              <tr>
-                <td>Trade fee</td>
-                <td>3% per trade, set by the launchpad. The creator share (2%) is routed to RESETS holders by the launchpad, permanently: holding RESETS earns a cut of every trade. The goal pool is funded by contributions only.</td>
-              </tr>
-              <tr>
-                <td>Burn reserve</td>
-                <td>
-                  The developer buy (5,740,664 RESETS, 0.57% of supply) is locked in a vault contract
-                  {token?.vault ? (
-                    <>
-                      {' '}
-                      <a href={`${explorer}/address/${token.vault}`} target="_blank" rel="noopener noreferrer">
-                        <code>{token.vault}</code>
-                      </a>
-                    </>
-                  ) : null}
-                  {' '}that can send tokens to exactly one place: the dead address. No owner, no withdraw, no upgrade. The site's burner wallet can trigger the scheduled burns and nothing else.
-                </td>
-              </tr>
-              <tr>
-                <td>Burn schedule</td>
-                <td>
-                  {formatNumber(g.burnPerReset, locale)} RESETS the moment a confirmed Claude reset is published here, {formatNumber(g.burnPerRound, locale)} RESETS when a goal round pays out. Automatic, once per event, logged below with the transaction.
-                </td>
-              </tr>
-              <tr>
-                <td>Control</td>
-                <td>The token contract is the launchpad's standard contract; we hold no admin power over it. The reserve sits in the vault, which nobody can withdraw from. The only thing we control is when the scheduled burns fire.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <h2>Why burns are tied to resets</h2>
-        <p>
-          Every reset announcement already sends people to this site. Tying a burn to each one gives holders a reason to care about the exact thing the site tracks, and gives readers a second reason to check: when Anthropic resets limits, RESETS supply shrinks the same day. The burn is sent automatically when the reset is published, and the burn log below links each transaction to the reset it was for.
-        </p>
-        <h2>Live token stats</h2>
-        {token ? (
+      </section>
+
+      {round && (round.status === 'drawn' || round.status === 'paid') && round.draw_hash ? (
+        <section class="section prose" id="draw">
+          <h2>Round {round.id} draw</h2>
           <dl class="kv">
-            <dt>Contract</dt>
+            <dt>Announced draw slot</dt>
+            <dd>{formatNumber(round.draw_slot ?? 0, locale)}</dd>
+            <dt>Block used</dt>
             <dd>
-              <a href={`${explorer}/token/${token.address}`} target="_blank" rel="noopener noreferrer">
-                <code>{token.address}</code>
+              <a href={`${explorer}/block/${round.draw_block}`} target="_blank" rel="noopener noreferrer">
+                {formatNumber(round.draw_block ?? 0, locale)}
               </a>
             </dd>
-            <dt>Total supply</dt>
-            <dd>{formatUnits(BigInt(token.total_supply), token.decimals, 0)} RESETS</dd>
-            <dt>Burned</dt>
-            <dd>{formatUnits(BigInt(token.burned), token.decimals, 0)} RESETS ({supplyPct(token.burned)} of initial)</dd>
-            <dt>Circulating</dt>
-            <dd>{formatUnits(BigInt(token.circulating), token.decimals, 0)} RESETS</dd>
-            {token.reserve != null ? (
+            <dt>Block hash</dt>
+            <dd>
+              <code>{round.draw_hash}</code>
+            </dd>
+            <dt>Contributors</dt>
+            <dd>{round.entries}</dd>
+            <dt>Winner index</dt>
+            <dd>{round.winner_index}</dd>
+            <dt>Winner</dt>
+            <dd>
+              {round.winner_wallet ? (
+                <a href={`${explorer}/account/${round.winner_wallet}`} target="_blank" rel="noopener noreferrer">
+                  <code>{round.winner_wallet}</code>
+                </a>
+              ) : null}
+            </dd>
+            {round.payout_tx ? (
               <>
-                <dt>Burn reserve</dt>
-                <dd>{formatUnits(BigInt(token.reserve), token.decimals, 0)} RESETS locked in the vault, waiting for the next resets</dd>
+                <dt>Payout</dt>
+                <dd>
+                  <a href={`${explorer}/tx/${round.payout_tx}`} target="_blank" rel="noopener noreferrer">
+                    <code>{shortSig(round.payout_tx)}</code>
+                  </a>
+                </dd>
               </>
             ) : null}
           </dl>
-        ) : (
-          <p class="notice notice--warn">RESETS is not launched yet. Stats appear here automatically once it is.</p>
-        )}
-        {token ? (
+        </section>
+      ) : null}
+
+      <section class="section prose" id="rules">
+        <h2>Rules</h2>
+        <ul>
+          <li>An entry is a wallet whose USDC transfers to the goal wallet during an open round add up to at least {status.min_contribution_usd} USDC. One entry per wallet regardless of amount or number of transfers.</li>
+          <li>Contributions are final. They fund the payout of the round they land in; when a round is cancelled, they roll into the next one.</li>
+          <li>The prize is ${target} USDC sent to the winning wallet, intended for one month of Claude Max 20x.</li>
+          <li>The operator's own wallets are excluded from the draw; their contributions still count on the meter.</li>
+          <li>Send from a wallet you control. If you contribute from an exchange account, the exchange's wallet is the entry and a payout to it may not reach you.</li>
+          <li>This project is independent and not affiliated with or endorsed by Anthropic. Winning pays for a plan; it does not change any account or limit.</li>
+          <li>Local law applies to you; if community pools of this kind are restricted where you live, do not participate.</li>
+        </ul>
+      </section>
+
+      <section class="section prose" id="verify">
+        <h2>Verify it yourself</h2>
+        <ul>
+          <li>
+            Every contribution and the wallet balance: {status.pool.wallet ? <a href={`${explorer}/account/${status.pool.wallet}`} target="_blank" rel="noopener noreferrer">the goal wallet on Solscan</a> : <span>the wallet is published when the goal opens</span>}.
+          </li>
+          <li>
+            Live status as JSON: <a href="/api/v1/goal">/api/v1/goal</a>; the contributor list in draw order: <a href="/api/v1/goal/contributors">/api/v1/goal/contributors</a>.
+          </li>
+          <li>Draw block hash: open the announced block on the explorer and compute <code>hash mod contributors</code> (decode the base58 hash to 32 bytes, read them as a big-endian integer).</li>
+          <li>
+            Source code: <a href={cfg.repoUrl ?? '/goal'} target="_blank" rel="noopener noreferrer">the public repository</a>; the sync, freeze and draw logic lives in <code>src/routes/goal.ts</code>.
+          </li>
+        </ul>
+        {status.past_rounds.length > 0 ? (
           <>
-            <h2 id="burns">Burn log</h2>
-            {status.burns.length === 0 ? (
-              <p class="note">No scheduled burns yet. The first one happens when the next confirmed reset is published.</p>
-            ) : (
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Trigger</th>
-                    <th>Status</th>
-                    <th>Transaction</th>
-                    <th>When</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {status.burns.map((b) => (
-                    <tr>
-                      <td>{b.kind === 'reset' ? <a href={localizePath(locale, `/resets/${b.ref}`)}>Reset {b.ref}</a> : `Round ${b.ref}`}</td>
-                      <td>{b.status}</td>
-                      <td>
-                        {b.tx ? (
-                          <a href={`${explorer}/tx/${b.tx}`} target="_blank" rel="noopener noreferrer">
-                            <code>{b.tx.slice(0, 10)}…{b.tx.slice(-6)}</code>
-                          </a>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                      <td>{b.at.slice(0, 16).replace('T', ' ')} UTC</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-            )}
+            <h2>Past rounds</h2>
+            <ul>
+              {status.past_rounds.map((r) => (
+                <li>
+                  Round {r.id}: {r.title} · {r.status} · {formatNumber(Math.round(r.raised_usd), locale)} USDC
+                  {r.winner ? ` · winner ${r.winner}` : ''}
+                  {r.draw_block ? (
+                    <>
+                      {' '}·{' '}
+                      <a href={`${explorer}/block/${r.draw_block}`} target="_blank" rel="noopener noreferrer">
+                        block {formatNumber(r.draw_block, locale)}
+                      </a>
+                    </>
+                  ) : null}
+                  {r.payout_tx ? (
+                    <>
+                      {' '}·{' '}
+                      <a href={`${explorer}/tx/${r.payout_tx}`} target="_blank" rel="noopener noreferrer">
+                        payout {shortSig(r.payout_tx)}
+                      </a>
+                    </>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           </>
         ) : null}
       </section>
 
       <section class="section prose" id="roadmap">
         <h2>Roadmap</h2>
-        <p>What is live, what is being switched on, and what comes after. Nothing here promises a price; it promises work.</p>
+        <p>What is live, what is being switched on, and what comes after. Nothing here promises more than work.</p>
         <ol class="roadmap">
           {ROADMAP.map((p) => (
             <li class={`roadmap-phase roadmap-phase--${p.status}`} id={`roadmap-${p.id}`}>
@@ -345,56 +321,6 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             </li>
           ))}
         </ol>
-      </section>
-
-      <section class="section prose" id="rules">
-        <h2>Rules</h2>
-        <ul>
-          <li>An entry is a wallet that sent at least {status.min_contribution_usd} USDG to the pool during the round. One entry per wallet regardless of amount or number of transfers.</li>
-          <li>Contributions are final and stay in the pool; the pool funds the payout and, when a round is cancelled, rolls into the next one.</li>
-          <li>The prize is ${g.targetUsd} USDG sent to the winning wallet, intended for one month of Claude Max 20x.</li>
-          <li>Wallets controlled by the site operator, and the pool and treasury wallets, are excluded from the draw.</li>
-          <li>RESETS is a community token with no promise of value, return or utility beyond what is described here. Supply mechanics are enforced by the contract; price is set by the market. Do not spend what you cannot afford to lose.</li>
-          <li>This project is independent and not affiliated with or endorsed by Anthropic or Robinhood. Winning pays for a plan; it does not change any account or limit.</li>
-          <li>Local law applies to you; if community pools or tokens are restricted where you live, do not participate.</li>
-        </ul>
-      </section>
-
-      <section class="section prose" id="verify">
-        <h2>Verify it yourself</h2>
-        <ul>
-          <li>
-            Pool balance and every contribution: {status.pool.address ? <a href={`${explorer}/address/${status.pool.address}`} target="_blank" rel="noopener noreferrer">the pool wallet on Blockscout</a> : <span>pool address published when the round opens</span>}.
-          </li>
-          <li>
-            Live status as JSON: <a href="/api/v1/goal">/api/v1/goal</a>; the contributor list in draw order: <a href="/api/v1/goal/contributors">/api/v1/goal/contributors</a>.
-          </li>
-          <li>Draw block hash: look up the announced block on the explorer and compute <code>hash mod contributors</code>.</li>
-          <li>
-            Contract source: <a href={cfg.repoUrl ? `${cfg.repoUrl}/blob/main/contracts/ResetToken.sol` : '/goal'} target="_blank" rel="noopener noreferrer">contracts/ResetToken.sol</a> in the public repository; the deployed bytecode is verified on the explorer after deployment.
-          </li>
-        </ul>
-        {status.past_rounds.length > 0 ? (
-          <>
-            <h2>Past rounds</h2>
-            <ul>
-              {status.past_rounds.map((r) => (
-                <li>
-                  Round {r.id}: {r.title} · {r.status}
-                  {r.winner ? ` · winner ${r.winner}` : ''}
-                  {r.payout_tx ? (
-                    <>
-                      {' '}·{' '}
-                      <a href={`${explorer}/tx/${r.payout_tx}`} target="_blank" rel="noopener noreferrer">
-                        payout {shortAddr(r.payout_tx)}
-                      </a>
-                    </>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : null}
       </section>
     </Layout>
   );

@@ -4,7 +4,7 @@ import { activeSponsors } from '../domain/content';
 import type { Sponsor } from '../domain/types';
 import type { SiteConfig } from '../env';
 import { LOCALES, dict, formatDate, interpolate, localizePath, ogLocale, type Dict, type Locale } from '../i18n';
-import { CloseIcon, CoinIcon, CupIcon, GitHubIcon, GlobeIcon, MoonIcon, ResetMark, RoadmapIcon, SunIcon, XIcon } from './icons';
+import { CloseIcon, CupIcon, GitHubIcon, GlobeIcon, MoonIcon, ResetMark, RoadmapIcon, SunIcon, XIcon } from './icons';
 
 export interface PageContext {
   locale: Locale;
@@ -91,10 +91,7 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
         data-push-key={cfg.browserAlerts.publicKey ?? ''}
         data-push-enabled={cfg.browserAlerts.enabled ? 'true' : 'false'}
         data-cooldown-hours={String(cfg.reactionCooldownHours)}
-        data-goal-pool={cfg.goal.live ? (cfg.goal.poolAddress ?? '') : ''}
-        data-goal-usdg={cfg.goal.usdgAddress ?? ''}
-        data-goal-chain-id={String(cfg.goal.chainId)}
-        data-goal-rpc={cfg.goal.rpcUrl.split(',')[0]}
+        data-goal-wallet={cfg.goal.live ? (cfg.goal.wallet ?? '') : ''}
         data-goal-explorer={cfg.goal.explorerUrl}
         data-goal-min="1"
       >
@@ -110,43 +107,15 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
         {showSponsors ? <SponsorDialog ctx={ctx} /> : null}
         {cfg.goal.live ? <GoalStrings ctx={ctx} /> : null}
         <script src="/app.js" defer></script>
-        {cfg.goal.live || cfg.goal.tokenAddress ? <script src="/goal.js" defer></script> : null}
+        {cfg.goal.live ? <script src="/goal.js" defer></script> : null}
       </body>
     </html>
-  );
-};
-
-const LaunchBar: FC<{ ctx: PageContext }> = ({ ctx }) => {
-  const { t, cfg } = ctx;
-  const g = cfg.goal;
-  if (!g.tokenAddress) return null;
-  return (
-    <div class="launch-bar" data-role="launch-bar">
-      <span class="chip chip--accent">$RESETS</span>
-      <span class="launch-live">{t.goal.launch.live}</span>
-      <span class="launch-ca">
-        <span class="mono">{t.goal.launch.ca}</span> <code>{g.tokenAddress}</code>
-      </span>
-      <button class="btn launch-copy" type="button" data-copy={g.tokenAddress} data-label-copied={t.goal.launch.copied}>
-        {t.goal.launch.copy}
-      </button>
-      {g.buyUrl ? (
-        <a class="btn btn--accent" href={g.buyUrl} target="_blank" rel="noopener noreferrer">
-          {t.goal.launch.buy}
-        </a>
-      ) : null}
-      <a class="status-line" href={`${g.explorerUrl}/token/${g.tokenAddress}`} target="_blank" rel="noopener noreferrer">
-        {t.goal.launch.explorer}
-      </a>
-    </div>
   );
 };
 
 const Masthead: FC<{ ctx: PageContext }> = ({ ctx }) => {
   const { t, locale, cfg } = ctx;
   return (
-    <>
-    <LaunchBar ctx={ctx} />
     <header class="masthead">
       <a class="brand" href={localizePath(locale, '/')}>
         <span class="brand-mark" aria-hidden="true">
@@ -165,9 +134,6 @@ const Masthead: FC<{ ctx: PageContext }> = ({ ctx }) => {
             </a>
           ))}
         </nav>
-        <a class="icon-btn" href={`${localizePath(locale, '/goal')}#token`} aria-label={t.nav.tokenomics} title={t.nav.tokenomics}>
-          <CoinIcon />
-        </a>
         <a class="icon-btn" href={`${localizePath(locale, '/goal')}#roadmap`} aria-label={t.nav.roadmap} title={t.nav.roadmap}>
           <RoadmapIcon />
         </a>
@@ -191,7 +157,6 @@ const Masthead: FC<{ ctx: PageContext }> = ({ ctx }) => {
         </button>
       </div>
     </header>
-    </>
   );
 };
 
@@ -341,5 +306,5 @@ const SponsorDialog: FC<{ ctx: PageContext }> = ({ ctx }) => {
 
 /** Localized strings for goal.js (the contribution sheet and its inline no-wallet help). */
 const GoalStrings: FC<{ ctx: PageContext }> = ({ ctx }) => (
-  <script type="application/json" id="goal-i18n" dangerouslySetInnerHTML={{ __html: JSON.stringify(ctx.t.goal.sheet).replace(/</g, '\u003c') }} />
+  <script type="application/json" id="goal-i18n" dangerouslySetInnerHTML={{ __html: JSON.stringify({ ...ctx.t.goal.sheet, ...ctx.t.goal.wallet }).replace(/</g, '\u003c') }} />
 );

@@ -8,13 +8,12 @@ import { filtersToQuery, parseFilters } from './domain/filters';
 import { computeStatus } from './domain/service';
 import { siteConfig, type Env } from './env';
 import { isLocale, stripLocale, type Locale } from './i18n';
-import { drainBurns } from './goal/burns';
 import { drainPushJobs } from './push/delivery';
 import { readCount } from './reactions';
 import { admin } from './routes/admin';
 import { api } from './routes/api';
 import { feeds } from './routes/feeds';
-import { goal, goalAdmin, goalStatus, syncOpenRound } from './routes/goal';
+import { goal, goalAdmin, goalStatus, tickGoal } from './routes/goal';
 import { GoalPage } from './views/goal';
 import { mcp } from './routes/mcp';
 import { meta } from './routes/meta';
@@ -48,12 +47,7 @@ const CSP = [
 app.use('*', async (c, next) => {
   await next();
   const h = c.res.headers;
-  if (!h.has('content-security-policy') && (h.get('content-type') ?? '').includes('text/html')) {
-    // The contribution sheet talks to the chain RPC from the browser; allow exactly that origin.
-    const goal = siteConfig(c.env).goal;
-    const rpcOrigins = goal.live ? goal.rpcUrl.split(',').map((u) => new URL(u.trim()).origin) : [];
-    h.set('content-security-policy', rpcOrigins.length ? CSP.replace("connect-src 'self'", `connect-src 'self' ${rpcOrigins.join(' ')}`) : CSP);
-  }
+  if (!h.has('content-security-policy') && (h.get('content-type') ?? '').includes('text/html')) h.set('content-security-policy', CSP);
   h.set('x-content-type-options', 'nosniff');
   h.set('referrer-policy', 'strict-origin-when-cross-origin');
   if (c.req.url.startsWith('https://')) h.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
@@ -115,16 +109,17 @@ page('/', async (c, locale) => {
     previewSources: content.sources.filter((s) => s.priority === 'primary' || s.priority === 'additional').sort((a, b) => order[a.priority] - order[b.priority]),
     sourceById: new Map(content.sources.map((s) => [s.id, s])),
     begCount: await safeBegCount(c),
-    goal: await goalStatus(c.env),
+    goal: await goalStatus(c.env, ctx.now),
   };
   const html = (<HomePage ctx={ctx} model={model} />).toString();
   const minute = Math.floor(ctx.now.getTime() / 60_000);
-  return cachedHtml(c, `<!doctype html>${html}`, `home:${locale}:${content.revision}:${query}:${minute}:${model.begCount}:${model.goal.pool.usdg}:${model.goal.round?.contributors}`, model.goal.enabled ? 20 : 60);
+  const goalSeed = model.goal.round ? `${model.goal.round.status}:${model.goal.round.raised_usd}:${model.goal.round.contributions}` : 'none';
+  return cachedHtml(c, `<!doctype html>${html}`, `home:${locale}:${content.revision}:${query}:${minute}:${model.begCount}:${goalSeed}`, model.goal.enabled ? 20 : 60);
 });
 
 page('/goal', async (c, locale) => {
   const ctx = pageContext(c, locale, '/goal');
-  const status = await goalStatus(c.env);
+  const status = await goalStatus(c.env, ctx.now);
   return cachedHtml(c, `<!doctype html>${(<GoalPage ctx={ctx} status={status} />).toString()}`, `goal:${locale}:${JSON.stringify(status)}`, 30);
 });
 page('/sources', (c, locale) => {
@@ -194,14 +189,9 @@ export default {
         .catch((err) => console.error('push drain failed', err)),
     );
     ctx.waitUntil(
-      syncOpenRound(env)
-        .then((r) => console.log('goal sync', JSON.stringify(r)))
-        .catch((err) => console.error('goal sync failed', err)),
-    );
-    ctx.waitUntil(
-      drainBurns(env, { limit: 20 })
-        .then((r) => console.log('burn drain', JSON.stringify(r)))
-        .catch((err) => console.error('burn drain failed', err)),
+      tickGoal(env)
+        .then((r) => console.log('goal tick', JSON.stringify(r)))
+        .catch((err) => console.error('goal tick failed', err)),
     );
   },
 };

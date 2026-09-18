@@ -48,15 +48,6 @@ export const GitHubIcon: FC<IconProps> = (p) => (
   </svg>
 );
 
-export const WalletIcon: FC<IconProps> = (p) => (
-  <svg {...base(p)}>
-    {p.title ? <title>{p.title}</title> : null}
-    <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H18v3" />
-    <path d="M3 7.5V17a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H5.5A2.5 2.5 0 0 1 3 7.5z" />
-    <circle cx="16.5" cy="14" r="1.3" fill="currentColor" stroke="none" />
-  </svg>
-);
-
 export const SunIcon: FC<IconProps> = (p) => (
   <svg {...base(p)}>
     {p.title ? <title>{p.title}</title> : null}
@@ -69,14 +60,6 @@ export const MoonIcon: FC<IconProps> = (p) => (
   <svg {...base(p)}>
     {p.title ? <title>{p.title}</title> : null}
     <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5z" />
-  </svg>
-);
-
-export const CoinIcon: FC<IconProps> = (p) => (
-  <svg {...base(p)}>
-    {p.title ? <title>{p.title}</title> : null}
-    <circle cx="12" cy="12" r="9" />
-    <path d="M14.8 9.2A3 3 0 0 0 12 7.5c-1.8 0-3 1-3 2.2 0 2.8 6 1.6 6 4.6 0 1.2-1.3 2.2-3 2.2a3 3 0 0 1-2.9-1.8M12 5.5v2M12 16.5v2" />
   </svg>
 );
 

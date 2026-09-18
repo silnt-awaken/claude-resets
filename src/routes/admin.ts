@@ -6,7 +6,6 @@ import { eventContentHash, findEvent, isQualifyingReset, loadContent } from '../
 import { resetEventSchema } from '../domain/schema';
 import type { ResetEvent } from '../domain/types';
 import { siteConfig, type Env } from '../env';
-import { queueBurn } from '../goal/burns';
 import { createAlert, drainPushJobs, hasResetAlert } from '../push/delivery';
 import { countActiveSubscriptions } from '../push/subscriptions';
 import { problem, readJson, timingSafeEqual } from '../util/http';
@@ -109,19 +108,9 @@ admin.post('/publish', async (c) => {
     alert = { created: false, alertId: null, jobs: 0, reason: req.mode === 'backfill' ? 'backfill never alerts' : 'silent publication' };
   }
 
-  // Automatic RESET burn: once per confirmed reset, only on a first real publication (never backfills or corrections).
-  let burn: { queued: boolean; reason: string } = { queued: false, reason: 'RESET token not deployed' };
-  if (cfg.goal.tokenAddress) {
-    if (req.mode !== 'publish') burn = { queued: false, reason: `${req.mode} never burns` };
-    else if (!isQualifyingReset(req.event)) burn = { queued: false, reason: 'not a confirmed usage reset' };
-    else if (backfilled) burn = { queued: false, reason: 'event was imported as history' };
-    else burn = (await queueBurn(db, 'reset', req.eventId, now)) ? { queued: true, reason: 'queued; the cron sends burnForReset within 2 minutes' } : { queued: false, reason: 'already queued or burned for this event' };
-  }
-
   return c.json({
     ok: true,
     eventId: req.eventId,
-    burn,
     revision: req.event.revision,
     contentHash: deployedHash,
     recorded,

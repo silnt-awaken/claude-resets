@@ -27,15 +27,9 @@
     "screenshots": "tsx scripts/screenshots.ts",
     "check": "npm run typecheck && npm run content:validate && npm test && npm run build",
     "types": "wrangler types",
-    "token:compile": "tsx scripts/token/compile.ts",
-    "token:deploy": "tsx scripts/token/deploy.ts",
-    "token:burn": "tsx scripts/token/burn.ts",
-    "token:burner": "tsx scripts/token/burner.ts",
-    "token:vault": "tsx scripts/token/vault.ts",
     "goal:round": "tsx scripts/goal/round.ts"
   },
   "dependencies": {
-    "viem": "^2.56.8",
     "@block65/webcrypto-web-push": "^2.0.0",
     "@hono/mcp": "^0.3.2",
     "@modelcontextprotocol/sdk": "^1.30.0",
@@ -47,7 +41,6 @@
     "@cloudflare/workers-types": "^5.20260917.0",
     "@types/node": "^22.20.3",
     "playwright": "^1.63.0",
-    "solc": "^0.8.37",
     "tsx": "^4.23.0",
     "typescript": "^5.9.0",
     "vitest": "^4.1.0",

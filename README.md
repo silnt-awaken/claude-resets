@@ -10,7 +10,7 @@ Live site: <https://clauderesets.com> · Updates: [@clauderesets on X](https://x
 
 If the tracker helps you, you can [tip for coffee](https://buymeacoffee.com/silntawaken). Tips never change reset access or Anthropic limits.
 
-**Community goal + RESETS token** (Robinhood Chain): readers pool USDG, one contributor wins a month of Claude Max 20x by a verifiable block-hash draw; RESETS supply burns automatically on every published reset (the site's cron signs the burn with a dedicated burner wallet). Contract in `contracts/`, mechanics and launch steps in [docs/goal-and-token.md](docs/goal-and-token.md), roadmap in [docs/roadmap.md](docs/roadmap.md).
+**Community goal** (USDC on Solana): readers pool USDC in the operator's wallet, one contributor wins a month of Claude Max 20x by an automatic, verifiable block-hash draw, and the operator pays the winner by hand. Mechanics and commands in [docs/goal.md](docs/goal.md), roadmap in [docs/roadmap.md](docs/roadmap.md). No token, no contract.
 
 ## Install and run
 
@@ -43,7 +43,7 @@ npm run readiness      # what still needs owner configuration
 4. Set public vars in `wrangler.jsonc` (`SITE_URL` = your real https origin, `SUPPORT_URL`, optional links) and secrets: `npx wrangler secret put CONTENT_PUBLISH_TOKEN`, `npx wrangler secret put REACTION_SECRET`, and for browser alerts `npx wrangler secret put VAPID_PRIVATE_KEY` (generate with `npx tsx scripts/vapid-keys.ts`).
 5. `npm run deploy`
 
-The Worker runs on the free tier limits documented in `docs/operations.md`. The cron trigger (`*/2 * * * *`) drains push alerts.
+The Worker runs on the free tier limits documented in `docs/operations.md`. The cron trigger (`* * * * *`) drains push alerts and runs the goal step (chain sync, freeze, draw, open).
 
 ## Editorial commands
 
@@ -59,6 +59,7 @@ The Worker runs on the free tier limits documented in `docs/operations.md`. The 
 | `npm run content:export [-- --restore <dir>]` | Restorable snapshot of content + ledger |
 | `npm run x:draft -- --event <id>` | Copyable X post text; nothing is sent |
 | `npm run outbox [-- --drain]` | Ledger, alert jobs, optional manual delivery batch |
+| `npm run goal:round -- status \| paid --tx <sig> \| cancel \| tick` | Community goal: status, record the payout, cancel, run the cron step |
 
 See `docs/content-workflow.md` for the full workflow, `docs/operations.md` for alerts, backups and limits, and `docs/launch-checklist.md` for what the owner still has to supply.
 
@@ -71,9 +72,10 @@ public/         styles.css, app.js, theme.js, sw.js, docs.js, fonts/, icons/, ma
 scripts/        editorial and maintenance commands (tsx)
 src/domain/     types, schema, content selectors, filters, stats, calendar, service
 src/i18n/       five dictionaries (typed against en.ts)
+src/goal/       base58, solana (RPC, transfer message, contribution parsing), rounds, roadmap
 src/push/       subscriptions, alert creation, delivery
 src/routes/     api, feeds, mcp, push, reactions, admin, meta
 src/views/      layout, home, pages, docs, components, icons (Hono JSX)
 test/           vitest (Workers pool) suites and fixtures
-docs/           reference audit, source evidence, workflow, operations, acceptance, launch checklist
+docs/           reference audit, source evidence, workflow, operations, acceptance, launch checklist, goal, roadmap
 ```

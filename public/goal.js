@@ -1,31 +1,17 @@
-// Wallet connection (header button on every page) and the contribution sheet for the community goal.
-// PerkPond-style: Contribute → amount → review (contribution, network fee, total) → wallet approval → submitted → confirmed.
-// Works with any EIP-1193 wallet (MetaMask, Rabby, Coinbase Wallet, Brave…). Nothing here holds keys.
+// The contribution sheet for the community goal: amount → review → Phantom approval → submitted → confirmed.
+// The server builds the USDC transfer (POST /api/v1/goal/tx), Phantom signs and sends it, and the server
+// verifies the signature on chain (POST /api/v1/goal/contributions). Nothing here holds keys or talks to
+// any origin but this site. Phantom only: window.phantom.solana (browser extension or the Phantom app's browser).
 (function () {
   'use strict';
   var body = document.body;
   var cfg = {
-    pool: body.getAttribute('data-goal-pool') || '',
-    usdg: body.getAttribute('data-goal-usdg') || '',
-    chainId: parseInt(body.getAttribute('data-goal-chain-id') || '4663', 10),
-    rpc: body.getAttribute('data-goal-rpc') || '',
-    explorer: body.getAttribute('data-goal-explorer') || '',
+    wallet: body.getAttribute('data-goal-wallet') || '',
+    explorer: body.getAttribute('data-goal-explorer') || 'https://solscan.io',
     min: parseFloat(body.getAttribute('data-goal-min') || '1'),
     locale: body.getAttribute('data-locale') || 'en',
   };
-  // Copy buttons (launch bar CA) work on every page, even before a round is open.
-  document.querySelectorAll('[data-copy]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var label = btn.textContent;
-      (navigator.clipboard ? navigator.clipboard.writeText(btn.getAttribute('data-copy')) : Promise.reject()).then(function () {
-        btn.textContent = btn.getAttribute('data-label-copied') || 'Copied';
-        setTimeout(function () {
-          btn.textContent = label;
-        }, 1600);
-      }, function () {});
-    });
-  });
-  if (!cfg.pool) return;
+  if (!cfg.wallet) return;
   var strings = {};
   try {
     strings = JSON.parse((document.getElementById('goal-i18n') || {}).textContent || '{}');
@@ -37,103 +23,61 @@
   };
   var intl = { en: 'en-US', 'zh-CN': 'zh-CN', 'zh-TW': 'zh-TW', ja: 'ja-JP', ko: 'ko-KR' }[cfg.locale] || 'en-US';
   var usd = new Intl.NumberFormat(intl, { style: 'currency', currency: 'USD' });
-  var STORE = 'claude-resets-wallet';
   var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  function log() {
+    if (window.console && window.localStorage && window.localStorage.getItem('claude-resets-debug') === '1') console.log.apply(console, ['[goal]'].concat(Array.prototype.slice.call(arguments)));
+  }
 
-  // ---------- chain helpers ----------
-  function hex(n) {
-    return '0x' + n.toString(16);
-  }
-  function pad(addr) {
-    return addr.replace(/^0x/, '').toLowerCase().padStart(64, '0');
-  }
-  function transferData(to, units) {
-    return '0xa9059cbb' + pad(to) + units.toString(16).padStart(64, '0');
-  }
-  function rpc(method, params) {
-    return fetch(cfg.rpc, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: method, params: params || [] }) })
-      .then(function (r) {
-        return r.json();
-      })
-      .then(function (j) {
-        if (j.error) throw new Error(j.error.message);
-        return j.result;
-      });
-  }
+  // ---------- Phantom ----------
   function provider() {
-    return window.ethereum || null;
+    var p = window.phantom && window.phantom.solana;
+    return p && p.isPhantom ? p : null;
   }
-  function ensureChain(eth, onSwitching) {
-    return eth.request({ method: 'eth_chainId' }).then(function (id) {
-      if (parseInt(id, 16) === cfg.chainId) return;
-      if (onSwitching) onSwitching();
-      return eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: hex(cfg.chainId) }] }).catch(function (err) {
-        if (err && (err.code === 4902 || /unrecognized|not added/i.test(String(err.message)))) {
-          return eth.request({
-            method: 'wallet_addEthereumChain',
-            params: [{ chainId: hex(cfg.chainId), chainName: 'Robinhood Chain', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: [cfg.rpc], blockExplorerUrls: [cfg.explorer] }],
-          });
-        }
-        throw err;
-      });
+  var account = null;
+  function connect() {
+    var p = provider();
+    if (!p) return Promise.reject(Object.assign(new Error('no wallet'), { code: 'no_wallet' }));
+    if (p.publicKey) {
+      account = p.publicKey.toString();
+      return Promise.resolve(account);
+    }
+    return p.connect().then(function (resp) {
+      var key = (resp && resp.publicKey) || p.publicKey;
+      if (!key) throw Object.assign(new Error('no account'), { code: 'no_account' });
+      account = key.toString();
+      return account;
+    });
+  }
+  function bindEvents() {
+    var p = provider();
+    if (!p || !p.on || p.__crBound) return;
+    p.__crBound = true;
+    p.on('accountChanged', function (key) {
+      account = key ? key.toString() : null;
+      payBtn.textContent = payLabel();
+    });
+    p.on('disconnect', function () {
+      account = null;
+      payBtn.textContent = payLabel();
     });
   }
 
-  // ---------- wallet state shared by the header button and the sheet ----------
-  var wallet = { account: null, listeners: [] };
-  function setAccount(a) {
-    wallet.account = a ? a.toLowerCase() : null;
-    try {
-      if (a) window.localStorage.setItem(STORE, '1');
-      else window.localStorage.removeItem(STORE);
-    } catch (e) {
-      /* ignore */
-    }
-    wallet.listeners.forEach(function (fn) {
-      fn(wallet.account);
+  // ---------- API ----------
+  function post(path, payload) {
+    return fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }).then(function (r) {
+      return r
+        .json()
+        .catch(function () {
+          return {};
+        })
+        .then(function (j) {
+          if (!r.ok) throw Object.assign(new Error(j.detail || r.statusText), { code: j.code || 'http_' + r.status, status: r.status });
+          return { status: r.status, body: j };
+        });
     });
-  }
-  function connect(interactive) {
-    var eth = provider();
-    if (!eth) return Promise.reject(Object.assign(new Error('no wallet'), { code: 'no_wallet' }));
-    return eth.request({ method: interactive ? 'eth_requestAccounts' : 'eth_accounts' }).then(function (accounts) {
-      if (!accounts || !accounts[0]) {
-        if (interactive) throw Object.assign(new Error('no account'), { code: 'no_account' });
-        return null;
-      }
-      setAccount(accounts[0]);
-      return wallet.account;
-    });
-  }
-  var remembered = false;
-  try {
-    remembered = window.localStorage.getItem(STORE) === '1';
-  } catch (e) {
-    /* ignore */
-  }
-  // The wallet is only touched after someone opens the contribution sheet: a silent account read,
-  // never a connect prompt, and nothing at all for readers who only came for reset news.
-  function restore() {
-    if (!remembered || wallet.account) return;
-    var eth = provider();
-    if (!eth) return;
-    if (eth.on && !eth.__crBound) {
-      eth.__crBound = true;
-      eth.on('accountsChanged', function (accounts) {
-        setAccount(accounts && accounts[0] ? accounts[0] : null);
-      });
-    }
-    connect(false).catch(function () {});
-  }
-  window.addEventListener('ethereum#initialized', restore, { once: true });
-  // Wallets sometimes inject after our script runs (or after a "which extension?" prompt), so retry quietly.
-  function restoreSoon() {
-    restore();
-    setTimeout(restore, 1000);
-    setTimeout(restore, 3000);
   }
 
-  // ---------- contribution sheet ----------
+  // ---------- sheet ----------
   var card = document.querySelector('[data-role="goal-card"]');
   var sheet = document.getElementById('goal-sheet');
   if (!card || !sheet || typeof sheet.showModal !== 'function') return;
@@ -156,12 +100,12 @@
   function say(text) {
     status.textContent = text || '';
   }
-  // No wallet installed: keep the sheet open and show the inline help instead of a popup.
+  // No Phantom: keep the sheet open and show the inline help (install, open in the app, copy the address).
   function showFallback() {
     if (!fallback) return;
     var deep = fallback.querySelector('[data-role="open-in-app"]');
     if (deep) {
-      deep.href = 'https://metamask.app.link/dapp/' + location.host + location.pathname;
+      deep.href = 'https://phantom.app/ul/browse/' + encodeURIComponent(location.href) + '?ref=' + encodeURIComponent(location.origin);
       deep.hidden = !isMobile;
     }
     fallback.hidden = false;
@@ -169,7 +113,7 @@
   sheet.querySelectorAll('[data-role="copy-pool"]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var label = btn.textContent;
-      (navigator.clipboard ? navigator.clipboard.writeText(cfg.pool) : Promise.reject()).then(function () {
+      (navigator.clipboard ? navigator.clipboard.writeText(cfg.wallet) : Promise.reject()).then(function () {
         btn.textContent = t('copied', 'Copied');
         setTimeout(function () {
           btn.textContent = label;
@@ -179,12 +123,12 @@
   });
   function payLabel() {
     var pay = t('pay', 'Contribute {amount}').replace('{amount}', usd.format(amount));
-    return wallet.account ? pay : t('connect', 'Connect wallet') + ' · ' + pay;
+    return account ? pay : t('connect', 'Connect Phantom') + ' · ' + pay;
   }
   function setAmount(n) {
     amount = Math.max(0, Math.round(n * 100) / 100);
     for (var i = 0; i < presets.length; i++) presets[i].setAttribute('aria-pressed', parseFloat(presets[i].getAttribute('data-amount')) === amount ? 'true' : 'false');
-    rowContribution.textContent = usd.format(amount) + ' · ' + amount.toFixed(2) + ' USDG';
+    rowContribution.textContent = usd.format(amount) + ' · ' + amount.toFixed(2) + ' USDC';
     rowFee.textContent = '—';
     rowTotal.textContent = usd.format(amount);
     payBtn.textContent = payLabel();
@@ -192,16 +136,12 @@
     if (amount > 0 && amount < cfg.min) say(t('minAmount', 'Minimum is $1.'));
     else if (!busy) say('');
   }
-  wallet.listeners.push(function (account) {
-    payBtn.textContent = payLabel();
-    if (account && fallback) fallback.hidden = true;
-  });
   card.querySelectorAll('[data-role="goal-open"]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       opener = btn;
       receipt.hidden = true;
       if (fallback) fallback.hidden = true;
-      restoreSoon();
+      bindEvents();
       setAmount(amount);
       sheet.showModal();
       amountInput.focus();
@@ -226,36 +166,35 @@
     setAmount(isFinite(v) ? v : 0);
   });
 
-  function estimateFee(from, units) {
-    return Promise.all([
-      rpc('eth_gasPrice'),
-      rpc('eth_estimateGas', [{ from: from, to: cfg.usdg, data: transferData(cfg.pool, units) }]).catch(function () {
-        return '0xea60';
-      }),
-    ])
-      .then(function (r) {
-        var eth = Number(BigInt(r[0]) * BigInt(r[1])) / 1e18;
-        rowFee.textContent = '≈ ' + eth.toFixed(6) + ' ETH';
-        rowTotal.textContent = usd.format(amount) + ' + ' + eth.toFixed(6) + ' ETH';
-      })
-      .catch(function () {});
+  function showReceipt(signature) {
+    receipt.hidden = false;
+    receipt.innerHTML = '';
+    var a = document.createElement('a');
+    a.href = cfg.explorer + '/tx/' + signature;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = t('receipt', 'Receipt') + ' · ' + signature.slice(0, 8) + '…' + signature.slice(-6);
+    receipt.appendChild(a);
   }
-  function waitReceipt(hash, tries) {
-    return rpc('eth_getTransactionReceipt', [hash]).then(function (rcpt) {
-      if (rcpt) return rcpt;
-      if (tries <= 0) return null;
-      return new Promise(function (res) {
-        setTimeout(res, 1500);
-      }).then(function () {
-        return waitReceipt(hash, tries - 1);
-      });
+  // Ask the site to verify the signature on chain; 202 means not confirmed yet.
+  function waitConfirmed(signature, tries) {
+    return post('/api/v1/goal/contributions', { signature: signature }).then(function (r) {
+      if (r.status === 202) {
+        if (tries <= 0) return null;
+        return new Promise(function (res) {
+          setTimeout(res, 1500);
+        }).then(function () {
+          return waitConfirmed(signature, tries - 1);
+        });
+      }
+      return r.body;
     });
   }
 
   payBtn.addEventListener('click', function () {
     if (busy || amount < cfg.min) return;
-    var eth = provider();
-    if (!eth) {
+    var p = provider();
+    if (!p) {
       showFallback();
       say('');
       return;
@@ -263,56 +202,53 @@
     busy = true;
     payBtn.disabled = true;
     receipt.hidden = true;
-    var units = BigInt(Math.round(amount * 1e6));
-    var from = null;
-    say(t('connect', 'Connect wallet'));
-    connect(true)
-      .then(function (account) {
-        from = account;
-        return ensureChain(eth, function () {
-          say(t('switching', 'Switching your wallet to Robinhood Chain…'));
-        });
+    say(t('connect', 'Connect Phantom'));
+    connect()
+      .then(function (from) {
+        payBtn.textContent = payLabel();
+        say(t('preparing', 'Preparing the transfer…'));
+        return post('/api/v1/goal/tx', { from: from, amount: amount });
       })
-      .then(function () {
-        return rpc('eth_call', [{ to: cfg.usdg, data: '0x70a08231' + pad(from) }, 'latest']);
+      .then(function (r) {
+        var sol = (r.body.fee_lamports || 0) / 1e9;
+        rowFee.textContent = '≈ ' + sol.toFixed(6) + ' SOL';
+        rowTotal.textContent = usd.format(amount) + ' + ' + sol.toFixed(6) + ' SOL';
+        say(t('awaiting', 'Awaiting approval in Phantom'));
+        log('message built', r.body.source, '→', r.body.destination);
+        return p.request({ method: 'signAndSendTransaction', params: { message: r.body.message } });
       })
-      .then(function (bal) {
-        if (BigInt(bal) < units) throw Object.assign(new Error('insufficient'), { code: 'insufficient' });
-        return estimateFee(from, units);
+      .then(function (res) {
+        var signature = res && res.signature;
+        if (!signature) throw new Error('no signature');
+        log('submitted', signature);
+        say(t('submitted', 'Submitted. Waiting for the network…'));
+        showReceipt(signature);
+        return waitConfirmed(signature, 40);
       })
-      .then(function () {
-        say(t('awaiting', 'Awaiting wallet approval'));
-        return eth.request({ method: 'eth_sendTransaction', params: [{ from: from, to: cfg.usdg, data: transferData(cfg.pool, units), value: '0x0' }] });
-      })
-      .then(function (hash) {
-        say(t('submitted', 'Submitted. Waiting for confirmation…'));
-        receipt.hidden = false;
-        receipt.innerHTML = '';
-        var a = document.createElement('a');
-        a.href = cfg.explorer + '/tx/' + hash;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        a.textContent = t('receipt', 'Receipt') + ' · ' + hash.slice(0, 10) + '…';
-        receipt.appendChild(a);
-        return waitReceipt(hash, 40);
-      })
-      .then(function (rcpt) {
-        if (!rcpt) say(t('unknown', 'Status unknown. Check the explorer.'));
-        else if (rcpt.status === '0x1') {
-          say(t('confirmed', 'Confirmed. You are in this round.') + ' ' + t('updatesSoon', ''));
+      .then(function (result) {
+        if (!result) say(t('unknown', 'Status unknown. Check the receipt on the explorer.'));
+        else if (result.status === 'confirmed') {
+          say((result.counted ? t('confirmed', 'Confirmed. You are in this round.') : t('nextRound', 'Confirmed. You are in the next round.')) + ' ' + t('updatesSoon', ''));
           var n = document.querySelector('[data-role="goal-entries"]');
-          if (n) n.textContent = String((parseInt(n.textContent, 10) || 0) + 1);
+          if (n && typeof result.contributors === 'number') n.textContent = String(result.contributors);
         } else say(t('failed', 'The transaction failed.'));
       })
       .catch(function (err) {
         var code = err && err.code;
-        if (code === 4001 || code === 'ACTION_REJECTED' || code === 'no_account') say(t('rejected', 'Payment was not submitted.'));
-        else if (code === 'insufficient') say(t('insufficient', 'Not enough USDG in this wallet on Robinhood Chain.'));
+        log('error', code, err && err.message);
+        if (code === 4001 || code === 'no_account') say(t('rejected', 'The transfer was not approved.'));
+        else if (code === 'no_wallet') showFallback();
+        else if (code === 'insufficient') say(t('insufficient', 'Not enough USDC in this wallet.'));
+        else if (code === 'no_usdc') say(t('noUsdc', 'This wallet holds no USDC on Solana.'));
+        else if (code === 'no_sol') say(t('noSol', 'This wallet needs a little SOL for the network fee.'));
+        else if (code === 'round_closed' || code === 'goal_not_open') say(t('closed', 'Entries are closed right now.'));
+        else if (code === 'failed') say(t('failed', 'The transaction failed.'));
         else say((err && err.message) || t('failed', 'The transaction failed.'));
       })
       .then(function () {
         busy = false;
         payBtn.disabled = amount < cfg.min;
+        payBtn.textContent = payLabel();
       });
   });
   setAmount(amount);

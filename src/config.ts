@@ -1,6 +1,9 @@
 // Public site configuration parsed from plain string variables. No Worker types here so the
 // maintainer scripts (Node) can reuse it. Bindings live in src/env.ts.
 
+import { isSolanaAddress } from './goal/base58';
+import { SOLANA } from './goal/solana';
+
 export interface ConfigVars {
   SITE_NAME?: string;
   SITE_URL?: string;
@@ -17,31 +20,25 @@ export interface ConfigVars {
   ALERTS_PAUSED?: string;
   REACTION_COOLDOWN_HOURS?: string;
   ALERT_MAX_AGE_HOURS?: string;
-  // community goal + RESET token (Robinhood Chain)
+  // community goal: USDC on Solana, sent to the operator's wallet; the draw is automatic
   GOAL_ENABLED?: string;
-  GOAL_CHAIN_RPC?: string;
-  GOAL_CHAIN_ID?: string;
+  /** Comma-separated Solana JSON-RPC endpoints, tried in order. */
+  GOAL_SOLANA_RPC?: string;
   GOAL_EXPLORER_URL?: string;
-  GOAL_POOL_ADDRESS?: string;
-  GOAL_USDG_ADDRESS?: string;
+  /** The operator's Solana wallet that receives contributions (base58). */
+  GOAL_WALLET?: string;
+  /** That wallet's USDC token account (the address transfers actually land in). */
+  GOAL_USDC_ACCOUNT?: string;
+  GOAL_USDC_MINT?: string;
   GOAL_TARGET_USD?: string;
-  /** Comma-separated wallets excluded from the draw (operator, pool, burner). Their money still counts on the meter. */
+  /** Comma-separated wallets excluded from the draw (the operator's). Their money still counts on the meter. */
   GOAL_EXCLUDED_WALLETS?: string;
-  RESET_TOKEN_ADDRESS?: string;
-  /** vault (contracts/BurnVault.sol holds the reserve; burner triggers) | transfer (burner wallet sends to 0xdEaD) | contract (contracts/ResetToken.sol) */
-  RESET_BURN_MODE?: string;
-  RESET_VAULT_ADDRESS?: string;
-  RESET_BURNER_ADDRESS?: string;
-  RESET_BURN_PER_RESET?: string; // whole RESET
-  RESET_BURN_PER_ROUND?: string; // whole RESET
-  /** Where to buy the token (launchpad page). Shown in the launch bar. */
-  RESET_BUY_URL?: string;
   // secrets (values are never rendered)
   CONTENT_PUBLISH_TOKEN?: string;
   VAPID_PRIVATE_KEY?: string;
   REACTION_SECRET?: string;
-  /** Burner wallet key (secret). May only trigger the contract's fixed reserve burns; holds no tokens. */
-  BURNER_PRIVATE_KEY?: string;
+  /** Optional keyed Solana RPC URL (e.g. a free Helius/QuickNode endpoint), tried before GOAL_SOLANA_RPC. Keep it a secret: the key is in the URL. */
+  GOAL_SOLANA_RPC_PRIVATE?: string;
 }
 
 export interface SiteConfig {
@@ -65,68 +62,43 @@ export interface SiteConfig {
 }
 
 export interface GoalConfig {
-  /** True only when a pool address and USDG address are configured and GOAL_ENABLED is true. */
+  /** True only when GOAL_ENABLED is true and the wallet and its USDC account are valid Solana addresses. */
   live: boolean;
   /** Reason the goal is not live (shown only to maintainers). */
   reason: string | null;
   /** Comma-separated JSON-RPC endpoints, tried in order. */
   rpcUrl: string;
-  chainId: number;
   explorerUrl: string;
-  poolAddress: string | null;
-  usdgAddress: string | null;
+  wallet: string | null;
+  usdcAccount: string | null;
+  usdcMint: string;
   targetUsd: number;
+  /** Wallets that never win (always includes the operator's wallet). */
   excludedWallets: string[];
-  tokenAddress: string | null;
-  burnMode: 'vault' | 'transfer' | 'contract';
-  /** BurnVault address when burnMode is vault: the locked reserve that can only send to 0xdEaD. */
-  vaultAddress: string | null;
-  /** Public address of the burner wallet (the reserve), shown on /goal. */
-  burnerAddress: string | null;
-  burnPerReset: number; // whole RESET
-  burnPerRound: number; // whole RESET
-  buyUrl: string | null;
-}
-
-export const ROBINHOOD_CHAIN = {
-  id: 4663,
-  name: 'Robinhood Chain',
-  rpc: 'https://rpc.mainnet.chain.robinhood.com',
-  explorer: 'https://robinhoodchain.blockscout.com',
-} as const;
-
-export function isEvmAddress(value: string | undefined | null): value is string {
-  return !!value && /^0x[0-9a-fA-F]{40}$/.test(value.trim());
 }
 
 export function goalConfig(env: ConfigVars): GoalConfig {
-  const poolAddress = isEvmAddress(env.GOAL_POOL_ADDRESS) ? env.GOAL_POOL_ADDRESS!.trim() : null;
-  const usdgAddress = isEvmAddress(env.GOAL_USDG_ADDRESS) ? env.GOAL_USDG_ADDRESS!.trim() : null;
-  const tokenAddress = isEvmAddress(env.RESET_TOKEN_ADDRESS) ? env.RESET_TOKEN_ADDRESS!.trim() : null;
+  const wallet = isSolanaAddress(env.GOAL_WALLET?.trim()) ? env.GOAL_WALLET!.trim() : null;
+  const usdcAccount = isSolanaAddress(env.GOAL_USDC_ACCOUNT?.trim()) ? env.GOAL_USDC_ACCOUNT!.trim() : null;
+  const usdcMint = isSolanaAddress(env.GOAL_USDC_MINT?.trim()) ? env.GOAL_USDC_MINT!.trim() : SOLANA.usdcMint;
   const enabled = bool(env.GOAL_ENABLED);
   let reason: string | null = null;
   if (!enabled) reason = 'GOAL_ENABLED is not true';
-  else if (!poolAddress) reason = 'GOAL_POOL_ADDRESS is missing or invalid';
-  else if (!usdgAddress) reason = 'GOAL_USDG_ADDRESS is missing or invalid';
-  const rpcList = (env.GOAL_CHAIN_RPC ?? '').split(',').map((u) => httpsUrlOrNull(u.trim())).filter((u): u is string => !!u);
-  const rpc = rpcList.length ? rpcList.join(',') : ROBINHOOD_CHAIN.rpc;
+  else if (!wallet) reason = 'GOAL_WALLET is missing or not a Solana address';
+  else if (!usdcAccount) reason = 'GOAL_USDC_ACCOUNT is missing or not a Solana address';
+  const rpcList = [env.GOAL_SOLANA_RPC_PRIVATE ?? '', ...(env.GOAL_SOLANA_RPC ?? '').split(',')].map((u) => httpsUrlOrNull(u.trim())).filter((u): u is string => !!u);
+  const excluded = new Set((env.GOAL_EXCLUDED_WALLETS ?? '').split(',').map((a) => a.trim()).filter((a) => isSolanaAddress(a)));
+  if (wallet) excluded.add(wallet);
   return {
     live: reason === null,
     reason,
-    rpcUrl: rpc,
-    chainId: positiveNumber(env.GOAL_CHAIN_ID, ROBINHOOD_CHAIN.id),
-    explorerUrl: httpsUrlOrNull(env.GOAL_EXPLORER_URL)?.replace(/\/$/, '') ?? ROBINHOOD_CHAIN.explorer,
-    poolAddress,
-    usdgAddress,
+    rpcUrl: rpcList.length ? rpcList.join(',') : SOLANA.rpc,
+    explorerUrl: httpsUrlOrNull(env.GOAL_EXPLORER_URL)?.replace(/\/$/, '') ?? SOLANA.explorer,
+    wallet,
+    usdcAccount,
+    usdcMint,
     targetUsd: positiveNumber(env.GOAL_TARGET_USD, 200),
-    excludedWallets: (env.GOAL_EXCLUDED_WALLETS ?? '').split(',').map((a) => a.trim().toLowerCase()).filter((a) => isEvmAddress(a)),
-    tokenAddress,
-    burnMode: env.RESET_BURN_MODE?.trim() === 'contract' ? 'contract' : env.RESET_BURN_MODE?.trim() === 'vault' && isEvmAddress(env.RESET_VAULT_ADDRESS) ? 'vault' : 'transfer',
-    vaultAddress: isEvmAddress(env.RESET_VAULT_ADDRESS) ? env.RESET_VAULT_ADDRESS!.trim() : null,
-    burnerAddress: isEvmAddress(env.RESET_BURNER_ADDRESS) ? env.RESET_BURNER_ADDRESS!.trim() : null,
-    burnPerReset: positiveNumber(env.RESET_BURN_PER_RESET, 2_500_000),
-    burnPerRound: positiveNumber(env.RESET_BURN_PER_ROUND, 5_000_000),
-    buyUrl: httpsUrlOrNull(env.RESET_BUY_URL),
+    excludedWallets: [...excluded],
   };
 }
 
@@ -235,10 +207,8 @@ export function readiness(env: ConfigVars, hasDb: boolean): { ok: boolean; items
   add('CONTENT_PUBLISH_TOKEN', cfg.publishConfigured ? 'ok' : 'missing', cfg.publishConfigured ? 'present' : 'absent or shorter than 16 characters; publication endpoint disabled.', true);
   add('REACTION_SECRET', env.REACTION_SECRET ? 'ok' : 'missing', env.REACTION_SECRET ? 'present' : 'absent; reactions disabled.', true);
   add('ALERTS_PAUSED', cfg.alertsPaused ? 'off' : 'ok', cfg.alertsPaused ? 'Delivery paused.' : 'Delivery active.');
-  add('GOAL', cfg.goal.live ? 'ok' : 'off', cfg.goal.live ? `Live on chain ${cfg.goal.chainId}, pool ${cfg.goal.poolAddress}, target $${cfg.goal.targetUsd}.` : `Community goal shown as "preparing": ${cfg.goal.reason}.`);
-  add('RESET_TOKEN_ADDRESS', cfg.goal.tokenAddress ? 'ok' : 'off', cfg.goal.tokenAddress ? `${cfg.goal.tokenAddress} (burn mode: ${cfg.goal.burnMode}, ${cfg.goal.burnPerReset.toLocaleString('en-US')} RESET per reset)` : 'Token stats hidden until RESET is launched.');
-  add('RESET_BURNER_ADDRESS', cfg.goal.burnerAddress ? 'ok' : 'off', cfg.goal.burnerAddress ?? 'Burn reserve not shown until the burner wallet address is set.');
-  add('BURNER_PRIVATE_KEY', /^0x[0-9a-fA-F]{64}$/.test(env.BURNER_PRIVATE_KEY ?? '') ? 'ok' : 'off', env.BURNER_PRIVATE_KEY ? 'present; reset burns run automatically from the cron' : 'absent; queued burns wait until it is set (wrangler secret put BURNER_PRIVATE_KEY)', true);
+  add('GOAL_SOLANA_RPC_PRIVATE', httpsUrlOrNull(env.GOAL_SOLANA_RPC_PRIVATE) ? 'ok' : 'off', httpsUrlOrNull(env.GOAL_SOLANA_RPC_PRIVATE) ? 'present; tried before the public endpoints' : 'absent; only the public GOAL_SOLANA_RPC endpoints are used', true);
+  add('GOAL', cfg.goal.live ? 'ok' : 'off', cfg.goal.live ? `Live: USDC on Solana to ${cfg.goal.wallet} (token account ${cfg.goal.usdcAccount}), target $${cfg.goal.targetUsd}.` : `Community goal shown as "not open yet": ${cfg.goal.reason}.`);
   add('DB', hasDb ? 'ok' : 'missing', hasDb ? 'D1 bound.' : 'D1 binding missing.');
 
   const ok = items.every((i) => i.status === 'ok' || i.status === 'off');
