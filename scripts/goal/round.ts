@@ -39,6 +39,6 @@ console.log(typeof res.body === 'string' ? res.body : JSON.stringify(res.body, n
 if (res.status >= 300) process.exit(1);
 if (action === 'draw') {
   const r = res.body as { winner: string; winnerIdentity: string; kind: string; drawBlock: number; drawHash: string };
-  console.log(`\nWinner: ${r.winner} (${r.kind}). Send the prize in USDC from the pool wallet to ${r.kind === 'wallet' ? r.winnerIdentity : 'the wallet they provide by DM'}, then run: npm run goal:round -- paid --tx <hash>${target.name === 'production' ? ' --env production --yes' : ''}`);
+  console.log(`\nWinner: ${r.winner} (${r.kind}). Send the prize in USDG from the pool wallet to ${r.kind === 'wallet' ? r.winnerIdentity : 'the wallet they provide by DM'}, then run: npm run goal:round -- paid --tx <hash>${target.name === 'production' ? ' --env production --yes' : ''}`);
   console.log(`Publish the draw: block ${r.drawBlock}, hash ${r.drawHash}, winner index = hash mod entries.`);
 }

@@ -6,7 +6,7 @@
   var body = document.body;
   var cfg = {
     pool: body.getAttribute('data-goal-pool') || '',
-    usdc: body.getAttribute('data-goal-usdc') || '',
+    usdg: body.getAttribute('data-goal-usdg') || '',
     chainId: parseInt(body.getAttribute('data-goal-chain-id') || '4663', 10),
     rpc: body.getAttribute('data-goal-rpc') || '',
     explorer: body.getAttribute('data-goal-explorer') || '',
@@ -214,7 +214,7 @@
   function setAmount(n) {
     amount = Math.max(0, Math.round(n * 100) / 100);
     for (var i = 0; i < presets.length; i++) presets[i].setAttribute('aria-pressed', parseFloat(presets[i].getAttribute('data-amount')) === amount ? 'true' : 'false');
-    rowContribution.textContent = usd.format(amount) + ' · ' + amount.toFixed(2) + ' USDC';
+    rowContribution.textContent = usd.format(amount) + ' · ' + amount.toFixed(2) + ' USDG';
     rowFee.textContent = '—';
     rowTotal.textContent = usd.format(amount);
     payBtn.textContent = payLabel();
@@ -256,7 +256,7 @@
   function estimateFee(from, units) {
     return Promise.all([
       rpc('eth_gasPrice'),
-      rpc('eth_estimateGas', [{ from: from, to: cfg.usdc, data: transferData(cfg.pool, units) }]).catch(function () {
+      rpc('eth_estimateGas', [{ from: from, to: cfg.usdg, data: transferData(cfg.pool, units) }]).catch(function () {
         return '0xea60';
       }),
     ])
@@ -300,7 +300,7 @@
         });
       })
       .then(function () {
-        return rpc('eth_call', [{ to: cfg.usdc, data: '0x70a08231' + pad(from) }, 'latest']);
+        return rpc('eth_call', [{ to: cfg.usdg, data: '0x70a08231' + pad(from) }, 'latest']);
       })
       .then(function (bal) {
         if (BigInt(bal) < units) throw Object.assign(new Error('insufficient'), { code: 'insufficient' });
@@ -308,7 +308,7 @@
       })
       .then(function () {
         say(t('awaiting', 'Awaiting wallet approval'));
-        return eth.request({ method: 'eth_sendTransaction', params: [{ from: from, to: cfg.usdc, data: transferData(cfg.pool, units), value: '0x0' }] });
+        return eth.request({ method: 'eth_sendTransaction', params: [{ from: from, to: cfg.usdg, data: transferData(cfg.pool, units), value: '0x0' }] });
       })
       .then(function (hash) {
         say(t('submitted', 'Submitted. Waiting for confirmation…'));
@@ -333,7 +333,7 @@
       .catch(function (err) {
         var code = err && err.code;
         if (code === 4001 || code === 'ACTION_REJECTED' || code === 'no_account') say(t('rejected', 'Payment was not submitted.'));
-        else if (code === 'insufficient') say(t('insufficient', 'Not enough USDC in this wallet on Robinhood Chain.'));
+        else if (code === 'insufficient') say(t('insufficient', 'Not enough USDG in this wallet on Robinhood Chain.'));
         else say((err && err.message) || t('failed', 'The transaction failed.'));
       })
       .then(function () {

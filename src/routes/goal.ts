@@ -11,7 +11,7 @@ export interface GoalStatus {
   chain: { id: number; name: string; explorer: string };
   target_usd: number;
   min_contribution_usd: number;
-  pool: { address: string | null; usdc: number | null; eth: string | null; block: number | null; read_at: string | null; stale: boolean };
+  pool: { address: string | null; usdg: number | null; eth: string | null; block: number | null; read_at: string | null; stale: boolean };
   round: null | {
     id: number;
     title: string;
@@ -37,7 +37,7 @@ async function liveContributors(env: Env, round: GoalRound, fetchFn: FetchLike):
   try {
     return await cached<ContributorSummary[]>(`contrib:${cfg.poolAddress}:${round.id}:${round.freeze_block ?? 'open'}`, 60_000, async () => {
       const end = round.freeze_block ?? (await blockNumber(fetchFn, cfg.rpcUrl));
-      const transfers = await transfersTo(fetchFn, cfg.rpcUrl, cfg.usdcAddress!, cfg.poolAddress!, round.open_block!, end);
+      const transfers = await transfersTo(fetchFn, cfg.rpcUrl, cfg.usdgAddress!, cfg.poolAddress!, round.open_block!, end);
       return summarizeContributors(transfers, MIN_CONTRIBUTION_UNITS);
     });
   } catch (err) {
@@ -54,7 +54,7 @@ export async function goalStatus(env: Env, fetchFn: FetchLike = fetch): Promise<
     chain: { id: cfg.chainId, name: 'Robinhood Chain', explorer: cfg.explorerUrl },
     target_usd: cfg.targetUsd,
     min_contribution_usd: Number(MIN_CONTRIBUTION_UNITS) / 1e6,
-    pool: { address: cfg.poolAddress, usdc: null, eth: null, block: null, read_at: null, stale: false },
+    pool: { address: cfg.poolAddress, usdg: null, eth: null, block: null, read_at: null, stale: false },
     round: null,
     past_rounds: [],
     token: null,
@@ -63,7 +63,7 @@ export async function goalStatus(env: Env, fetchFn: FetchLike = fetch): Promise<
   if (cfg.live) {
     try {
       const pool = await cached<PoolSnapshot>(`pool:${cfg.poolAddress}`, 60_000, () => readPool(cfg, fetchFn));
-      status.pool = { address: cfg.poolAddress, usdc: pool.usd, eth: formatUnits(pool.ethWei, 18, 4), block: pool.block, read_at: pool.readAt, stale: false };
+      status.pool = { address: cfg.poolAddress, usdg: pool.usd, eth: formatUnits(pool.ethWei, 18, 4), block: pool.block, read_at: pool.readAt, stale: false };
       status.progress = Math.min(1, pool.usd / cfg.targetUsd);
     } catch (err) {
       console.error('goal pool read failed', err instanceof Error ? err.message : err);
@@ -118,13 +118,13 @@ goal.get('/contributors', async (c) => {
   const round = await currentRound(c.env.DB);
   if (!round) return c.json({ round: null, contributors: [] }, 200, { 'cache-control': 'public, max-age=30' });
   const cfg = siteConfig(c.env).goal;
-  let list: Array<{ index: number; address: string; usdc: number }> = [];
+  let list: Array<{ index: number; address: string; usdg: number }> = [];
   if (round.status === 'open') {
     const live = await liveContributors(c.env, round, fetch);
-    list = (live ?? []).map((x, i) => ({ index: i, address: x.address, usdc: Number(x.units) / 1e6 }));
+    list = (live ?? []).map((x, i) => ({ index: i, address: x.address, usdg: Number(x.units) / 1e6 }));
   } else {
     const { listEntries } = await import('../goal/rounds');
-    list = (await listEntries(c.env.DB, round.id)).map((e, i) => ({ index: i, address: e.identity, usdc: e.amount_units / 1e6 }));
+    list = (await listEntries(c.env.DB, round.id)).map((e, i) => ({ index: i, address: e.identity, usdg: e.amount_units / 1e6 }));
   }
   return c.json({ round: round.id, status: round.status, min_contribution_usd: Number(MIN_CONTRIBUTION_UNITS) / 1e6, explorer: cfg.explorerUrl, contributors: list }, 200, { 'cache-control': 'public, max-age=30', 'access-control-allow-origin': '*' });
 });
@@ -164,7 +164,7 @@ goalAdmin.post('/rounds', async (c) => {
         const current = await blockNumber(fetch, cfg.rpcUrl);
         const lead = typeof v.blocksAhead === 'number' && v.blocksAhead >= 10 ? Math.floor(v.blocksAhead) : 600; // ~1 minute at 100 ms blocks
         // Snapshot the contributor set from the chain for [open_block, current] and store it as the entry list.
-        const transfers = await transfersTo(fetch, cfg.rpcUrl, cfg.usdcAddress!, cfg.poolAddress!, round.open_block ?? current, current);
+        const transfers = await transfersTo(fetch, cfg.rpcUrl, cfg.usdgAddress!, cfg.poolAddress!, round.open_block ?? current, current);
         const contributors = summarizeContributors(transfers, MIN_CONTRIBUTION_UNITS);
         if (contributors.length === 0) return problem(c, 409, 'no_contributors', 'No contributions at or above the minimum yet; nothing to draw from.');
         await syncContributors(c.env.DB, round.id, contributors, now);

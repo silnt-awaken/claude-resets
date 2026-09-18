@@ -9,11 +9,11 @@ Infrastructure is deployed; the goal is **not open** until `GOAL_ENABLED`, `GOAL
 ## How a round works
 
 1. **Open a round**: `npm run goal:round -- open --env production --yes` (title and `--target` optional; default $200 = one month of Max 20x).
-2. **Readers enter by contributing**: any wallet that sends at least 1 USDC to the pool during the round is one entry, regardless of amount or number of transfers. The open-round contributor count is read live from the USDC transfer log (`eth_getLogs`), cached 60 s.
-3. **Meter**: `/api/v1/goal` reads the pool wallet's USDC balance (and ETH, informational) straight from the chain, cached 60 s per isolate. RPC failure shows "stale", never a made-up figure.
+2. **Readers enter by contributing**: any wallet that sends at least 1 USDG to the pool during the round is one entry, regardless of amount or number of transfers. The open-round contributor count is read live from the USDG transfer log (`eth_getLogs`), cached 60 s.
+3. **Meter**: `/api/v1/goal` reads the pool wallet's USDG balance (and ETH, informational) straight from the chain, cached 60 s per isolate. RPC failure shows "stale", never a made-up figure.
 4. **Freeze** when the target is reached: `npm run goal:round -- freeze --env production --yes`. Snapshots the contributor set from the chain for `[open_block, current]` into D1, records the current block and announces `drawBlock = current + 600` (≈1 minute at 100 ms blocks; `--blocks` overrides). Refuses if nobody contributed at least the minimum.
 5. **Draw** after the draw block exists: `npm run goal:round -- draw --env production --yes`. Winner index = `uint256(blockhash(drawBlock)) mod entries` over entries ordered by id. The hash, block and index are stored and shown publicly.
-6. **Pay** $200 USDC from the pool wallet to the winning wallet, then `npm run goal:round -- paid --tx 0x… --env production --yes`.
+6. **Pay** $200 USDG from the pool wallet to the winning wallet, then `npm run goal:round -- paid --tx 0x… --env production --yes`.
 7. **Burn** for the round: `npm run token:burn -- --round <id>` (0.5% of initial supply from the reserve), then open the next round.
 
 `npm run goal:round -- status` prints the public status JSON. `cancel --note "…"` closes a round without a draw.
@@ -26,7 +26,7 @@ Contract: `contracts/ResetToken.sol` (no external dependencies, ~5 KB bytecode).
 | --- | --- |
 | Supply | 1,000,000,000 RESET, 18 decimals, minted once in the constructor; no mint function |
 | Liquidity | 40% paired with ETH on Uniswap on Robinhood Chain; LP tokens sent to `0x…dEaD` |
-| Contributor rewards | 25%, paid per round pro-rata to USDC contributed (rewards only; odds never change) |
+| Contributor rewards | 25%, paid per round pro-rata to USDG contributed (rewards only; odds never change) |
 | Burn reserve | 15%: 0.25% of initial supply per published Claude reset (`burnForReset(eventId)`), 0.5% per completed round (`burnForRound(roundId)`) |
 | Treasury | 20%, released linearly over 12 months (a vesting contract or a published manual schedule) |
 | Transfer fee | 1% on non-exempt transfers: 60% burned, 40% to the goal pool. Cap 2%; can only be lowered. LP pair, treasury and pool are exempt (`setFeeExempt`) |
@@ -54,6 +54,6 @@ On chain: contributions, pool balance, token supply, burns, the draw block hash,
 
 `/goal` links the pool wallet, the token contract, the draw block and each payout on Blockscout, and documents the winner formula so anyone can recompute a draw.
 
-## Notes on the USDC address
+## Why USDG
 
-`GOAL_USDC_ADDRESS` defaults to the canonically bridged USDC on Robinhood Chain (`0x80e0e24718dbfcad49ecaa6f1e6c89a190586ca8`, derived from the L2 gateway router on 2026-09-18 and confirmed to report symbol USDC). Before funding, confirm on the explorer that this is the USDC your contributors will actually hold; if Robinhood lists a native USDC or USDG contract, set that address instead. The pool wallet can hold either; the meter counts only the configured token.
+Robinhood Chain's native stablecoin is **USDG (Global Dollar, Paxos)** at `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` (listed in Robinhood's own contract docs; 6 decimals; hundreds of thousands of holders). There is no Circle-native USDC on the chain; the only "USDC" is Arbitrum-bridged with a few hundred dollars in existence, which nobody holds. The explorer also lists many fake tokens named USDG: only the address above counts. `GOAL_USDG_ADDRESS` defaults to it. Contributors bridging from Ethereum/Arbitrum/Base get USDG delivered on Robinhood Chain through the bridge routes (Across, Relay, LI.FI/Jumper) or the canonical Arbitrum bridge.

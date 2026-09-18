@@ -12,7 +12,7 @@ function shortAddr(a: string): string {
 /** Compact goal card for the tracker homepage. Honest states: preparing / open / frozen / drawn / paid. */
 export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }) => {
   const { t, locale } = ctx;
-  const raised = status.pool.usdc ?? 0;
+  const raised = status.pool.usdg ?? 0;
   const pct = Math.round(status.progress * 100);
   const round = status.round;
   const stateLine = !status.enabled
@@ -33,7 +33,7 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             <span class="mono">{t.goal.sub}</span>
             <h2 id="goal-heading">{t.goal.heading}</h2>
           </div>
-          <span class="chip chip--accent">USDC · {t.goal.token}</span>
+          <span class="chip chip--accent">USDG · {t.goal.token}</span>
         </div>
         <p class="goal-pitch">{t.goal.pitch}</p>
         <div class="goal-meter" role="progressbar" aria-valuemin={0} aria-valuemax={status.target_usd} aria-valuenow={Math.round(raised)} aria-label={interpolate(t.goal.raised, { raised: formatNumber(Math.round(raised), locale), target: formatNumber(status.target_usd, locale) })}>
@@ -132,7 +132,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
   const token = status.token;
   const supplyPct = (n: string) => (token ? `${(Number((BigInt(n) * 10000n) / 1_000_000_000_000_000_000_000_000_000n) / 100).toFixed(2)}%` : '');
   return (
-    <Layout ctx={ctx} title={`Max 20x for a reader | ${cfg.siteName}`} description="A community-funded goal: readers pool USDC on Robinhood Chain and one contributor wins a month of Claude Max 20x by a verifiable block-hash draw. RESET token with on-chain burns.">
+    <Layout ctx={ctx} title={`Max 20x for a reader | ${cfg.siteName}`} description="A community-funded goal: readers pool USDG on Robinhood Chain and one contributor wins a month of Claude Max 20x by a verifiable block-hash draw. RESET token with on-chain burns.">
       <h1 class="page-title">Max 20x for a reader</h1>
       <p class="page-intro">{t.goal.pitch}</p>
       {locale !== 'en' ? (
@@ -147,7 +147,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
         <h2>How a round works</h2>
         <ol>
           <li>
-            <strong>Pool.</strong> A public wallet on Robinhood Chain (chain id {status.chain.id}) receives USDC. The meter above is the wallet's live balance read from the chain, not a number we typed.
+            <strong>Pool.</strong> A public wallet on Robinhood Chain (chain id {status.chain.id}) receives USDG. The meter above is the wallet's live balance read from the chain, not a number we typed.
             {status.pool.address ? (
               <>
                 {' '}Pool: <a href={`${explorer}/address/${status.pool.address}`} target="_blank" rel="noopener noreferrer"><code>{status.pool.address}</code></a>.
@@ -155,16 +155,16 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             ) : null}
           </li>
           <li>
-            <strong>Contribute to enter.</strong> Send at least {status.min_contribution_usd} USDC to the pool from your own wallet during the round. Your wallet is your entry. Amount does not matter for the draw: a 1 USDC contributor and a 100 USDC contributor have exactly the same chance. One entry per wallet; sending twice does not add a second entry.
+            <strong>Contribute to enter.</strong> Send at least {status.min_contribution_usd} USDG to the pool from your own wallet during the round. Your wallet is your entry. Amount does not matter for the draw: a 1 USDG contributor and a 100 USDG contributor have exactly the same chance. One entry per wallet; sending twice does not add a second entry.
           </li>
           <li>
-            <strong>Freeze.</strong> When the pool reaches ${g.targetUsd} USDC, the round closes at a recorded block. The contributor list is snapshotted from the chain's transfer log for that block range and published, and a future <em>draw block</em> is announced (about a minute ahead at 100 ms blocks).
+            <strong>Freeze.</strong> When the pool reaches ${g.targetUsd} USDG, the round closes at a recorded block. The contributor list is snapshotted from the chain's transfer log for that block range and published, and a future <em>draw block</em> is announced (about a minute ahead at 100 ms blocks).
           </li>
           <li>
             <strong>Draw.</strong> The winner is contributor number <code>uint256(drawBlockHash) mod contributors</code>, with contributors ordered by their first contribution. The hash and the list are public, so anyone can recompute the result. Nobody, including us, can influence a future block hash.
           </li>
           <li>
-            <strong>Payout.</strong> ${g.targetUsd} USDC goes to the winning wallet toward one month of Claude Max 20x (subscriptions cannot be transferred, so the money is paid out, not the account). The transaction hash is published here and on X, then the next round opens.
+            <strong>Payout.</strong> ${g.targetUsd} USDG goes to the winning wallet toward one month of Claude Max 20x (subscriptions cannot be transferred, so the money is paid out, not the account). The transaction hash is published here and on X, then the next round opens.
           </li>
           <li>
             <strong>Rewards.</strong> After each round, RESET from the contributor-rewards allocation is distributed to that round's contributors pro-rata to what they gave. Rewards scale with contribution; odds never do.
@@ -201,7 +201,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
               </tr>
               <tr>
                 <td>Contributor rewards</td>
-                <td>25%, distributed after each round to that round's USDC contributors pro-rata to what they gave.</td>
+                <td>25%, distributed after each round to that round's USDG contributors pro-rata to what they gave.</td>
               </tr>
               <tr>
                 <td>Burn reserve</td>
@@ -250,9 +250,9 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
       <section class="section prose" id="rules">
         <h2>Rules</h2>
         <ul>
-          <li>An entry is a wallet that sent at least {status.min_contribution_usd} USDC to the pool during the round. One entry per wallet regardless of amount or number of transfers.</li>
+          <li>An entry is a wallet that sent at least {status.min_contribution_usd} USDG to the pool during the round. One entry per wallet regardless of amount or number of transfers.</li>
           <li>Contributions are final and stay in the pool; the pool funds the payout and, when a round is cancelled, rolls into the next one.</li>
-          <li>The prize is ${g.targetUsd} USDC sent to the winning wallet, intended for one month of Claude Max 20x.</li>
+          <li>The prize is ${g.targetUsd} USDG sent to the winning wallet, intended for one month of Claude Max 20x.</li>
           <li>Wallets controlled by the site operator, and the pool and treasury wallets, are excluded from the draw.</li>
           <li>RESET is a community token with no promise of value, return or utility beyond what is described here. Supply mechanics are enforced by the contract; price is set by the market. Do not spend what you cannot afford to lose.</li>
           <li>This project is independent and not affiliated with or endorsed by Anthropic or Robinhood. Winning pays for a plan; it does not change any account or limit.</li>

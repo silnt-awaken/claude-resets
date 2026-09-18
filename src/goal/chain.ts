@@ -106,7 +106,7 @@ export function summarizeContributors(transfers: Contribution[], minUnits: bigin
 }
 
 export interface PoolSnapshot {
-  usdcUnits: bigint; // 6-decimal units
+  usdgUnits: bigint; // 6-decimal units
   usd: number;
   ethWei: bigint;
   block: number;
@@ -114,13 +114,13 @@ export interface PoolSnapshot {
 }
 
 export async function readPool(cfg: GoalConfig, fetchFn: FetchLike): Promise<PoolSnapshot> {
-  if (!cfg.poolAddress || !cfg.usdcAddress) throw new Error('goal pool not configured');
-  const [usdcUnits, ethHex, block] = await Promise.all([
-    erc20Balance(fetchFn, cfg.rpcUrl, cfg.usdcAddress, cfg.poolAddress),
+  if (!cfg.poolAddress || !cfg.usdgAddress) throw new Error('goal pool not configured');
+  const [usdgUnits, ethHex, block] = await Promise.all([
+    erc20Balance(fetchFn, cfg.rpcUrl, cfg.usdgAddress, cfg.poolAddress),
     rpc<string>(fetchFn, cfg.rpcUrl, 'eth_getBalance', [cfg.poolAddress, 'latest']),
     blockNumber(fetchFn, cfg.rpcUrl),
   ]);
-  return { usdcUnits, usd: Number(usdcUnits) / 1e6, ethWei: hexToBigInt(ethHex), block, readAt: new Date().toISOString() };
+  return { usdgUnits, usd: Number(usdgUnits) / 1e6, ethWei: hexToBigInt(ethHex), block, readAt: new Date().toISOString() };
 }
 
 export interface TokenSnapshot {

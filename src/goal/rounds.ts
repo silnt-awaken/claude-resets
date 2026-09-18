@@ -33,7 +33,7 @@ export interface GoalEntry {
   created_at: string;
 }
 
-/** Minimum contribution that counts as an entry (USDC base units): 1 USDC. Keeps dust spam out. */
+/** Minimum contribution that counts as an entry (USDG base units): 1 USDG. Keeps dust spam out. */
 export const MIN_CONTRIBUTION_UNITS = 1_000_000n;
 
 export function shortAddress(a: string): string {

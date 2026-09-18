@@ -23,7 +23,7 @@ export interface ConfigVars {
   GOAL_CHAIN_ID?: string;
   GOAL_EXPLORER_URL?: string;
   GOAL_POOL_ADDRESS?: string;
-  GOAL_USDC_ADDRESS?: string;
+  GOAL_USDG_ADDRESS?: string;
   GOAL_TARGET_USD?: string;
   RESET_TOKEN_ADDRESS?: string;
   // secrets (values are never rendered)
@@ -53,7 +53,7 @@ export interface SiteConfig {
 }
 
 export interface GoalConfig {
-  /** True only when a pool address and USDC address are configured and GOAL_ENABLED is true. */
+  /** True only when a pool address and USDG address are configured and GOAL_ENABLED is true. */
   live: boolean;
   /** Reason the goal is not live (shown only to maintainers). */
   reason: string | null;
@@ -61,7 +61,7 @@ export interface GoalConfig {
   chainId: number;
   explorerUrl: string;
   poolAddress: string | null;
-  usdcAddress: string | null;
+  usdgAddress: string | null;
   targetUsd: number;
   tokenAddress: string | null;
 }
@@ -79,13 +79,13 @@ export function isEvmAddress(value: string | undefined | null): value is string 
 
 export function goalConfig(env: ConfigVars): GoalConfig {
   const poolAddress = isEvmAddress(env.GOAL_POOL_ADDRESS) ? env.GOAL_POOL_ADDRESS!.trim() : null;
-  const usdcAddress = isEvmAddress(env.GOAL_USDC_ADDRESS) ? env.GOAL_USDC_ADDRESS!.trim() : null;
+  const usdgAddress = isEvmAddress(env.GOAL_USDG_ADDRESS) ? env.GOAL_USDG_ADDRESS!.trim() : null;
   const tokenAddress = isEvmAddress(env.RESET_TOKEN_ADDRESS) ? env.RESET_TOKEN_ADDRESS!.trim() : null;
   const enabled = bool(env.GOAL_ENABLED);
   let reason: string | null = null;
   if (!enabled) reason = 'GOAL_ENABLED is not true';
   else if (!poolAddress) reason = 'GOAL_POOL_ADDRESS is missing or invalid';
-  else if (!usdcAddress) reason = 'GOAL_USDC_ADDRESS is missing or invalid';
+  else if (!usdgAddress) reason = 'GOAL_USDG_ADDRESS is missing or invalid';
   const rpc = httpsUrlOrNull(env.GOAL_CHAIN_RPC) ?? ROBINHOOD_CHAIN.rpc;
   return {
     live: reason === null,
@@ -94,7 +94,7 @@ export function goalConfig(env: ConfigVars): GoalConfig {
     chainId: positiveNumber(env.GOAL_CHAIN_ID, ROBINHOOD_CHAIN.id),
     explorerUrl: httpsUrlOrNull(env.GOAL_EXPLORER_URL)?.replace(/\/$/, '') ?? ROBINHOOD_CHAIN.explorer,
     poolAddress,
-    usdcAddress,
+    usdgAddress,
     targetUsd: positiveNumber(env.GOAL_TARGET_USD, 200),
     tokenAddress,
   };
