@@ -25,6 +25,8 @@ export interface ConfigVars {
   GOAL_POOL_ADDRESS?: string;
   GOAL_USDG_ADDRESS?: string;
   GOAL_TARGET_USD?: string;
+  /** Comma-separated wallets excluded from the draw (operator, pool, burner). Their money still counts on the meter. */
+  GOAL_EXCLUDED_WALLETS?: string;
   RESET_TOKEN_ADDRESS?: string;
   /** vault (contracts/BurnVault.sol holds the reserve; burner triggers) | transfer (burner wallet sends to 0xdEaD) | contract (contracts/ResetToken.sol) */
   RESET_BURN_MODE?: string;
@@ -74,6 +76,7 @@ export interface GoalConfig {
   poolAddress: string | null;
   usdgAddress: string | null;
   targetUsd: number;
+  excludedWallets: string[];
   tokenAddress: string | null;
   burnMode: 'vault' | 'transfer' | 'contract';
   /** BurnVault address when burnMode is vault: the locked reserve that can only send to 0xdEaD. */
@@ -116,6 +119,7 @@ export function goalConfig(env: ConfigVars): GoalConfig {
     poolAddress,
     usdgAddress,
     targetUsd: positiveNumber(env.GOAL_TARGET_USD, 200),
+    excludedWallets: (env.GOAL_EXCLUDED_WALLETS ?? '').split(',').map((a) => a.trim().toLowerCase()).filter((a) => isEvmAddress(a)),
     tokenAddress,
     burnMode: env.RESET_BURN_MODE?.trim() === 'contract' ? 'contract' : env.RESET_BURN_MODE?.trim() === 'vault' && isEvmAddress(env.RESET_VAULT_ADDRESS) ? 'vault' : 'transfer',
     vaultAddress: isEvmAddress(env.RESET_VAULT_ADDRESS) ? env.RESET_VAULT_ADDRESS!.trim() : null,

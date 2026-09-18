@@ -17,7 +17,7 @@
       "migrations_dir": "migrations"
     }
   ],
-  "triggers": { "crons": ["*/2 * * * *"] },
+  "triggers": { "crons": ["* * * * *"] },
   "observability": { "enabled": true },
   // Public, non-secret settings. Secrets go in .dev.vars locally and `wrangler secret put` in production.
   "vars": {
@@ -44,6 +44,8 @@
     "GOAL_POOL_ADDRESS": "0xCA6d06946e498b03112cFE0812C44Ac165dd4747",
     "GOAL_USDG_ADDRESS": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
     "GOAL_TARGET_USD": "200",
+    // Operator wallets: counted on the meter, never in the draw (launch wallet, pool, burner).
+    "GOAL_EXCLUDED_WALLETS": "0x110b8901b3d1c561c598586911b2d1ed765a7eb1,0xCA6d06946e498b03112cFE0812C44Ac165dd4747,0xA0599e6b56bC2E605920b370151b7a530E74C51C",
     "RESET_TOKEN_ADDRESS": "0xd3030f41c8e127992516d1fcd58f36601b878f24",
     // RESET is launched on the pons launchpad (a standard token), so burns are transfers from the burner wallet
     // to 0xdEaD ("transfer"). "contract" switches to contracts/ResetToken.sol with burnForReset. Amounts are whole RESET.

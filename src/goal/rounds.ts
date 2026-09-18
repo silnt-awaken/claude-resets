@@ -13,6 +13,7 @@ export interface GoalRound {
   status: RoundStatus;
   opened_at: string;
   open_block: number | null;
+  synced_block: number | null; // last block whose USDG transfers have been ingested
   frozen_at: string | null;
   freeze_block: number | null;
   draw_block: number | null;
@@ -69,18 +70,32 @@ export async function countEntries(db: D1Database, roundId: number): Promise<num
   return r?.n ?? 0;
 }
 
-/** Replace the round's entry list with the contributor set read from the chain (idempotent). */
-export async function syncContributors(db: D1Database, roundId: number, contributors: ContributorSummary[], now: Date): Promise<number> {
+/**
+ * Add contributions read from a block range to the round's entries (amounts accumulate per wallet).
+ * Called by the cron sync with ranges that never overlap, so a transfer is counted exactly once.
+ */
+export async function addContributions(db: D1Database, roundId: number, contributors: ContributorSummary[], now: Date): Promise<number> {
   const stmts = contributors.map((c) =>
     db
       .prepare(
         `INSERT INTO goal_entries (round_id, identity, display, amount_units, first_tx, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-         ON CONFLICT(round_id, identity) DO UPDATE SET amount_units = excluded.amount_units, first_tx = COALESCE(goal_entries.first_tx, excluded.first_tx)`,
+         ON CONFLICT(round_id, identity) DO UPDATE SET amount_units = goal_entries.amount_units + excluded.amount_units, first_tx = COALESCE(goal_entries.first_tx, excluded.first_tx)`,
       )
       .bind(roundId, c.address, shortAddress(c.address), Number(c.units), c.firstTx, now.toISOString()),
   );
   if (stmts.length) await db.batch(stmts);
   return contributors.length;
+}
+
+export async function setSyncedBlock(db: D1Database, roundId: number, block: number): Promise<void> {
+  await db.prepare('UPDATE goal_rounds SET synced_block = ?1 WHERE id = ?2').bind(block, roundId).run();
+}
+
+/** Entries at or above the minimum, optionally without the operator's wallets (for the draw). */
+export async function qualifyingEntries(db: D1Database, roundId: number, minUnits: bigint, excluded: readonly string[] = []): Promise<GoalEntry[]> {
+  const all = await listEntries(db, roundId);
+  const skip = new Set(excluded.map((a) => a.toLowerCase()));
+  return all.filter((e) => BigInt(e.amount_units) >= minUnits && !skip.has(e.identity.toLowerCase()));
 }
 
 export async function listEntries(db: D1Database, roundId: number): Promise<GoalEntry[]> {
@@ -106,11 +121,11 @@ export function pickWinnerIndex(drawHash: string, entryCount: number): number {
   return Number(BigInt(drawHash) % BigInt(entryCount));
 }
 
-export async function recordDraw(db: D1Database, roundId: number, drawHash: string): Promise<{ winner: GoalEntry; index: number; entries: number }> {
+export async function recordDraw(db: D1Database, roundId: number, drawHash: string, minUnits: bigint = MIN_CONTRIBUTION_UNITS, excluded: readonly string[] = []): Promise<{ winner: GoalEntry; index: number; entries: number }> {
   const round = await db.prepare('SELECT * FROM goal_rounds WHERE id = ?1').bind(roundId).first<GoalRound>();
   if (!round) throw new Error('unknown round');
   if (round.status !== 'frozen') throw new Error('round must be frozen before the draw');
-  const entries = await listEntries(db, roundId);
+  const entries = await qualifyingEntries(db, roundId, minUnits, excluded);
   const index = pickWinnerIndex(drawHash, entries.length);
   const winner = entries[index]!;
   await db.prepare("UPDATE goal_rounds SET status = 'drawn', draw_hash = ?1, winner_entry_id = ?2 WHERE id = ?3").bind(drawHash, winner.id, roundId).run();

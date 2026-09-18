@@ -4,7 +4,7 @@ import { __setContentForTests } from '../src/domain/content';
 import type { Env } from '../src/env';
 import { burnFor, drainBurns, listBurns, queueBurn, type BurnKind, type BurnSigner } from '../src/goal/burns';
 import { __clearChainCache } from '../src/goal/chain';
-import { freezeRound, openRound, recordDraw, syncContributors } from '../src/goal/rounds';
+import { addContributions, freezeRound, openRound, recordDraw } from '../src/goal/rounds';
 import { makeEvent, snapshotFor } from './fixtures';
 import { adminInit, clearDb, env, json, request } from './helpers';
 
@@ -161,7 +161,7 @@ describe('automatic burns', () => {
     const s = state();
     // A round paid through the admin endpoint queues burnForRound(roundId)
     const round = await openRound(db(), 'r', 200, 100, now);
-    await syncContributors(db(), round.id, [{ address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', units: 1_000_000n, firstTx: '0xa1' }], now);
+    await addContributions(db(), round.id, [{ address: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', units: 1_000_000n, firstTx: '0xa1' }], now);
     await freezeRound(db(), round.id, 150, 750, now);
     await recordDraw(db(), round.id, `0x${'00'.repeat(31)}01`);
     const paid = await json<{ ok: boolean; burn: string }>('/admin/goal/rounds', adminInit({ action: 'paid', tx: `0x${'cd'.repeat(32)}` }), LIVE);

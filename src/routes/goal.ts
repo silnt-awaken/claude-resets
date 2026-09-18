@@ -3,7 +3,7 @@ import { findEvent, isQualifyingReset, loadContent } from '../domain/content';
 import { siteConfig, type Env } from '../env';
 import { blockHash, blockNumber, cached, formatUnits, readPool, readToken, summarizeContributors, transfersTo, type ContributorSummary, type FetchLike, type PoolSnapshot, type TokenSnapshot } from '../goal/chain';
 import { burnerConfigured, drainBurns, listBurns, queueBurn, type TokenBurn } from '../goal/burns';
-import { MIN_CONTRIBUTION_UNITS, cancelRound, countEntries, currentRound, freezeRound, latestRound, markPaid, openRound, pastRounds, recordDraw, syncContributors, winnerOf, type GoalRound } from '../goal/rounds';
+import { MIN_CONTRIBUTION_UNITS, addContributions, cancelRound, currentRound, freezeRound, latestRound, markPaid, openRound, pastRounds, qualifyingEntries, recordDraw, setSyncedBlock, winnerOf, type GoalRound } from '../goal/rounds';
 import { problem, readJson, timingSafeEqual } from '../util/http';
 
 export const goal = new Hono<{ Bindings: Env }>();
@@ -34,19 +34,36 @@ export interface GoalStatus {
   progress: number; // 0..1
 }
 
-/** Contributors of the open round, read from the chain (unique senders ≥ minimum), cached 60 s. */
-async function liveContributors(env: Env, round: GoalRound, fetchFn: FetchLike): Promise<ContributorSummary[] | null> {
+export interface SyncResult {
+  round: number | null;
+  from: number | null;
+  to: number | null;
+  transfers: number;
+  error: string | null;
+}
+
+/**
+ * Ingest USDG transfers into the pool for the open round, from the last synced block to the chain head.
+ * Runs from the cron every minute (and before a freeze). Ranges never overlap, so amounts add up exactly once.
+ * Never throws: an RPC problem leaves synced_block where it was and is retried next minute.
+ */
+export async function syncOpenRound(env: Env, fetchFn: FetchLike = fetch): Promise<SyncResult> {
   const cfg = siteConfig(env).goal;
-  if (!cfg.live || round.open_block == null) return null;
+  const round = await currentRound(env.DB);
+  if (!cfg.live || !round || round.status !== 'open' || round.open_block == null) return { round: round?.id ?? null, from: null, to: null, transfers: 0, error: cfg.live ? null : 'goal not live' };
+  const from = (round.synced_block ?? round.open_block - 1) + 1;
   try {
-    return await cached<ContributorSummary[]>(`contrib:${cfg.poolAddress}:${round.id}:${round.freeze_block ?? 'open'}`, 60_000, async () => {
-      const end = round.freeze_block ?? (await blockNumber(fetchFn, cfg.rpcUrl));
-      const transfers = await transfersTo(fetchFn, cfg.rpcUrl, cfg.usdgAddress!, cfg.poolAddress!, round.open_block!, end);
-      return summarizeContributors(transfers, MIN_CONTRIBUTION_UNITS);
-    });
+    const head = await blockNumber(fetchFn, cfg.rpcUrl);
+    if (head < from) return { round: round.id, from, to: head, transfers: 0, error: null };
+    const transfers = await transfersTo(fetchFn, cfg.rpcUrl, cfg.usdgAddress!, cfg.poolAddress!, from, head);
+    // Everything in the range counts; the minimum is applied when entries are read.
+    await addContributions(env.DB, round.id, summarizeContributors(transfers, 0n), new Date());
+    await setSyncedBlock(env.DB, round.id, head);
+    return { round: round.id, from, to: head, transfers: transfers.length, error: null };
   } catch (err) {
-    console.error('contributor read failed', err instanceof Error ? err.message : err);
-    return null;
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('goal sync failed', message);
+    return { round: round.id, from, to: null, transfers: 0, error: message };
   }
 }
 
@@ -94,14 +111,13 @@ export async function goalStatus(env: Env, fetchFn: FetchLike = fetch): Promise<
     const round = (await currentRound(env.DB)) ?? (await latestRound(env.DB));
     if (round) {
       const winner = await winnerOf(env.DB, round);
-      const live = round.status === 'open' ? await liveContributors(env, round, fetchFn) : null;
       status.round = {
         id: round.id,
         title: round.title,
         status: round.status,
         opened_at: round.opened_at,
         open_block: round.open_block,
-        contributors: live ? live.length : await countEntries(env.DB, round.id),
+        contributors: (await qualifyingEntries(env.DB, round.id, MIN_CONTRIBUTION_UNITS)).length,
         frozen_at: round.frozen_at,
         draw_block: round.draw_block,
         draw_hash: round.draw_hash,
@@ -130,15 +146,9 @@ goal.get('/contributors', async (c) => {
   const round = await currentRound(c.env.DB);
   if (!round) return c.json({ round: null, contributors: [] }, 200, { 'cache-control': 'public, max-age=30' });
   const cfg = siteConfig(c.env).goal;
-  let list: Array<{ index: number; address: string; usdg: number }> = [];
-  if (round.status === 'open') {
-    const live = await liveContributors(c.env, round, fetch);
-    list = (live ?? []).map((x, i) => ({ index: i, address: x.address, usdg: Number(x.units) / 1e6 }));
-  } else {
-    const { listEntries } = await import('../goal/rounds');
-    list = (await listEntries(c.env.DB, round.id)).map((e, i) => ({ index: i, address: e.identity, usdg: e.amount_units / 1e6 }));
-  }
-  return c.json({ round: round.id, status: round.status, min_contribution_usd: Number(MIN_CONTRIBUTION_UNITS) / 1e6, explorer: cfg.explorerUrl, contributors: list }, 200, { 'cache-control': 'public, max-age=30', 'access-control-allow-origin': '*' });
+  // The public list is the draw list: at or above the minimum, operator wallets excluded, in draw order.
+  const list = (await qualifyingEntries(c.env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets)).map((e, i) => ({ index: i, address: e.identity, usdg: e.amount_units / 1e6 }));
+  return c.json({ round: round.id, status: round.status, synced_block: round.synced_block, min_contribution_usd: Number(MIN_CONTRIBUTION_UNITS) / 1e6, explorer: cfg.explorerUrl, contributors: list }, 200, { 'cache-control': 'public, max-age=30', 'access-control-allow-origin': '*' });
 });
 
 // ---------- maintainer actions (Bearer CONTENT_PUBLISH_TOKEN) ----------
@@ -173,15 +183,14 @@ goalAdmin.post('/rounds', async (c) => {
       case 'freeze': {
         const round = await currentRound(c.env.DB);
         if (!round || round.status !== 'open') return problem(c, 409, 'no_round', 'No open round.');
-        const current = await blockNumber(fetch, cfg.rpcUrl);
         const lead = typeof v.blocksAhead === 'number' && v.blocksAhead >= 10 ? Math.floor(v.blocksAhead) : 600; // ~1 minute at 100 ms blocks
-        // Snapshot the contributor set from the chain for [open_block, current] and store it as the entry list.
-        const transfers = await transfersTo(fetch, cfg.rpcUrl, cfg.usdgAddress!, cfg.poolAddress!, round.open_block ?? current, current);
-        const contributors = summarizeContributors(transfers, MIN_CONTRIBUTION_UNITS);
-        if (contributors.length === 0) return problem(c, 409, 'no_contributors', 'No contributions at or above the minimum yet; nothing to draw from.');
-        await syncContributors(c.env.DB, round.id, contributors, now);
-        await freezeRound(c.env.DB, round.id, current, current + lead, now);
-        return c.json({ ok: true, round: round.id, freezeBlock: current, drawBlock: current + lead, contributors: contributors.length });
+        // Ingest everything up to the chain head, then the entry list in D1 is the frozen snapshot.
+        const sync = await syncOpenRound(c.env, fetch);
+        if (sync.error || sync.to == null) return problem(c, 503, 'sync_failed', `Could not read the chain: ${sync.error ?? 'unknown'}. Try again in a minute.`);
+        const contributors = await qualifyingEntries(c.env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets);
+        if (contributors.length === 0) return problem(c, 409, 'no_contributors', 'No eligible contributions at or above the minimum yet; nothing to draw from.');
+        await freezeRound(c.env.DB, round.id, sync.to, sync.to + lead, now);
+        return c.json({ ok: true, round: round.id, freezeBlock: sync.to, drawBlock: sync.to + lead, contributors: contributors.length });
       }
       case 'draw': {
         const round = await currentRound(c.env.DB);
@@ -190,7 +199,7 @@ goalAdmin.post('/rounds', async (c) => {
         if (current < round.draw_block) return problem(c, 409, 'too_early', `Draw block ${round.draw_block} not reached yet (current ${current}).`);
         const hash = await blockHash(fetch, cfg.rpcUrl, round.draw_block);
         if (!hash) return problem(c, 503, 'block_unavailable', 'Could not read the draw block yet.');
-        const result = await recordDraw(c.env.DB, round.id, hash);
+        const result = await recordDraw(c.env.DB, round.id, hash, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets);
         return c.json({ ok: true, round: round.id, drawBlock: round.draw_block, drawHash: hash, index: result.index, entries: result.entries, winner: result.winner.display, winnerAddress: result.winner.identity });
       }
       case 'paid': {
@@ -201,6 +210,8 @@ goalAdmin.post('/rounds', async (c) => {
         const burnQueued = cfg.tokenAddress ? await queueBurn(c.env.DB, 'round', String(round.id), now) : false;
         return c.json({ ok: true, round: round.id, burn: cfg.tokenAddress ? (burnQueued ? 'queued; the cron sends burnForRound within 2 minutes' : 'already queued') : 'RESET token not deployed' });
       }
+      case 'sync':
+        return c.json({ ok: true, sync: await syncOpenRound(c.env, fetch) });
       case 'cancel': {
         const round = await currentRound(c.env.DB);
         if (!round) return problem(c, 409, 'no_round', 'No round to cancel.');
@@ -208,7 +219,7 @@ goalAdmin.post('/rounds', async (c) => {
         return c.json({ ok: true, round: round.id });
       }
       default:
-        return problem(c, 400, 'invalid_action', 'action must be open, freeze, draw, paid or cancel');
+        return problem(c, 400, 'invalid_action', 'action must be open, freeze, draw, paid, sync or cancel');
     }
   } catch (err) {
     return problem(c, 409, 'round_state', err instanceof Error ? err.message : 'round error');

@@ -14,7 +14,7 @@ import { readCount } from './reactions';
 import { admin } from './routes/admin';
 import { api } from './routes/api';
 import { feeds } from './routes/feeds';
-import { goal, goalAdmin, goalStatus } from './routes/goal';
+import { goal, goalAdmin, goalStatus, syncOpenRound } from './routes/goal';
 import { GoalPage } from './views/goal';
 import { mcp } from './routes/mcp';
 import { meta } from './routes/meta';
@@ -192,6 +192,11 @@ export default {
       drainPushJobs(env, { limit: 50 })
         .then((r) => console.log('push drain', JSON.stringify(r)))
         .catch((err) => console.error('push drain failed', err)),
+    );
+    ctx.waitUntil(
+      syncOpenRound(env)
+        .then((r) => console.log('goal sync', JSON.stringify(r)))
+        .catch((err) => console.error('goal sync failed', err)),
     );
     ctx.waitUntil(
       drainBurns(env, { limit: 20 })

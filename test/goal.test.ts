@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { goalConfig } from '../src/config';
 import type { Env } from '../src/env';
 import { __clearChainCache, formatUnits, readPool, readToken, summarizeContributors, transfersTo } from '../src/goal/chain';
-import { MIN_CONTRIBUTION_UNITS, currentRound, freezeRound, markPaid, openRound, pickWinnerIndex, recordDraw, syncContributors } from '../src/goal/rounds';
-import { goalStatus } from '../src/routes/goal';
+import { MIN_CONTRIBUTION_UNITS, currentRound, freezeRound, markPaid, openRound, pickWinnerIndex, recordDraw } from '../src/goal/rounds';
+import { goalStatus, syncOpenRound } from '../src/routes/goal';
 import { adminInit, clearDb, env, json, request } from './helpers';
 
 const POOL = '0x1111111111111111111111111111111111111111';
@@ -142,6 +142,11 @@ describe('rounds', () => {
     ];
     state.usdgUnits = 200_000_000n;
     state.block = 150;
+    // The cron ingests transfers incrementally; a second run over the same head adds nothing.
+    const sync1 = await syncOpenRound(live, rpc);
+    expect(sync1).toMatchObject({ round: round.id, from: 100, to: 150, transfers: 3, error: null });
+    const sync2 = await syncOpenRound(live, rpc);
+    expect(sync2.transfers).toBe(0);
     const s1 = await goalStatus(live, rpc);
     expect(s1.round?.status).toBe('open');
     expect(s1.round?.contributors).toBe(2);
@@ -157,11 +162,9 @@ describe('rounds', () => {
     const off = await (await request('/about')).text();
     expect(off).not.toContain('data-role="wallet-connect"');
 
-    // Freeze: snapshot contributors from the chain into the entry list (equal odds regardless of amount).
-    const transfers = await transfersTo(rpc, 'x', USDG, POOL, round.open_block!, 150);
-    await syncContributors(db, round.id, summarizeContributors(transfers, MIN_CONTRIBUTION_UNITS), new Date());
+    // Freeze: the synced entry list is the snapshot (equal odds regardless of amount); operator wallets are excluded from the draw.
     await freezeRound(db, round.id, 150, 750, new Date());
-    const draw = await recordDraw(db, round.id, `0x${'00'.repeat(31)}01`); // 1 mod 2 → index 1 → B, the 1 USDG contributor
+    const draw = await recordDraw(db, round.id, `0x${'00'.repeat(31)}01`, MIN_CONTRIBUTION_UNITS, [C]); // 1 mod 2 → index 1 → B, the 1 USDG contributor
     expect(draw.entries).toBe(2);
     expect(draw.winner.identity).toBe(B);
     await markPaid(db, round.id, `0x${'cd'.repeat(32)}`, new Date());
