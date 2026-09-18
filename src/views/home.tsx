@@ -177,11 +177,11 @@ const Actions: FC<{ ctx: PageContext }> = ({ ctx }) => {
         <RssIcon /> <span>{t.actions.feed}</span>
       </a>
       {cfg.supportUrl ? (
-        <a class="pill pill--rose" href={cfg.supportUrl} target="_blank" rel="noopener noreferrer" title={t.actions.tipTitle}>
+        <a class="pill pill--accent" href={cfg.supportUrl} target="_blank" rel="noopener noreferrer" title={t.actions.tipTitle}>
           <CupIcon /> <span>{t.actions.tip}</span>
         </a>
       ) : (
-        <a class="pill pill--rose" href={localizePath(locale, '/support')} title={t.actions.tipTitle}>
+        <a class="pill pill--accent" href={localizePath(locale, '/support')} title={t.actions.tipTitle}>
           <CupIcon /> <span>{t.actions.tip}</span>
         </a>
       )}

@@ -380,6 +380,15 @@ button {
   background: var(--mint);
   color: var(--on-mint);
 }
+.pill--accent {
+  background: var(--accent);
+  color: var(--on-accent);
+  transform: rotate(-1.5deg);
+}
+.pill--accent:hover {
+  color: var(--on-accent);
+  transform: rotate(-1.5deg) translate(-1px, -1px);
+}
 .pill--mint:hover {
   color: var(--on-mint);
 }

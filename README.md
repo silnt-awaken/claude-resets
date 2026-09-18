@@ -6,6 +6,10 @@ An independent tracker for publicly announced Claude usage-limit resets. Not aff
 - Editorial content is versioned JSON in `content/`; publishing is a local command that talks to a private endpoint.
 - Five locales (`/`, `/zh-CN`, `/zh-TW`, `/ja`, `/ko`), public JSON API, RSS + JSON feeds, read-only MCP server, Web Push browser alerts.
 
+Live site: <https://clauderesets.com> · Updates: [@clauderesets on X](https://x.com/clauderesets)
+
+If the tracker helps you, you can [tip for coffee](https://buymeacoffee.com/silntawaken). Tips never change reset access or Anthropic limits.
+
 ## Install and run
 
 ```bash
