@@ -42,7 +42,7 @@ export const ROADMAP: RoadmapPhase[] = [
     when: 'Q4 2026',
     status: 'next',
     items: [
-      'Launch RESETS on pons paired with ETH; buy the burn reserve on the curve at launch and move it to the burner wallet.',
+      'Launch RESETS on pons paired with ETH; lock the developer buy in a vault contract that can only send to the dead address.',
       'Publish the burner and pool wallets; the curve graduates at 4.2 ETH and liquidity moves to a Uniswap v4 pool.',
       'Turn on automatic burns: the first confirmed reset after launch burns on chain within two minutes.',
       'Open round one: $200 USDG, one month of Claude Max 20x for one contributor.',

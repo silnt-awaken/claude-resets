@@ -27,7 +27,7 @@ RESETS is launched on the **pons launchpad** (ponsfamily.com) on Robinhood Chain
 | Launch | pons launchpad, ETH pair, no presale, no team allocation, no mint function |
 | Liquidity | Moved by the launchpad into a Uniswap v4 pool at graduation (4.2 ETH raised) |
 | Trade fee | 3% per trade (launchpad setting); the 2% creator share is routed to RESETS holders by the launchpad (permanent "holder fee sharing"). The goal pool is funded by contributions only |
-| Burn reserve | Bought on the curve at launch (the "developer buy") and transferred to the burner wallet, whose address is published (`RESET_BURNER_ADDRESS`) |
+| Burn reserve | The developer buy (5,740,664 RESETS) locked in `contracts/BurnVault.sol` at `RESET_VAULT_ADDRESS`: immutable, no owner, tokens can only leave to `0x…dEaD`. The burner wallet (`RESET_BURNER_ADDRESS`) may call `burnForReset(eventId)` / `burnForRound(roundId)`, once per id |
 | Burn schedule | `RESET_BURN_PER_RESET` (default 2,500,000) per published confirmed reset; `RESET_BURN_PER_ROUND` (default 5,000,000) per paid round. Automatic, once per event id |
 | Control | None over the token. The burner wallet's balance is public and only shrinks |
 
@@ -35,13 +35,13 @@ RESETS is launched on the **pons launchpad** (ponsfamily.com) on Robinhood Chain
 
 1. `npm run token:burner -- new` → burner address + key. `npx wrangler secret put BURNER_PRIVATE_KEY` with the key; send the burner ~$3 of ETH on Robinhood Chain for gas.
 2. On pons: name `Reset`, ticker `RESETS`, paired asset ETH, description without links, X profile `clauderesets`, holder fee sharing on. Set a developer buy in ETH: that is the burn reserve. Launch.
-3. Transfer the developer-buy RESETS from the launching wallet to the burner wallet.
+3. Send the developer-buy RESETS and ~0.003 ETH to the burner wallet, then deploy the vault from the burner key: `npm run token:compile -- --contract BurnVault`, `npm run token:vault -- deploy`, `npm run token:vault -- fund`. Set `RESET_VAULT_ADDRESS` and `RESET_BURN_MODE: "vault"`.
 4. In `wrangler.jsonc`: `RESET_TOKEN_ADDRESS` (from pons / Blockscout), `RESET_BURNER_ADDRESS`, `GOAL_POOL_ADDRESS`, `GOAL_ENABLED: "true"`; adjust `RESET_BURN_PER_RESET` / `RESET_BURN_PER_ROUND` to the supply pons minted (defaults assume 1B). `npm run deploy`, then `npm run goal:round -- open --env production --yes`.
 5. `npm run token:burner -- status` shows the burner's gas and RESETS balance. `npm run readiness -- --env production` should show BURNER_PRIVATE_KEY and RESET_BURNER_ADDRESS ok.
 
 ### Per reset (automatic)
 
-`content:publish` of a confirmed usage reset queues one row in `token_burns` (once per event id; backfills and corrections never burn). The `*/2` cron drain sends the burn from the burner wallet, records the transaction hash, follows the receipt, retries with backoff on RPC trouble, and marks the row confirmed. In transfer mode the burn is a plain ERC-20 `transfer(0xdEaD, amount)`; the site's log links it to the event. `/goal#burns` shows the log, `/api/v1/goal` includes it as `burns`. Without `BURNER_PRIVATE_KEY` the rows wait. If the burner runs out of RESETS the row fails with "reserve empty"; top the wallet up and `POST /admin/goal/burns {action:'retry', id}`. Other maintainer actions: `{action:'drain'}`, `{action:'queue', eventId}` (a reset published before launch).
+`content:publish` of a confirmed usage reset queues one row in `token_burns` (once per event id; backfills and corrections never burn). The `*/2` cron drain sends the burn from the burner wallet, records the transaction hash, follows the receipt, retries with backoff on RPC trouble, and marks the row confirmed. In vault mode the burner calls the vault's `burnForReset(eventId)`, which moves the fixed amount to `0xdEaD` and records the event id on chain; transfer mode (no vault) is a plain ERC-20 transfer from the burner wallet. `/goal#burns` shows the log, `/api/v1/goal` includes it as `burns`. Without `BURNER_PRIVATE_KEY` the rows wait. If the burner runs out of RESETS the row fails with "reserve empty"; top the wallet up and `POST /admin/goal/burns {action:'retry', id}`. Other maintainer actions: `{action:'drain'}`, `{action:'queue', eventId}` (a reset published before launch).
 
 ### Fallback: self-deployed contract
 
