@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx';
 import { formatUnits } from '../goal/chain';
+import { ROADMAP, type PhaseStatus } from '../goal/roadmap';
 import type { GoalStatus } from '../routes/goal';
 import { formatNumber, interpolate, localizePath } from '../i18n';
 import { ArrowIcon, CloseIcon } from './icons';
@@ -124,7 +125,10 @@ const GoalSheet: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }
   );
 };
 
-/** Full page: mechanics, tokenomics, burn schedule, rules, verification. English, like the technical docs. */
+const ROADMAP_CHIP: Record<PhaseStatus, string> = { done: 'chip--mint', now: 'chip--accent', next: 'chip--sky', later: 'chip--muted' };
+const ROADMAP_LABEL: Record<PhaseStatus, string> = { done: 'Live', now: 'Switching on', next: 'Next', later: 'Later' };
+
+/** Full page: mechanics, tokenomics, burn schedule, roadmap, rules, verification. English, like the technical docs. */
 export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }) => {
   const { cfg, t, locale } = ctx;
   const g = cfg.goal;
@@ -284,6 +288,27 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             )}
           </>
         ) : null}
+      </section>
+
+      <section class="section prose" id="roadmap">
+        <h2>Roadmap</h2>
+        <p>What is live, what is being switched on, and what comes after. Nothing here promises a price; it promises work.</p>
+        <ol class="roadmap">
+          {ROADMAP.map((p) => (
+            <li class={`roadmap-phase roadmap-phase--${p.status}`} id={`roadmap-${p.id}`}>
+              <div class="roadmap-head">
+                <span class={`chip ${ROADMAP_CHIP[p.status]}`}>{ROADMAP_LABEL[p.status]}</span>
+                <h3>{p.title}</h3>
+                <span class="roadmap-when">{p.when}</span>
+              </div>
+              <ul>
+                {p.items.map((it) => (
+                  <li>{it}</li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ol>
       </section>
 
       <section class="section prose" id="rules">

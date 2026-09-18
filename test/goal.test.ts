@@ -173,6 +173,8 @@ describe('rounds', () => {
     expect(await currentRound(db)).toBeNull();
     const page = await (await request('/goal', {}, LIVE)).text();
     expect(page).toContain('Past rounds');
+    expect(page).toContain('id="roadmap"');
+    expect(page).toContain('Switching on');
     expect(page).toContain('0xbbbb…bbbb');
   });
 

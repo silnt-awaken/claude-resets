@@ -1668,3 +1668,17 @@ th {
   display: block;
   flex: none;
 }
+
+/* ---------- roadmap (/goal#roadmap) ---------- */
+.roadmap { list-style: none; margin: 1.25rem 0 0; padding: 0; }
+.roadmap-phase { position: relative; margin: 0; padding: 0 0 1.5rem 2rem; }
+.roadmap-phase::before { content: ''; position: absolute; left: 8px; top: 0.6rem; bottom: -0.4rem; width: 3px; background: var(--ink); z-index: 0; }
+.roadmap-phase:last-child::before { bottom: auto; height: 0; }
+.roadmap-phase::after { content: ''; position: absolute; left: 0; top: 0.3rem; width: 13px; height: 13px; border-radius: 50%; background: var(--card); border: 3px solid var(--ink); z-index: 1; }
+.roadmap-phase--done::after { background: var(--mint); }
+.roadmap-phase--now::after { background: var(--accent); }
+.roadmap-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.roadmap-head h3 { margin: 0; font-size: 1.15rem; }
+.roadmap-when { color: var(--ink-3); font-size: 0.9rem; }
+.roadmap-phase ul { margin: 0.5rem 0 0; }
+.roadmap-phase--later { opacity: 0.8; }
