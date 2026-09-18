@@ -34,7 +34,13 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             <span class="mono">{t.goal.sub}</span>
             <h2 id="goal-heading">{t.goal.heading}</h2>
           </div>
-          <span class="chip chip--accent">USDG · {t.goal.token}</span>
+          {status.token ? (
+            <a class="chip chip--accent" href={`${status.chain.explorer}/token/${status.token.address}`} target="_blank" rel="noopener noreferrer" title={status.token.address}>
+              USDG · {t.goal.token}
+            </a>
+          ) : (
+            <span class="chip chip--accent">USDG · {t.goal.token}</span>
+          )}
         </div>
         <p class="goal-pitch">{t.goal.pitch}</p>
         <div class="goal-meter" role="progressbar" aria-valuemin={0} aria-valuemax={status.target_usd} aria-valuenow={Math.round(raised)} aria-label={interpolate(t.goal.raised, { raised: formatNumber(Math.round(raised), locale), target: formatNumber(status.target_usd, locale) })}>
@@ -58,6 +64,11 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
           <a class="btn" href={localizePath(locale, '/goal')}>
             {t.goal.learn} <ArrowIcon />
           </a>
+          {status.token ? (
+            <a class="status-line goal-ca" href={`${status.chain.explorer}/token/${status.token.address}`} target="_blank" rel="noopener noreferrer">
+              CA <code>{status.token.address}</code>
+            </a>
+          ) : null}
           {open ? (
             <a class="status-line" href={`${status.chain.explorer}/address/${status.pool.address}`} target="_blank" rel="noopener noreferrer">
               {t.goal.viewPool}
@@ -136,7 +147,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
   const token = status.token;
   const supplyPct = (n: string) => (token ? `${(Number((BigInt(n) * 10000n) / 1_000_000_000_000_000_000_000_000_000n) / 100).toFixed(2)}%` : '');
   return (
-    <Layout ctx={ctx} title={`Max 20x for a reader | ${cfg.siteName}`} description="A community-funded goal: readers pool USDG on Robinhood Chain and one contributor wins a month of Claude Max 20x by a verifiable block-hash draw. RESET token with on-chain burns.">
+    <Layout ctx={ctx} title={`Max 20x for a reader | ${cfg.siteName}`} description="A community-funded goal: readers pool USDG on Robinhood Chain and one contributor wins a month of Claude Max 20x by a verifiable block-hash draw. RESETS token with on-chain burns.">
       <h1 class="page-title">Max 20x for a reader</h1>
       <p class="page-intro">{t.goal.pitch}</p>
       {locale !== 'en' ? (
@@ -171,16 +182,16 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             <strong>Payout.</strong> ${g.targetUsd} USDG goes to the winning wallet toward one month of Claude Max 20x (subscriptions cannot be transferred, so the money is paid out, not the account). The transaction hash is published here and on X, then the next round opens.
           </li>
           <li>
-            <strong>Burn.</strong> When the payout is recorded, the burner wallet sends {formatNumber(g.burnPerRound, locale)} RESET to the dead address. Every round makes the supply smaller.
+            <strong>Burn.</strong> When the payout is recorded, the burner wallet sends {formatNumber(g.burnPerRound, locale)} RESETS to the dead address. Every round makes the supply smaller.
           </li>
         </ol>
         <p>{t.support.noEffect} Winning here does not change anything about anyone's Claude account or Anthropic's limits; it pays for a plan.</p>
       </section>
 
       <section class="section prose" id="token">
-        <h2>RESET tokenomics</h2>
+        <h2>RESETS tokenomics</h2>
         <p>
-          RESET is the community token behind the goal. Its whole design is one sentence: <strong>supply only goes down, and it goes down every time a real Claude reset is published.</strong>
+          RESETS is the community token behind the goal. Its whole design is one sentence: <strong>supply only goes down, and it goes down every time a real Claude reset is published.</strong>
         </p>
         <div class="table-wrap">
           <table>
@@ -205,7 +216,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
               </tr>
               <tr>
                 <td>Trade fee</td>
-                <td>3% per trade, set by the launchpad. The creator share (2%) is routed to RESET holders by the launchpad, permanently: holding RESET earns a cut of every trade. The goal pool is funded by contributions only.</td>
+                <td>3% per trade, set by the launchpad. The creator share (2%) is routed to RESETS holders by the launchpad, permanently: holding RESETS earns a cut of every trade. The goal pool is funded by contributions only.</td>
               </tr>
               <tr>
                 <td>Burn reserve</td>
@@ -219,13 +230,13 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
                       </a>
                     </>
                   ) : null}
-                  . That wallet does one thing: send RESET to the dead address.
+                  . That wallet does one thing: send RESETS to the dead address.
                 </td>
               </tr>
               <tr>
                 <td>Burn schedule</td>
                 <td>
-                  {formatNumber(g.burnPerReset, locale)} RESET the moment a confirmed Claude reset is published here, {formatNumber(g.burnPerRound, locale)} RESET when a goal round pays out. Automatic, once per event, logged below with the transaction.
+                  {formatNumber(g.burnPerReset, locale)} RESETS the moment a confirmed Claude reset is published here, {formatNumber(g.burnPerRound, locale)} RESETS when a goal round pays out. Automatic, once per event, logged below with the transaction.
                 </td>
               </tr>
               <tr>
@@ -237,7 +248,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
         </div>
         <h2>Why burns are tied to resets</h2>
         <p>
-          Every reset announcement already sends people to this site. Tying a burn to each one gives holders a reason to care about the exact thing the site tracks, and gives readers a second reason to check: when Anthropic resets limits, RESET supply shrinks the same day. The burn is sent automatically when the reset is published, and the burn log below links each transaction to the reset it was for.
+          Every reset announcement already sends people to this site. Tying a burn to each one gives holders a reason to care about the exact thing the site tracks, and gives readers a second reason to check: when Anthropic resets limits, RESETS supply shrinks the same day. The burn is sent automatically when the reset is published, and the burn log below links each transaction to the reset it was for.
         </p>
         <h2>Live token stats</h2>
         {token ? (
@@ -249,20 +260,20 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
               </a>
             </dd>
             <dt>Total supply</dt>
-            <dd>{formatUnits(BigInt(token.total_supply), token.decimals, 0)} RESET</dd>
+            <dd>{formatUnits(BigInt(token.total_supply), token.decimals, 0)} RESETS</dd>
             <dt>Burned</dt>
-            <dd>{formatUnits(BigInt(token.burned), token.decimals, 0)} RESET ({supplyPct(token.burned)} of initial)</dd>
+            <dd>{formatUnits(BigInt(token.burned), token.decimals, 0)} RESETS ({supplyPct(token.burned)} of initial)</dd>
             <dt>Circulating</dt>
-            <dd>{formatUnits(BigInt(token.circulating), token.decimals, 0)} RESET</dd>
+            <dd>{formatUnits(BigInt(token.circulating), token.decimals, 0)} RESETS</dd>
             {token.reserve != null ? (
               <>
                 <dt>Burn reserve</dt>
-                <dd>{formatUnits(BigInt(token.reserve), token.decimals, 0)} RESET waiting for the next resets</dd>
+                <dd>{formatUnits(BigInt(token.reserve), token.decimals, 0)} RESETS waiting for the next resets</dd>
               </>
             ) : null}
           </dl>
         ) : (
-          <p class="notice notice--warn">RESET is not launched yet. Stats appear here automatically once it is.</p>
+          <p class="notice notice--warn">RESETS is not launched yet. Stats appear here automatically once it is.</p>
         )}
         {token ? (
           <>
@@ -333,7 +344,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
           <li>Contributions are final and stay in the pool; the pool funds the payout and, when a round is cancelled, rolls into the next one.</li>
           <li>The prize is ${g.targetUsd} USDG sent to the winning wallet, intended for one month of Claude Max 20x.</li>
           <li>Wallets controlled by the site operator, and the pool and treasury wallets, are excluded from the draw.</li>
-          <li>RESET is a community token with no promise of value, return or utility beyond what is described here. Supply mechanics are enforced by the contract; price is set by the market. Do not spend what you cannot afford to lose.</li>
+          <li>RESETS is a community token with no promise of value, return or utility beyond what is described here. Supply mechanics are enforced by the contract; price is set by the market. Do not spend what you cannot afford to lose.</li>
           <li>This project is independent and not affiliated with or endorsed by Anthropic or Robinhood. Winning pays for a plan; it does not change any account or limit.</li>
           <li>Local law applies to you; if community pools or tokens are restricted where you live, do not participate.</li>
         </ul>

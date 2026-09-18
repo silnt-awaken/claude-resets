@@ -25,7 +25,7 @@ export const en = {
     mcp: 'MCP',
     feed: 'RSS',
     jsonFeed: 'JSON Feed',
-    tokenomics: 'RESET tokenomics',
+    tokenomics: 'RESETS tokenomics',
     roadmap: 'Roadmap',
   },
   hero: {
@@ -225,7 +225,7 @@ export const en = {
     heading: "Max 20x for a reader",
     sub: "Community goal on Robinhood Chain",
     pitch: "Readers pool USDG on Robinhood Chain. Send any amount to the pool and you are in: when it reaches the target, one contributor is drawn at random by a public block hash and gets one month of Claude Max 20x paid for. Every contributor has the same chance, whatever the amount.",
-    preparing: "Not open yet: the pool wallet and RESET token are being set up. Entries open the moment they go live.",
+    preparing: "Not open yet: the pool wallet and RESETS token are being set up. Entries open the moment they go live.",
     raised: "{raised} of {target} USDG raised",
     entries: "{n} contributions",
     enter: "Contribute",
@@ -278,7 +278,7 @@ export const en = {
       noWalletTitle: "No wallet in this browser yet",
       noWalletBody: "Install a wallet extension, or open this page inside your wallet app on your phone. You can also send USDG to the pool from any wallet:",
     },
-    token: "RESET token",
+    token: "RESETS token",
   },
   support: {
     cta: 'Tip for coffee',

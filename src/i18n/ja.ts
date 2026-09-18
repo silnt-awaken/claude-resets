@@ -24,7 +24,7 @@ export const ja: Dict = {
     mcp: 'MCP',
     feed: 'RSS',
     jsonFeed: 'JSON Feed',
-    tokenomics: 'RESET トークノミクス',
+    tokenomics: 'RESETS トークノミクス',
     roadmap: 'ロードマップ',
   },
   hero: {
@@ -224,7 +224,7 @@ export const ja: Dict = {
     heading: "読者 1 人に Max 20x を",
     sub: "Robinhood Chain 上のコミュニティ目標",
     pitch: "読者が Robinhood Chain 上で USDG を出し合います。プールに任意の金額を送れば参加完了。目標額に達すると、公開されたブロックハッシュで出資者から 1 人が無作為に選ばれ、Claude Max 20x の 1 か月分が支払われます。金額に関係なく、出資者全員の当選確率は同じです。",
-    preparing: "まだ開始していません。プールのウォレットと RESET トークンを準備中です。開始と同時に参加できます。",
+    preparing: "まだ開始していません。プールのウォレットと RESETS トークンを準備中です。開始と同時に参加できます。",
     raised: "{raised} / {target} USDG 集まりました",
     entries: "出資 {n} 件",
     enter: "出資する",
@@ -277,7 +277,7 @@ export const ja: Dict = {
       noWalletTitle: "このブラウザにはまだウォレットがありません",
       noWalletBody: "ウォレット拡張機能をインストールするか、スマホのウォレットアプリ内でこのページを開いてください。任意のウォレットからプールへ USDG を送ることもできます：",
     },
-    token: "RESET トークン",
+    token: "RESETS トークン",
   },
   support: {
     cta: 'コーヒーをおごる',

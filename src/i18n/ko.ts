@@ -24,7 +24,7 @@ export const ko: Dict = {
     mcp: 'MCP',
     feed: 'RSS',
     jsonFeed: 'JSON Feed',
-    tokenomics: 'RESET 토크노믹스',
+    tokenomics: 'RESETS 토크노믹스',
     roadmap: '로드맵',
   },
   hero: {
@@ -224,7 +224,7 @@ export const ko: Dict = {
     heading: "독자 한 분에게 Max 20x를",
     sub: "Robinhood Chain 커뮤니티 목표",
     pitch: "독자들이 Robinhood Chain에서 USDG를 모읍니다. 풀에 아무 금액이나 보내면 참가 완료. 목표에 도달하면 공개 블록 해시로 기부자 중 한 명을 무작위 추첨해 Claude Max 20x 한 달 비용을 지급합니다. 금액과 상관없이 모든 기부자의 당첨 확률은 같습니다.",
-    preparing: "아직 열리지 않았습니다. 풀 지갑과 RESET 토큰을 준비 중입니다. 시작되는 즉시 참가할 수 있습니다.",
+    preparing: "아직 열리지 않았습니다. 풀 지갑과 RESETS 토큰을 준비 중입니다. 시작되는 즉시 참가할 수 있습니다.",
     raised: "{raised} / {target} USDG 모금",
     entries: "기부 {n}건",
     enter: "기부하기",
@@ -277,7 +277,7 @@ export const ko: Dict = {
       noWalletTitle: "이 브라우저에는 아직 지갑이 없습니다",
       noWalletBody: "지갑 확장 프로그램을 설치하거나 휴대폰의 지갑 앱에서 이 페이지를 여세요. 아무 지갑에서나 풀로 USDG를 보낼 수도 있습니다:",
     },
-    token: "RESET 토큰",
+    token: "RESETS 토큰",
   },
   support: {
     cta: '커피 한 잔 후원',

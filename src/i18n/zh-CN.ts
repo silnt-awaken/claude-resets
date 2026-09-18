@@ -23,7 +23,7 @@ export const zhCN: Dict = {
     mcp: 'MCP',
     feed: 'RSS',
     jsonFeed: 'JSON Feed',
-    tokenomics: 'RESET 代币经济',
+    tokenomics: 'RESETS 代币经济',
     roadmap: '路线图',
   },
   hero: {
@@ -222,7 +222,7 @@ export const zhCN: Dict = {
     heading: "为一位读者赢取 Max 20x",
     sub: "Robinhood Chain 上的社区目标",
     pitch: "读者在 Robinhood Chain 上共同凑集 USDG。向资金池转入任意金额即可参与：达到目标后，由公开的区块哈希随机抽出一位出资者，为其支付一个月的 Claude Max 20x。无论金额多少，每位出资者中奖机会相同。",
-    preparing: "尚未开放：资金池钱包与 RESET 代币正在准备中。一旦上线即可参与。",
+    preparing: "尚未开放：资金池钱包与 RESETS 代币正在准备中。一旦上线即可参与。",
     raised: "已筹集 {raised} / {target} USDG",
     entries: "{n} 笔出资",
     enter: "出资",
@@ -275,7 +275,7 @@ export const zhCN: Dict = {
       noWalletTitle: "此浏览器还没有钱包",
       noWalletBody: "请安装钱包扩展，或在手机上的钱包应用内打开本页。也可以用任意钱包向资金池转入 USDG：",
     },
-    token: "RESET 代币",
+    token: "RESETS 代币",
   },
   support: {
     cta: '请我喝咖啡',

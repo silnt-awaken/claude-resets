@@ -1,4 +1,4 @@
-// Public roadmap for the community goal and RESET. Rendered on /goal#roadmap and mirrored in
+// Public roadmap for the community goal and RESETS. Rendered on /goal#roadmap and mirrored in
 // docs/roadmap.md. Statuses are honest: "done" means live today, "now" means built and being
 // switched on, "next" means planned but not started. No dates we cannot keep.
 
@@ -32,7 +32,7 @@ export const ROADMAP: RoadmapPhase[] = [
     items: [
       'Community goal on Robinhood Chain: contribute USDG, one contribution equals one entry, winner picked by a public block hash.',
       'Wallet connect and a one-tap contribution sheet; contributor counts read straight from the chain.',
-      'RESET on the pons launchpad: fair launch on an ETH bonding curve, liquidity locked at graduation, creator fees shared with holders.',
+      'RESETS on the pons launchpad: fair launch on an ETH bonding curve, liquidity locked at graduation, creator fees shared with holders.',
       'Automatic burns: publishing a confirmed reset triggers the on-chain burn within two minutes, with a public log.',
     ],
   },
@@ -42,7 +42,7 @@ export const ROADMAP: RoadmapPhase[] = [
     when: 'Q4 2026',
     status: 'next',
     items: [
-      'Launch RESET on pons paired with ETH; buy the burn reserve on the curve at launch and move it to the burner wallet.',
+      'Launch RESETS on pons paired with ETH; buy the burn reserve on the curve at launch and move it to the burner wallet.',
       'Publish the burner and pool wallets; the curve graduates at 4.2 ETH and the launchpad locks liquidity.',
       'Turn on automatic burns: the first confirmed reset after launch burns on chain within two minutes.',
       'Open round one: $200 USDG, one month of Claude Max 20x for one contributor.',
@@ -56,7 +56,7 @@ export const ROADMAP: RoadmapPhase[] = [
     items: [
       'First winner paid, with the draw block, hash and index published for anyone to recompute.',
       'First automatic burn on a real reset announcement.',
-      'Holders earn the creator share of every RESET trade, routed by the launchpad.',
+      'Holders earn the creator share of every RESETS trade, routed by the launchpad.',
       'One round per month while the pool keeps filling.',
     ],
   },
@@ -79,7 +79,7 @@ export const ROADMAP: RoadmapPhase[] = [
     status: 'later',
     items: [
       'Treasury vesting completes over 12 months; the schedule and wallet are public from day one.',
-      'Pool wallet moves to a multisig; RESET holders signal the next goal target.',
+      'Pool wallet moves to a multisig; RESETS holders signal the next goal target.',
       'The tracker stays free, independent and ad-free regardless of what the token does.',
     ],
   },

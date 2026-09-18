@@ -1,6 +1,6 @@
-# Community goal and the RESET token
+# Community goal and the RESETS token
 
-The goal ("Max 20x for a reader") and the RESET token run on **Robinhood Chain** (Arbitrum L2, chain id 4663, ETH gas, RPC `https://rpc.mainnet.chain.robinhood.com`, explorer `https://robinhoodchain.blockscout.com`). Everything is built so that the site only *reads* the chain; all money movement is signed by the owner's own wallet.
+The goal ("Max 20x for a reader") and the RESETS token run on **Robinhood Chain** (Arbitrum L2, chain id 4663, ETH gas, RPC `https://rpc.mainnet.chain.robinhood.com`, explorer `https://robinhoodchain.blockscout.com`). Everything is built so that the site only *reads* the chain; all money movement is signed by the owner's own wallet.
 
 ## Status
 
@@ -18,15 +18,15 @@ Infrastructure is deployed; the goal is **not open** until `GOAL_ENABLED`, `GOAL
 
 `npm run goal:round -- status` prints the public status JSON. `cancel --note "…"` closes a round without a draw.
 
-## RESET token
+## RESETS token
 
-RESET is launched on the **pons launchpad** (ponsfamily.com) on Robinhood Chain: a fair-launch bonding curve paired with **ETH**, graduating once the curve has raised 4.2 ETH, after which the launchpad locks the liquidity. The token contract is pons' standard ERC-20; we have no admin power over it. The site's only lever is the **burner wallet**, which holds the burn reserve and sends fixed amounts to `0x000…dEaD`.
+RESETS is launched on the **pons launchpad** (ponsfamily.com) on Robinhood Chain: a fair-launch bonding curve paired with **ETH**, graduating once the curve has raised 4.2 ETH, after which the launchpad locks the liquidity. The token contract is pons' standard ERC-20; we have no admin power over it. The site's only lever is the **burner wallet**, which holds the burn reserve and sends fixed amounts to `0x000…dEaD`.
 
 | Item | Value |
 | --- | --- |
 | Launch | pons launchpad, ETH pair, no presale, no team allocation, no mint function |
 | Liquidity | Locked by the launchpad at graduation (4.2 ETH raised) |
-| Trade fee | 3% per trade (launchpad setting); the 2% creator share is routed to RESET holders by the launchpad (permanent "holder fee sharing"). The goal pool is funded by contributions only |
+| Trade fee | 3% per trade (launchpad setting); the 2% creator share is routed to RESETS holders by the launchpad (permanent "holder fee sharing"). The goal pool is funded by contributions only |
 | Burn reserve | Bought on the curve at launch (the "developer buy") and transferred to the burner wallet, whose address is published (`RESET_BURNER_ADDRESS`) |
 | Burn schedule | `RESET_BURN_PER_RESET` (default 2,500,000) per published confirmed reset; `RESET_BURN_PER_ROUND` (default 5,000,000) per paid round. Automatic, once per event id |
 | Control | None over the token. The burner wallet's balance is public and only shrinks |
@@ -34,14 +34,14 @@ RESET is launched on the **pons launchpad** (ponsfamily.com) on Robinhood Chain:
 ### Launch sequence (pons)
 
 1. `npm run token:burner -- new` → burner address + key. `npx wrangler secret put BURNER_PRIVATE_KEY` with the key; send the burner ~$3 of ETH on Robinhood Chain for gas.
-2. On pons: name `Reset`, ticker `RESET`, paired asset ETH, description without links, X profile `clauderesets`, holder fee sharing on. Set a developer buy in ETH: that is the burn reserve. Launch.
-3. Transfer the developer-buy RESET from the launching wallet to the burner wallet.
+2. On pons: name `Reset`, ticker `RESETS`, paired asset ETH, description without links, X profile `clauderesets`, holder fee sharing on. Set a developer buy in ETH: that is the burn reserve. Launch.
+3. Transfer the developer-buy RESETS from the launching wallet to the burner wallet.
 4. In `wrangler.jsonc`: `RESET_TOKEN_ADDRESS` (from pons / Blockscout), `RESET_BURNER_ADDRESS`, `GOAL_POOL_ADDRESS`, `GOAL_ENABLED: "true"`; adjust `RESET_BURN_PER_RESET` / `RESET_BURN_PER_ROUND` to the supply pons minted (defaults assume 1B). `npm run deploy`, then `npm run goal:round -- open --env production --yes`.
-5. `npm run token:burner -- status` shows the burner's gas and RESET balance. `npm run readiness -- --env production` should show BURNER_PRIVATE_KEY and RESET_BURNER_ADDRESS ok.
+5. `npm run token:burner -- status` shows the burner's gas and RESETS balance. `npm run readiness -- --env production` should show BURNER_PRIVATE_KEY and RESET_BURNER_ADDRESS ok.
 
 ### Per reset (automatic)
 
-`content:publish` of a confirmed usage reset queues one row in `token_burns` (once per event id; backfills and corrections never burn). The `*/2` cron drain sends the burn from the burner wallet, records the transaction hash, follows the receipt, retries with backoff on RPC trouble, and marks the row confirmed. In transfer mode the burn is a plain ERC-20 `transfer(0xdEaD, amount)`; the site's log links it to the event. `/goal#burns` shows the log, `/api/v1/goal` includes it as `burns`. Without `BURNER_PRIVATE_KEY` the rows wait. If the burner runs out of RESET the row fails with "reserve empty"; top the wallet up and `POST /admin/goal/burns {action:'retry', id}`. Other maintainer actions: `{action:'drain'}`, `{action:'queue', eventId}` (a reset published before launch).
+`content:publish` of a confirmed usage reset queues one row in `token_burns` (once per event id; backfills and corrections never burn). The `*/2` cron drain sends the burn from the burner wallet, records the transaction hash, follows the receipt, retries with backoff on RPC trouble, and marks the row confirmed. In transfer mode the burn is a plain ERC-20 `transfer(0xdEaD, amount)`; the site's log links it to the event. `/goal#burns` shows the log, `/api/v1/goal` includes it as `burns`. Without `BURNER_PRIVATE_KEY` the rows wait. If the burner runs out of RESETS the row fails with "reserve empty"; top the wallet up and `POST /admin/goal/burns {action:'retry', id}`. Other maintainer actions: `{action:'drain'}`, `{action:'queue', eventId}` (a reset published before launch).
 
 ### Fallback: self-deployed contract
 

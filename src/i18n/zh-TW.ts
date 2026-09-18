@@ -24,7 +24,7 @@ export const zhTW: Dict = {
     mcp: 'MCP',
     feed: 'RSS',
     jsonFeed: 'JSON Feed',
-    tokenomics: 'RESET 代幣經濟',
+    tokenomics: 'RESETS 代幣經濟',
     roadmap: '路線圖',
   },
   hero: {
@@ -224,7 +224,7 @@ export const zhTW: Dict = {
     heading: "為一位讀者贏得 Max 20x",
     sub: "Robinhood Chain 上的社群目標",
     pitch: "讀者在 Robinhood Chain 上共同集資 USDG。向資金池轉入任意金額即可參與：達標後，由公開的區塊雜湊隨機抽出一位出資者，為其支付一個月的 Claude Max 20x。無論金額多少，每位出資者中獎機會相同。",
-    preparing: "尚未開放：資金池錢包與 RESET 代幣正在準備中。上線後即可參與。",
+    preparing: "尚未開放：資金池錢包與 RESETS 代幣正在準備中。上線後即可參與。",
     raised: "已募集 {raised} / {target} USDG",
     entries: "{n} 筆出資",
     enter: "出資",
@@ -277,7 +277,7 @@ export const zhTW: Dict = {
       noWalletTitle: "此瀏覽器還沒有錢包",
       noWalletBody: "請安裝錢包擴充功能，或在手機的錢包應用程式內開啟本頁。也可以用任意錢包向資金池轉入 USDG：",
     },
-    token: "RESET 代幣",
+    token: "RESETS 代幣",
   },
   support: {
     cta: '請我喝咖啡',

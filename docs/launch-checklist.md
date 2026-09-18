@@ -11,11 +11,11 @@ What the owner still has to supply or do. Everything else is implemented and ver
 - [ ] `npm run deploy`, then `npm run content:backfill -- --all --env production --yes` with `CONTENT_PUBLISH_TOKEN` exported, so the seed history is recorded as history and can never trigger an alert.
 - [ ] `npm run readiness` shows no ✖ items.
 
-## Community goal and RESET token (infrastructure deployed, not opened)
+## Community goal and RESETS token (infrastructure deployed, not opened)
 
 - [ ] Pool wallet you control on Robinhood Chain; a little ETH for gas.
 - [ ] `npm run token:burner -- new`, `npx wrangler secret put BURNER_PRIVATE_KEY`, send the burner ~$3 of ETH on Robinhood Chain.
-- [ ] Launch RESET on pons (USDG pair, developer buy = burn reserve), move the developer-buy RESET to the burner wallet.
+- [ ] Launch RESETS on pons (USDG pair, developer buy = burn reserve), move the developer-buy RESETS to the burner wallet.
 - [ ] Set RESET_TOKEN_ADDRESS, RESET_BURNER_ADDRESS, GOAL_POOL_ADDRESS, GOAL_ENABLED; check RESET_BURN_PER_RESET against the minted supply.
 - [ ] Apply migration 0004 remotely (`npm run db:migrate:remote`); burns then run automatically on every published reset.
 - [ ] Confirm `GOAL_USDG_ADDRESS` is the USDG contributors hold; set `GOAL_POOL_ADDRESS`, `RESET_TOKEN_ADDRESS`, `GOAL_ENABLED: "true"`; `npm run deploy`; `npm run goal:round -- open --env production --yes`.
