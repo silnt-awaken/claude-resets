@@ -32,7 +32,7 @@ export const ROADMAP: RoadmapPhase[] = [
     items: [
       'Community goal on Robinhood Chain: contribute USDG, one contribution equals one entry, winner picked by a public block hash.',
       'Wallet connect and a one-tap contribution sheet; contributor counts read straight from the chain.',
-      'RESET contract: fixed supply, 1% fee split 60% burn / 40% goal pool, reserve burns wired to reset announcements.',
+      'RESET on the pons launchpad: fair launch on a USDG bonding curve, liquidity locked at graduation, creator fees forwarded to the goal pool.',
       'Automatic burns: publishing a confirmed reset triggers the on-chain burn within two minutes, with a public log.',
     ],
   },
@@ -42,9 +42,9 @@ export const ROADMAP: RoadmapPhase[] = [
     when: 'Q4 2026',
     status: 'next',
     items: [
-      'Deploy RESET, verify the source on Blockscout, set the burner wallet, fund the burn reserve.',
-      'Seed RESET/USDG liquidity and burn the LP tokens; publish the allocation with wallet links.',
-      'Renounce ownership once fees, exemptions and burn sizes are final.',
+      'Launch RESET on pons paired with USDG; buy the burn reserve on the curve at launch and move it to the burner wallet.',
+      'Publish the burner and pool wallets; the curve graduates at 8,090 USDG and the launchpad locks liquidity.',
+      'Turn on automatic burns: the first confirmed reset after launch burns on chain within two minutes.',
       'Open round one: $200 USDG, one month of Claude Max 20x for one contributor.',
     ],
   },
@@ -56,7 +56,7 @@ export const ROADMAP: RoadmapPhase[] = [
     items: [
       'First winner paid, with the draw block, hash and index published for anyone to recompute.',
       'First automatic burn on a real reset announcement.',
-      'Contributor rewards: RESET from the 25% allocation distributed to each round\'s contributors, pro-rata to what they gave.',
+      'Creator share of every RESET trade lands in the goal pool, so trading funds the next prize.',
       'One round per month while the pool keeps filling.',
     ],
   },

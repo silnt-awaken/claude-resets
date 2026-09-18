@@ -4,7 +4,7 @@ import { activeSponsors } from '../domain/content';
 import type { Sponsor } from '../domain/types';
 import type { SiteConfig } from '../env';
 import { LOCALES, dict, formatDate, interpolate, localizePath, ogLocale, type Dict, type Locale } from '../i18n';
-import { CloseIcon, CupIcon, GitHubIcon, GlobeIcon, MoonIcon, ResetMark, SunIcon, WalletIcon, XIcon } from './icons';
+import { CloseIcon, CoinIcon, CupIcon, GitHubIcon, GlobeIcon, MoonIcon, ResetMark, RoadmapIcon, SunIcon, WalletIcon, XIcon } from './icons';
 
 export interface PageContext {
   locale: Locale;
@@ -137,6 +137,12 @@ const Masthead: FC<{ ctx: PageContext }> = ({ ctx }) => {
             </a>
           ))}
         </nav>
+        <a class="icon-btn" href={`${localizePath(locale, '/goal')}#token`} aria-label={t.nav.tokenomics} title={t.nav.tokenomics}>
+          <CoinIcon />
+        </a>
+        <a class="icon-btn" href={`${localizePath(locale, '/goal')}#roadmap`} aria-label={t.nav.roadmap} title={t.nav.roadmap}>
+          <RoadmapIcon />
+        </a>
         {cfg.projectXUrl ? (
           <a class="icon-btn" href={cfg.projectXUrl} target="_blank" rel="noopener noreferrer" aria-label={interpolate(t.nav.projectX, { site: cfg.siteName })} title={interpolate(t.nav.projectX, { site: cfg.siteName })}>
             <XIcon />

@@ -23,6 +23,8 @@ export const zhCN: Dict = {
     mcp: 'MCP',
     feed: 'RSS',
     jsonFeed: 'JSON Feed',
+    tokenomics: 'RESET 代币经济',
+    roadmap: '路线图',
   },
   hero: {
     intro: '我会人工查看 Claude 和 Anthropic 的公开公告，寻找用量限制重置的消息，这样你就不用自己盯着了。',

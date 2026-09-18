@@ -26,6 +26,11 @@ export interface ConfigVars {
   GOAL_USDG_ADDRESS?: string;
   GOAL_TARGET_USD?: string;
   RESET_TOKEN_ADDRESS?: string;
+  /** transfer (launchpad token: burner wallet sends RESET to 0xdEaD) | contract (contracts/ResetToken.sol burnForReset) */
+  RESET_BURN_MODE?: string;
+  RESET_BURNER_ADDRESS?: string;
+  RESET_BURN_PER_RESET?: string; // whole RESET
+  RESET_BURN_PER_ROUND?: string; // whole RESET
   // secrets (values are never rendered)
   CONTENT_PUBLISH_TOKEN?: string;
   VAPID_PRIVATE_KEY?: string;
@@ -66,6 +71,11 @@ export interface GoalConfig {
   usdgAddress: string | null;
   targetUsd: number;
   tokenAddress: string | null;
+  burnMode: 'transfer' | 'contract';
+  /** Public address of the burner wallet (the reserve), shown on /goal. */
+  burnerAddress: string | null;
+  burnPerReset: number; // whole RESET
+  burnPerRound: number; // whole RESET
 }
 
 export const ROBINHOOD_CHAIN = {
@@ -99,6 +109,10 @@ export function goalConfig(env: ConfigVars): GoalConfig {
     usdgAddress,
     targetUsd: positiveNumber(env.GOAL_TARGET_USD, 200),
     tokenAddress,
+    burnMode: env.RESET_BURN_MODE?.trim() === 'contract' ? 'contract' : 'transfer',
+    burnerAddress: isEvmAddress(env.RESET_BURNER_ADDRESS) ? env.RESET_BURNER_ADDRESS!.trim() : null,
+    burnPerReset: positiveNumber(env.RESET_BURN_PER_RESET, 2_500_000),
+    burnPerRound: positiveNumber(env.RESET_BURN_PER_ROUND, 5_000_000),
   };
 }
 
@@ -208,7 +222,8 @@ export function readiness(env: ConfigVars, hasDb: boolean): { ok: boolean; items
   add('REACTION_SECRET', env.REACTION_SECRET ? 'ok' : 'missing', env.REACTION_SECRET ? 'present' : 'absent; reactions disabled.', true);
   add('ALERTS_PAUSED', cfg.alertsPaused ? 'off' : 'ok', cfg.alertsPaused ? 'Delivery paused.' : 'Delivery active.');
   add('GOAL', cfg.goal.live ? 'ok' : 'off', cfg.goal.live ? `Live on chain ${cfg.goal.chainId}, pool ${cfg.goal.poolAddress}, target $${cfg.goal.targetUsd}.` : `Community goal shown as "preparing": ${cfg.goal.reason}.`);
-  add('RESET_TOKEN_ADDRESS', cfg.goal.tokenAddress ? 'ok' : 'off', cfg.goal.tokenAddress ?? 'Token stats hidden until the RESET contract is deployed.');
+  add('RESET_TOKEN_ADDRESS', cfg.goal.tokenAddress ? 'ok' : 'off', cfg.goal.tokenAddress ? `${cfg.goal.tokenAddress} (burn mode: ${cfg.goal.burnMode}, ${cfg.goal.burnPerReset.toLocaleString('en-US')} RESET per reset)` : 'Token stats hidden until RESET is launched.');
+  add('RESET_BURNER_ADDRESS', cfg.goal.burnerAddress ? 'ok' : 'off', cfg.goal.burnerAddress ?? 'Burn reserve not shown until the burner wallet address is set.');
   add('BURNER_PRIVATE_KEY', /^0x[0-9a-fA-F]{64}$/.test(env.BURNER_PRIVATE_KEY ?? '') ? 'ok' : 'off', env.BURNER_PRIVATE_KEY ? 'present; reset burns run automatically from the cron' : 'absent; queued burns wait until it is set (wrangler secret put BURNER_PRIVATE_KEY)', true);
   add('DB', hasDb ? 'ok' : 'missing', hasDb ? 'D1 bound.' : 'D1 binding missing.');
 

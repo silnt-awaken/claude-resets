@@ -10,7 +10,13 @@ import { privateKeyToAccount } from 'viem/accounts';
 import type { GoalConfig } from '../config';
 import { siteConfig, type Env } from '../env';
 import { hexToBigInt, rpc, type FetchLike } from './chain';
+import { BURN_ADDRESSES, erc20Balance, erc20Decimals } from './chain';
 import { RESET_TOKEN_ABI } from './token-abi';
+
+const ERC20_ABI = [
+  { type: 'function', name: 'transfer', stateMutability: 'nonpayable', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] },
+] as const;
+const DEAD = BURN_ADDRESSES[0] as `0x${string}`;
 
 export type BurnKind = 'reset' | 'round';
 export type BurnStatus = 'queued' | 'sent' | 'confirmed' | 'failed';
@@ -76,7 +82,16 @@ export function viemSigner(env: Env, cfg: GoalConfig, fetchFn: FetchLike): BurnS
   return {
     address: account.address,
     async send(kind, ref) {
-      // Simulate first so a revert reason ('already burned', 'rate limit', 'not burner') is readable.
+      if (cfg.burnMode === 'transfer') {
+        // Launchpad token: the burner wallet holds the reserve and sends a fixed amount to the dead address.
+        const decimals = await erc20Decimals(fetchFn, cfg.rpcUrl, token);
+        const amount = BigInt(kind === 'reset' ? cfg.burnPerReset : cfg.burnPerRound) * 10n ** BigInt(decimals);
+        const balance = await erc20Balance(fetchFn, cfg.rpcUrl, token, account.address);
+        if (balance < amount) throw new Error(`reserve empty: burner holds ${balance / 10n ** BigInt(decimals)} RESET, needs ${amount / 10n ** BigInt(decimals)}`);
+        const { request } = await publicClient.simulateContract({ address: token, abi: ERC20_ABI, functionName: 'transfer', args: [DEAD, amount], account });
+        return wallet.writeContract(request);
+      }
+      // Own contract: simulate first so a revert reason ('already burned', 'rate limit', 'not burner') is readable.
       if (kind === 'reset') {
         const { request } = await publicClient.simulateContract({ address: token, abi: RESET_TOKEN_ABI, functionName: 'burnForReset', args: [ref], account });
         return wallet.writeContract(request);
@@ -89,7 +104,7 @@ export function viemSigner(env: Env, cfg: GoalConfig, fetchFn: FetchLike): BurnS
 
 /** Read-only: has the contract already burned for this id? (Self-heals after a lost tx hash.) */
 export async function alreadyBurnedOnChain(fetchFn: FetchLike, cfg: GoalConfig, kind: BurnKind, ref: string): Promise<boolean> {
-  if (!cfg.tokenAddress) return false;
+  if (!cfg.tokenAddress || cfg.burnMode !== 'contract') return false; // a plain transfer leaves no per-id mark; the D1 row is the guard
   const data =
     kind === 'reset'
       ? encodeFunctionData({

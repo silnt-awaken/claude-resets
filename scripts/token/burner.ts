@@ -1,10 +1,10 @@
 // npm run token:burner -- new                 generate a fresh burner wallet (prints address + private key once)
-// npm run token:burner -- set --address 0x…  point the deployed contract at that burner (signs with DEPLOYER_PRIVATE_KEY)
-// npm run token:burner -- status             show the contract's burner, reserve and burn sizes
+// npm run token:burner -- status             burner gas + RESET reserve (launchpad token), or the contract's burner config
+// npm run token:burner -- set --address 0x…  contract mode only: point contracts/ResetToken.sol at that burner (DEPLOYER_PRIVATE_KEY)
 //
-// The burner wallet is what the site uses to trigger reset burns automatically. It can only call
-// burnForReset / burnForRound (fixed amounts, once per id, rate-limited); it never holds RESET.
-// Store its key as a Worker secret:  npx wrangler secret put BURNER_PRIVATE_KEY
+// The burner wallet is what the site uses to burn automatically. With a launchpad token (RESET_BURN_MODE
+// transfer) it holds the burn reserve and sends fixed amounts to 0xdEaD; with our own contract it can only
+// call burnForReset / burnForRound. Store its key as a Worker secret:  npx wrangler secret put BURNER_PRIVATE_KEY
 // and send it a little ETH on Robinhood Chain for gas (a few dollars lasts years at L2 fees).
 
 import { createPublicClient, createWalletClient, defineChain, formatEther, formatUnits, http } from 'viem';
@@ -36,13 +36,32 @@ if (action === 'new') {
   console.log('\nThis key is shown once and stored nowhere. Next:');
   console.log('  1. npx wrangler secret put BURNER_PRIVATE_KEY      (paste the key)');
   console.log(`  2. send ~$3 of ETH on Robinhood Chain to ${account.address} for gas`);
-  console.log(`  3. npm run token:burner -- set --address ${account.address}   (after the token is deployed; or pass --burner at deploy)`);
+  console.log(`  3. put ${account.address} in wrangler.jsonc as RESET_BURNER_ADDRESS and send it the burn reserve (launchpad token),`);
+  console.log(`     or, with our own contract, npm run token:burner -- set --address ${account.address}`);
   process.exit(0);
 }
 
 const token = flagString(flags, 'token') ?? vars.RESET_TOKEN_ADDRESS;
 if (!token || !/^0x[0-9a-fA-F]{40}$/.test(token)) fail('RESET_TOKEN_ADDRESS is not set in wrangler.jsonc (or pass --token)');
 const addr = token as `0x${string}`;
+
+if (action === 'status' && (vars.RESET_BURN_MODE ?? 'transfer') !== 'contract') {
+  const burner = vars.RESET_BURNER_ADDRESS;
+  if (!burner || !/^0x[0-9a-fA-F]{40}$/.test(burner)) fail('RESET_BURNER_ADDRESS is not set in wrangler.jsonc');
+  const erc20 = [
+    { type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ name: '', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] },
+    { type: 'function', name: 'decimals', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint8' }] },
+  ] as const;
+  const [bal, dec, gas] = await Promise.all([
+    publicClient.readContract({ address: addr, abi: erc20, functionName: 'balanceOf', args: [burner as `0x${string}`] }),
+    publicClient.readContract({ address: addr, abi: erc20, functionName: 'decimals' }),
+    publicClient.getBalance({ address: burner as `0x${string}` }),
+  ]);
+  console.log(`Token      ${addr} (launchpad token, burn mode: transfer)`);
+  console.log(`Burner     ${burner} (gas: ${formatEther(gas)} ETH)`);
+  console.log(`Reserve    ${formatUnits(bal, dec)} RESET · per reset ${vars.RESET_BURN_PER_RESET ?? '2500000'} · per round ${vars.RESET_BURN_PER_ROUND ?? '5000000'}`);
+  process.exit(0);
+}
 
 if (action === 'status') {
   const [burner, owner, reserve, perReset, perRound, interval] = await Promise.all([

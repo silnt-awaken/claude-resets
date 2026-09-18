@@ -24,6 +24,8 @@ export const ja: Dict = {
     mcp: 'MCP',
     feed: 'RSS',
     jsonFeed: 'JSON Feed',
+    tokenomics: 'RESET トークノミクス',
+    roadmap: 'ロードマップ',
   },
   hero: {
     intro: '使用制限のリセットがないか、Claude と Anthropic の公開発表を手作業で確認しています。あなたが自分で探す必要はありません。',

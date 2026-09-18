@@ -24,6 +24,8 @@ export const zhTW: Dict = {
     mcp: 'MCP',
     feed: 'RSS',
     jsonFeed: 'JSON Feed',
+    tokenomics: 'RESET 代幣經濟',
+    roadmap: '路線圖',
   },
   hero: {
     intro: '我會親自查看 Claude 與 Anthropic 的公開公告，找出用量限制重置，這樣你就不必自己盯著了。',

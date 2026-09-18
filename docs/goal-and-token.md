@@ -14,39 +14,39 @@ Infrastructure is deployed; the goal is **not open** until `GOAL_ENABLED`, `GOAL
 4. **Freeze** when the target is reached: `npm run goal:round -- freeze --env production --yes`. Snapshots the contributor set from the chain for `[open_block, current]` into D1, records the current block and announces `drawBlock = current + 600` (≈1 minute at 100 ms blocks; `--blocks` overrides). Refuses if nobody contributed at least the minimum.
 5. **Draw** after the draw block exists: `npm run goal:round -- draw --env production --yes`. Winner index = `uint256(blockhash(drawBlock)) mod entries` over entries ordered by id. The hash, block and index are stored and shown publicly.
 6. **Pay** $200 USDG from the pool wallet to the winning wallet, then `npm run goal:round -- paid --tx 0x… --env production --yes`.
-7. Marking the round paid queues `burnForRound(roundId)` automatically (5,000,000 RESET from the reserve); the cron sends it within two minutes. Then open the next round.
+7. Marking the round paid queues the round burn automatically (`RESET_BURN_PER_ROUND` from the burner wallet); the cron sends it within two minutes. Then open the next round.
 
 `npm run goal:round -- status` prints the public status JSON. `cancel --note "…"` closes a round without a draw.
 
 ## RESET token
 
-Contract: `contracts/ResetToken.sol` (no external dependencies, ~5 KB bytecode). Compile with `npm run token:compile`, deploy with `DEPLOYER_PRIVATE_KEY=0x… npm run token:deploy -- --pool <poolWallet> --burner <burnerWallet>` (use `--dry-run` first). The contract keeps the 15% burn reserve itself; the deployer receives the other 85% and distributes it per the table below.
+RESET is launched on the **pons launchpad** (ponsfamily.com) on Robinhood Chain: a fair-launch bonding curve paired with **USDG**, graduating once the curve has raised 8,090 USDG, after which the launchpad locks the liquidity. The token contract is pons' standard ERC-20; we have no admin power over it. The site's only lever is the **burner wallet**, which holds the burn reserve and sends fixed amounts to `0x000…dEaD`.
 
 | Item | Value |
 | --- | --- |
-| Supply | 1,000,000,000 RESET, 18 decimals, minted once in the constructor; no mint function |
-| Liquidity | 40% paired with ETH on Uniswap on Robinhood Chain; LP tokens sent to `0x…dEaD` |
-| Contributor rewards | 25%, paid per round pro-rata to USDG contributed (rewards only; odds never change) |
-| Burn reserve | 15%, held by the contract. `burnForReset(eventId)` burns 2,500,000 RESET (0.25% of initial supply) per published Claude reset; `burnForRound(roundId)` burns 5,000,000 per completed round. Each id burns once; the burner is rate-limited to one burn per hour. Sizes adjustable by the owner until renounced; anyone can `fundReserve` |
-| Treasury | 20%, released linearly over 12 months (a vesting contract or a published manual schedule) |
-| Transfer fee | 1% on non-exempt transfers: 60% burned, 40% to the goal pool. Cap 2%; can only be lowered. LP pair, treasury and pool are exempt (`setFeeExempt`) |
-| Burner | A separate wallet (`burner`) that may only call the two reserve burns. The site holds its key as the `BURNER_PRIVATE_KEY` secret and needs a little ETH for gas. Worst case if it leaks: the reserve is burned early |
-| Ownership | Owner may lower the fee, set exemptions, the pool address, the burner and the burn sizes, and burn its own balance. `renounceOwnership()` freezes everything |
+| Launch | pons launchpad, USDG pair, no presale, no team allocation, no mint function |
+| Liquidity | Locked by the launchpad at graduation (8,090 USDG raised) |
+| Trade fee | 3% per trade (launchpad setting); the 2% creator share is forwarded to the goal pool wallet |
+| Burn reserve | Bought on the curve at launch (the "developer buy") and transferred to the burner wallet, whose address is published (`RESET_BURNER_ADDRESS`) |
+| Burn schedule | `RESET_BURN_PER_RESET` (default 2,500,000) per published confirmed reset; `RESET_BURN_PER_ROUND` (default 5,000,000) per paid round. Automatic, once per event id |
+| Control | None over the token. The burner wallet's balance is public and only shrinks |
 
-### Launch sequence
+### Launch sequence (pons)
 
-1. Create the pool wallet (a wallet you control; a Safe multisig is recommended) and bridge a little ETH to Robinhood Chain for gas.
-2. `npm run token:burner -- new` → note the burner address, `npx wrangler secret put BURNER_PRIVATE_KEY` with its key, send it ~$3 of ETH for gas.
-3. `npm run token:compile && DEPLOYER_PRIVATE_KEY=0x… npm run token:deploy -- --pool 0xPool --burner 0xBurner`.
-4. Verify the source on Blockscout (solc 0.8.x, optimizer 200 runs, evm `paris`).
-5. Create the RESET/USDG pool on a DEX on Robinhood Chain with 40% of supply; send the LP tokens to the burn address; mark the pair address fee-exempt.
-6. Move the treasury share to the vesting contract or a separate wallet; mark it fee-exempt.
-7. Set `RESET_TOKEN_ADDRESS`, `GOAL_POOL_ADDRESS`, `GOAL_ENABLED: "true"` in `wrangler.jsonc`, `npm run deploy`, then `npm run goal:round -- open --env production --yes`. `npm run token:burner -- status` confirms the burner and its gas.
-8. When done configuring, `renounceOwnership()`, and announce.
+1. `npm run token:burner -- new` → burner address + key. `npx wrangler secret put BURNER_PRIVATE_KEY` with the key; send the burner ~$3 of ETH on Robinhood Chain for gas.
+2. On pons: name `Reset`, ticker `RESET`, paired asset USDG, description without links, X profile `clauderesets`. Set a developer buy: that is the burn reserve. Launch.
+3. Transfer the developer-buy RESET from the launching wallet to the burner wallet.
+4. In `wrangler.jsonc`: `RESET_TOKEN_ADDRESS` (from pons / Blockscout), `RESET_BURNER_ADDRESS`, `GOAL_POOL_ADDRESS`, `GOAL_ENABLED: "true"`; adjust `RESET_BURN_PER_RESET` / `RESET_BURN_PER_ROUND` to the supply pons minted (defaults assume 1B). `npm run deploy`, then `npm run goal:round -- open --env production --yes`.
+5. `npm run token:burner -- status` shows the burner's gas and RESET balance. `npm run readiness -- --env production` should show BURNER_PRIVATE_KEY and RESET_BURNER_ADDRESS ok.
+6. Forward creator fees from pons to the pool wallet as they accrue (manual; the pool meter reads the wallet, so it shows up).
 
 ### Per reset (automatic)
 
-`content:publish` of a confirmed usage reset queues one row in `token_burns` (once per event id; backfills and corrections never burn). The `*/2` cron drain signs `burnForReset(eventId)` with the burner wallet, records the transaction hash, follows the receipt, retries with backoff on RPC trouble, and marks the row confirmed. `/goal#burns` shows the log with explorer links, `/api/v1/goal` includes it as `burns`. Without `BURNER_PRIVATE_KEY` the rows simply wait. Maintainer controls: `GET /admin/goal/burns`, `POST /admin/goal/burns` with `{action:'drain'}`, `{action:'queue', eventId}` (a reset published before the token existed) or `{action:'retry', id}`. `npm run token:burn` remains as a manual fallback.
+`content:publish` of a confirmed usage reset queues one row in `token_burns` (once per event id; backfills and corrections never burn). The `*/2` cron drain sends the burn from the burner wallet, records the transaction hash, follows the receipt, retries with backoff on RPC trouble, and marks the row confirmed. In transfer mode the burn is a plain ERC-20 `transfer(0xdEaD, amount)`; the site's log links it to the event. `/goal#burns` shows the log, `/api/v1/goal` includes it as `burns`. Without `BURNER_PRIVATE_KEY` the rows wait. If the burner runs out of RESET the row fails with "reserve empty"; top the wallet up and `POST /admin/goal/burns {action:'retry', id}`. Other maintainer actions: `{action:'drain'}`, `{action:'queue', eventId}` (a reset published before launch).
+
+### Fallback: self-deployed contract
+
+`contracts/ResetToken.sol` is kept for the case where the launchpad is not used: fixed 1B supply, 1% transfer fee (60% burned / 40% to the pool), a 15% reserve held by the contract, and a burner role that can only call `burnForReset(eventId)` / `burnForRound(roundId)`. Compile with `npm run token:compile`, deploy with `DEPLOYER_PRIVATE_KEY=0x… npm run token:deploy -- --pool 0xPool --burner 0xBurner`, set `RESET_BURN_MODE: "contract"`, and `npm run token:burner -- set --address 0xBurner` if the burner changes. Burn sizes then come from the contract, not the vars.
 
 ## What is on chain vs. in D1
 

@@ -72,6 +72,23 @@ export const MoonIcon: FC<IconProps> = (p) => (
   </svg>
 );
 
+export const CoinIcon: FC<IconProps> = (p) => (
+  <svg {...base(p)}>
+    {p.title ? <title>{p.title}</title> : null}
+    <circle cx="12" cy="12" r="9" />
+    <path d="M14.8 9.2A3 3 0 0 0 12 7.5c-1.8 0-3 1-3 2.2 0 2.8 6 1.6 6 4.6 0 1.2-1.3 2.2-3 2.2a3 3 0 0 1-2.9-1.8M12 5.5v2M12 16.5v2" />
+  </svg>
+);
+
+export const RoadmapIcon: FC<IconProps> = (p) => (
+  <svg {...base(p)}>
+    {p.title ? <title>{p.title}</title> : null}
+    <path d="M5 21V4" />
+    <path d="M5 4h11l-2.5 3.5L16 11H5" />
+    <circle cx="5" cy="21" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 export const BellIcon: FC<IconProps> = (p) => (
   <svg {...base(p)}>
     {p.title ? <title>{p.title}</title> : null}

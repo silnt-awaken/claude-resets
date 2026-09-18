@@ -129,18 +129,20 @@ export interface TokenSnapshot {
   totalSupply: bigint;
   burned: bigint; // held by burn addresses
   circulating: bigint; // totalSupply - burned
+  reserve: bigint | null; // held by the burner wallet, waiting for resets
   readAt: string;
 }
 
 export async function readToken(cfg: GoalConfig, fetchFn: FetchLike): Promise<TokenSnapshot> {
   if (!cfg.tokenAddress) throw new Error('token not configured');
-  const [decimals, totalSupply, ...burns] = await Promise.all([
+  const [decimals, totalSupply, reserve, ...burns] = await Promise.all([
     erc20Decimals(fetchFn, cfg.rpcUrl, cfg.tokenAddress),
     erc20TotalSupply(fetchFn, cfg.rpcUrl, cfg.tokenAddress),
+    cfg.burnerAddress ? erc20Balance(fetchFn, cfg.rpcUrl, cfg.tokenAddress, cfg.burnerAddress) : Promise.resolve(null),
     ...BURN_ADDRESSES.map((a) => erc20Balance(fetchFn, cfg.rpcUrl, cfg.tokenAddress!, a)),
   ]);
   const burned = burns.reduce((s, b) => s + b, 0n);
-  return { address: cfg.tokenAddress, decimals, totalSupply, burned, circulating: totalSupply - burned, readAt: new Date().toISOString() };
+  return { address: cfg.tokenAddress, decimals, totalSupply, burned, circulating: totalSupply - burned, reserve, readAt: new Date().toISOString() };
 }
 
 /** Format a bigint token amount with the given decimals, at most 2 fractional digits. */

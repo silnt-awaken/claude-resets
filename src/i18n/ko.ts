@@ -24,6 +24,8 @@ export const ko: Dict = {
     mcp: 'MCP',
     feed: 'RSS',
     jsonFeed: 'JSON Feed',
+    tokenomics: 'RESET 토크노믹스',
+    roadmap: '로드맵',
   },
   hero: {
     intro: 'Claude와 Anthropic의 공개 발표에서 사용량 한도 리셋을 직접 찾아 정리합니다. 여러분이 일일이 뒤지지 않아도 되도록요.',

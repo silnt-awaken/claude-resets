@@ -174,6 +174,8 @@ describe('rounds', () => {
     const page = await (await request('/goal', {}, LIVE)).text();
     expect(page).toContain('Past rounds');
     expect(page).toContain('id="roadmap"');
+    expect(page).toContain('#roadmap"'); // header icon links
+    expect(page).toContain('#token"');
     expect(page).toContain('Switching on');
     expect(page).toContain('0xbbbb…bbbb');
   });

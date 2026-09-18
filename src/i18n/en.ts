@@ -25,6 +25,8 @@ export const en = {
     mcp: 'MCP',
     feed: 'RSS',
     jsonFeed: 'JSON Feed',
+    tokenomics: 'RESET tokenomics',
+    roadmap: 'Roadmap',
   },
   hero: {
     intro: 'I check public Claude and Anthropic announcements for usage-limit resets by hand, so you don’t have to.',

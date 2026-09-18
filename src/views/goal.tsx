@@ -171,7 +171,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             <strong>Payout.</strong> ${g.targetUsd} USDG goes to the winning wallet toward one month of Claude Max 20x (subscriptions cannot be transferred, so the money is paid out, not the account). The transaction hash is published here and on X, then the next round opens.
           </li>
           <li>
-            <strong>Rewards.</strong> After each round, RESET from the contributor-rewards allocation is distributed to that round's contributors pro-rata to what they gave. Rewards scale with contribution; odds never do.
+            <strong>Burn.</strong> When the payout is recorded, the burner wallet sends {formatNumber(g.burnPerRound, locale)} RESET to the dead address. Every round makes the supply smaller.
           </li>
         </ol>
         <p>{t.support.noEffect} Winning here does not change anything about anyone's Claude account or Anthropic's limits; it pays for a plan.</p>
@@ -193,42 +193,51 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             <tbody>
               <tr>
                 <td>Chain</td>
-                <td>Robinhood Chain (Arbitrum L2, chain id 4663), ERC-20, 18 decimals</td>
+                <td>Robinhood Chain (Arbitrum L2, chain id {status.chain.id}), standard ERC-20.</td>
               </tr>
               <tr>
-                <td>Supply</td>
-                <td>1,000,000,000 RESET minted once. No mint function exists in the contract.</td>
+                <td>Launch</td>
+                <td>Fair launch on the pons launchpad: a bonding curve paired with USDG, open to everyone at the same time. No presale, no team allocation, no mint function.</td>
               </tr>
               <tr>
                 <td>Liquidity</td>
-                <td>40% paired with ETH on Uniswap on Robinhood Chain; LP tokens burned so liquidity cannot be pulled.</td>
+                <td>When the curve has raised 8,090 USDG it graduates and the launchpad locks the liquidity. Nobody, including us, can pull it.</td>
               </tr>
               <tr>
-                <td>Contributor rewards</td>
-                <td>25%, distributed after each round to that round's USDG contributors pro-rata to what they gave.</td>
+                <td>Trade fee</td>
+                <td>3% per trade, set by the launchpad. The creator share (2%) is forwarded to the goal pool, so trading RESET funds the next Max 20x prize in USDG.</td>
               </tr>
               <tr>
                 <td>Burn reserve</td>
-                <td>15%, held by the contract itself. Burned automatically: 2,500,000 RESET (0.25% of initial supply) the moment a confirmed Claude reset is published here, 5,000,000 RESET per completed goal round. Each event id burns exactly once; the site's burner wallet can trigger these burns and nothing else.</td>
+                <td>
+                  Bought on the curve at launch by the creator, like anyone else, and held by the site's burner wallet
+                  {token?.burner ? (
+                    <>
+                      {' '}
+                      <a href={`${explorer}/address/${token.burner}`} target="_blank" rel="noopener noreferrer">
+                        <code>{token.burner}</code>
+                      </a>
+                    </>
+                  ) : null}
+                  . That wallet does one thing: send RESET to the dead address.
+                </td>
               </tr>
               <tr>
-                <td>Treasury</td>
-                <td>20%, vesting linearly over 12 months, for running the site and future goals.</td>
-              </tr>
-              <tr>
-                <td>Transfer fee</td>
-                <td>1% on trades and transfers: 0.6% burned forever, 0.4% sent to the goal pool. Liquidity pool, treasury and pool wallet are fee-exempt. The fee can be lowered but never raised above 2%.</td>
+                <td>Burn schedule</td>
+                <td>
+                  {formatNumber(g.burnPerReset, locale)} RESET the moment a confirmed Claude reset is published here, {formatNumber(g.burnPerRound, locale)} RESET when a goal round pays out. Automatic, once per event, logged below with the transaction.
+                </td>
               </tr>
               <tr>
                 <td>Control</td>
-                <td>Owner can only adjust the fee downward, set exemptions, the pool address, the burner wallet and the burn sizes. Ownership will be renounced after launch, freezing everything.</td>
+                <td>The token contract is the launchpad's standard contract; we hold no admin power over it. The only thing we control is the burner wallet, whose balance is public and only ever shrinks.</td>
               </tr>
             </tbody>
           </table>
         </div>
         <h2>Why burns are tied to resets</h2>
         <p>
-          Every reset announcement already sends people to this site. Tying a burn to each one gives holders a reason to care about the exact thing the site tracks, and gives readers a second reason to check: when Anthropic resets limits, RESET supply shrinks the same day. The burn is sent automatically when the reset is published, and the event id is written into the on-chain <code>ResetBurn</code> event so anyone can match the transaction to the announcement.
+          Every reset announcement already sends people to this site. Tying a burn to each one gives holders a reason to care about the exact thing the site tracks, and gives readers a second reason to check: when Anthropic resets limits, RESET supply shrinks the same day. The burn is sent automatically when the reset is published, and the burn log below links each transaction to the reset it was for.
         </p>
         <h2>Live token stats</h2>
         {token ? (
@@ -245,9 +254,15 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             <dd>{formatUnits(BigInt(token.burned), token.decimals, 0)} RESET ({supplyPct(token.burned)} of initial)</dd>
             <dt>Circulating</dt>
             <dd>{formatUnits(BigInt(token.circulating), token.decimals, 0)} RESET</dd>
+            {token.reserve != null ? (
+              <>
+                <dt>Burn reserve</dt>
+                <dd>{formatUnits(BigInt(token.reserve), token.decimals, 0)} RESET waiting for the next resets</dd>
+              </>
+            ) : null}
           </dl>
         ) : (
-          <p class="notice notice--warn">The RESET contract is not deployed yet. Stats appear here automatically once it is.</p>
+          <p class="notice notice--warn">RESET is not launched yet. Stats appear here automatically once it is.</p>
         )}
         {token ? (
           <>

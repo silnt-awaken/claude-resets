@@ -42,6 +42,12 @@
     "GOAL_USDG_ADDRESS": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
     "GOAL_TARGET_USD": "200",
     "RESET_TOKEN_ADDRESS": "",
+    // RESET is launched on the pons launchpad (a standard token), so burns are transfers from the burner wallet
+    // to 0xdEaD ("transfer"). "contract" switches to contracts/ResetToken.sol with burnForReset. Amounts are whole RESET.
+    "RESET_BURN_MODE": "transfer",
+    "RESET_BURNER_ADDRESS": "",
+    "RESET_BURN_PER_RESET": "2500000",
+    "RESET_BURN_PER_ROUND": "5000000",
     "REACTION_COOLDOWN_HOURS": "24",
     "ALERT_MAX_AGE_HOURS": "72"
   }

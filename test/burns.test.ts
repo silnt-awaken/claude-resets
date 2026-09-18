@@ -169,10 +169,11 @@ describe('automatic burns', () => {
     expect(paid.body.burn).toMatch(/queued/);
     expect((await burnFor(db(), 'round', String(round.id)))?.status).toBe('queued');
 
-    // The chain already has this round burned (e.g. done manually) → confirmed without sending
+    // With our own contract, the chain can say a round was already burned (e.g. done manually) → confirmed without sending.
+    // (A launchpad token leaves no per-id mark, so transfer mode skips this check and relies on the D1 row.)
     s.burnedOnChain.add(`round:${round.id}`);
     const calls: Array<{ kind: BurnKind; ref: string }> = [];
-    const healed = await drainBurns(live(), { fetchFn: fakeRpc(s), signer: fakeSigner(calls), now: new Date(Date.now() + 1000) }); // the admin route queued it at real time
+    const healed = await drainBurns({ ...live(), RESET_BURN_MODE: 'contract' } as Env, { fetchFn: fakeRpc(s), signer: fakeSigner(calls), now: new Date(Date.now() + 1000) }); // the admin route queued it at real time
     expect(healed.confirmed).toBe(1);
     expect(calls).toHaveLength(0);
     expect((await burnFor(db(), 'round', String(round.id)))?.status).toBe('confirmed');
