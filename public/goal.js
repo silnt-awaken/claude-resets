@@ -96,19 +96,29 @@
       return wallet.account;
     });
   }
-  var eth0 = provider();
-  if (eth0 && eth0.on) {
-    eth0.on('accountsChanged', function (accounts) {
-      setAccount(accounts && accounts[0] ? accounts[0] : null);
-    });
-  }
   var remembered = false;
   try {
     remembered = window.localStorage.getItem(STORE) === '1';
   } catch (e) {
     /* ignore */
   }
-  if (remembered && eth0) connect(false).catch(function () {});
+  // Wallets sometimes inject after our script runs (or after a "which extension?" prompt), so retry quietly.
+  function restore() {
+    if (!remembered || wallet.account) return;
+    var eth = provider();
+    if (!eth) return;
+    if (eth.on && !eth.__crBound) {
+      eth.__crBound = true;
+      eth.on('accountsChanged', function (accounts) {
+        setAccount(accounts && accounts[0] ? accounts[0] : null);
+      });
+    }
+    connect(false).catch(function () {});
+  }
+  restore();
+  window.addEventListener('ethereum#initialized', restore, { once: true });
+  setTimeout(restore, 1000);
+  setTimeout(restore, 3000);
 
   // ---------- no-wallet options dialog ----------
   var optionsDialog = document.getElementById('wallet-options');
