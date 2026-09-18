@@ -15,6 +15,11 @@ export default defineConfig(async () => {
           bindings: {
             TEST_MIGRATIONS: migrations,
             SITE_URL: 'http://test.local',
+            GOAL_ENABLED: 'false',
+            GOAL_POOL_ADDRESS: '',
+            RESET_TOKEN_ADDRESS: '',
+            RESET_BURNER_ADDRESS: '',
+            TELEGRAM_CHANNEL_URL: '',
             CONTENT_PUBLISH_TOKEN: 'test-publish-token-0123456789',
             REACTION_SECRET: 'test-reaction-secret',
             BROWSER_ALERTS_ENABLED: 'true',
