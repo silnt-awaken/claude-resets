@@ -30,6 +30,8 @@ export interface ConfigVars {
   CONTENT_PUBLISH_TOKEN?: string;
   VAPID_PRIVATE_KEY?: string;
   REACTION_SECRET?: string;
+  /** Burner wallet key (secret). May only trigger the contract's fixed reserve burns; holds no tokens. */
+  BURNER_PRIVATE_KEY?: string;
 }
 
 export interface SiteConfig {
@@ -207,6 +209,7 @@ export function readiness(env: ConfigVars, hasDb: boolean): { ok: boolean; items
   add('ALERTS_PAUSED', cfg.alertsPaused ? 'off' : 'ok', cfg.alertsPaused ? 'Delivery paused.' : 'Delivery active.');
   add('GOAL', cfg.goal.live ? 'ok' : 'off', cfg.goal.live ? `Live on chain ${cfg.goal.chainId}, pool ${cfg.goal.poolAddress}, target $${cfg.goal.targetUsd}.` : `Community goal shown as "preparing": ${cfg.goal.reason}.`);
   add('RESET_TOKEN_ADDRESS', cfg.goal.tokenAddress ? 'ok' : 'off', cfg.goal.tokenAddress ?? 'Token stats hidden until the RESET contract is deployed.');
+  add('BURNER_PRIVATE_KEY', /^0x[0-9a-fA-F]{64}$/.test(env.BURNER_PRIVATE_KEY ?? '') ? 'ok' : 'off', env.BURNER_PRIVATE_KEY ? 'present; reset burns run automatically from the cron' : 'absent; queued burns wait until it is set (wrangler secret put BURNER_PRIVATE_KEY)', true);
   add('DB', hasDb ? 'ok' : 'missing', hasDb ? 'D1 bound.' : 'D1 binding missing.');
 
   const ok = items.every((i) => i.status === 'ok' || i.status === 'off');

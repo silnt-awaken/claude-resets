@@ -10,7 +10,7 @@ Live site: <https://clauderesets.com> · Updates: [@clauderesets on X](https://x
 
 If the tracker helps you, you can [tip for coffee](https://buymeacoffee.com/silntawaken). Tips never change reset access or Anthropic limits.
 
-**Community goal + RESET token** (Robinhood Chain): readers pool USDG, one free entrant wins a month of Claude Max 20x by a verifiable block-hash draw; RESET supply burns on every published reset. Contract in `contracts/`, mechanics and launch steps in [docs/goal-and-token.md](docs/goal-and-token.md).
+**Community goal + RESET token** (Robinhood Chain): readers pool USDG, one contributor wins a month of Claude Max 20x by a verifiable block-hash draw; RESET supply burns automatically on every published reset (the site's cron signs the burn with a dedicated burner wallet). Contract in `contracts/`, mechanics and launch steps in [docs/goal-and-token.md](docs/goal-and-token.md).
 
 ## Install and run
 

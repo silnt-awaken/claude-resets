@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
+import { findEvent, isQualifyingReset, loadContent } from '../domain/content';
 import { siteConfig, type Env } from '../env';
 import { blockHash, blockNumber, cached, formatUnits, readPool, readToken, summarizeContributors, transfersTo, type ContributorSummary, type FetchLike, type PoolSnapshot, type TokenSnapshot } from '../goal/chain';
+import { burnerConfigured, drainBurns, listBurns, queueBurn, type TokenBurn } from '../goal/burns';
 import { MIN_CONTRIBUTION_UNITS, cancelRound, countEntries, currentRound, freezeRound, latestRound, markPaid, openRound, pastRounds, recordDraw, syncContributors, winnerOf, type GoalRound } from '../goal/rounds';
 import { problem, readJson, timingSafeEqual } from '../util/http';
 
@@ -27,6 +29,8 @@ export interface GoalStatus {
   };
   past_rounds: Array<{ id: number; title: string; status: string; winner: string | null; payout_tx: string | null; paid_at: string | null }>;
   token: null | { address: string; total_supply: string; burned: string; circulating: string; decimals: number; read_at: string };
+  /** Scheduled burns triggered by the site (newest first). Automatic once the burner wallet is configured. */
+  burns: Array<{ kind: TokenBurn['kind']; ref: string; status: TokenBurn['status']; tx: string | null; block: number | null; at: string }>;
   progress: number; // 0..1
 }
 
@@ -58,6 +62,7 @@ export async function goalStatus(env: Env, fetchFn: FetchLike = fetch): Promise<
     round: null,
     past_rounds: [],
     token: null,
+    burns: [],
     progress: 0,
   };
   if (cfg.live) {
@@ -76,6 +81,13 @@ export async function goalStatus(env: Env, fetchFn: FetchLike = fetch): Promise<
       status.token = { address: t.address, total_supply: t.totalSupply.toString(), burned: t.burned.toString(), circulating: t.circulating.toString(), decimals: t.decimals, read_at: t.readAt };
     } catch (err) {
       console.error('token read failed', err instanceof Error ? err.message : err);
+    }
+  }
+  if (cfg.tokenAddress) {
+    try {
+      status.burns = (await listBurns(env.DB, 20)).map((b) => ({ kind: b.kind, ref: b.ref, status: b.status, tx: b.tx_hash, block: b.block, at: b.confirmed_at ?? b.sent_at ?? b.created_at }));
+    } catch (err) {
+      console.error('burn list unavailable', err instanceof Error ? err.message : err);
     }
   }
   try {
@@ -186,7 +198,8 @@ goalAdmin.post('/rounds', async (c) => {
         if (!round) return problem(c, 409, 'no_round', 'No round to mark paid.');
         if (typeof v.tx !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(v.tx)) return problem(c, 400, 'invalid_tx', 'tx must be a transaction hash');
         await markPaid(c.env.DB, round.id, v.tx, now);
-        return c.json({ ok: true, round: round.id });
+        const burnQueued = cfg.tokenAddress ? await queueBurn(c.env.DB, 'round', String(round.id), now) : false;
+        return c.json({ ok: true, round: round.id, burn: cfg.tokenAddress ? (burnQueued ? 'queued; the cron sends burnForRound within 2 minutes' : 'already queued') : 'RESET token not deployed' });
       }
       case 'cancel': {
         const round = await currentRound(c.env.DB);
@@ -199,5 +212,40 @@ goalAdmin.post('/rounds', async (c) => {
     }
   } catch (err) {
     return problem(c, 409, 'round_state', err instanceof Error ? err.message : 'round error');
+  }
+});
+
+// ---------- burns (maintainer) ----------
+
+goalAdmin.get('/burns', async (c) => {
+  const cfg = siteConfig(c.env).goal;
+  return c.json({ token: cfg.tokenAddress, burner: burnerConfigured(c.env), burns: await listBurns(c.env.DB, 100) });
+});
+
+/** actions: drain (run the cron step now), queue { eventId } (a reset published before the token existed), retry { id } */
+goalAdmin.post('/burns', async (c) => {
+  const body = await readJson(c, 8192);
+  if (!body.ok) return problem(c, 400, 'invalid_body', body.error);
+  const v = body.value as Record<string, unknown>;
+  const cfg = siteConfig(c.env).goal;
+  if (!cfg.tokenAddress) return problem(c, 409, 'token_not_configured', 'RESET_TOKEN_ADDRESS is not set.');
+  const now = new Date();
+  switch (v.action) {
+    case 'drain':
+      return c.json({ ok: true, result: await drainBurns(c.env, { limit: 20, now }) });
+    case 'queue': {
+      if (typeof v.eventId !== 'string') return problem(c, 400, 'invalid_event', 'eventId is required');
+      const ev = findEvent(loadContent().events, v.eventId);
+      if (!ev || !isQualifyingReset(ev)) return problem(c, 409, 'not_a_reset', `${v.eventId} is not a published, confirmed usage reset; only real resets burn.`);
+      const queued = await queueBurn(c.env.DB, 'reset', ev.id, now);
+      return c.json({ ok: true, eventId: ev.id, queued, reason: queued ? 'queued' : 'already queued or burned' });
+    }
+    case 'retry': {
+      if (typeof v.id !== 'number') return problem(c, 400, 'invalid_id', 'id is required');
+      const r = await c.env.DB.prepare("UPDATE token_burns SET status = 'queued', attempts = 0, next_attempt_at = ?1, last_error = NULL WHERE id = ?2 AND status = 'failed'").bind(now.toISOString(), v.id).run();
+      return c.json({ ok: true, retried: (r.meta.changes ?? 0) > 0 });
+    }
+    default:
+      return problem(c, 400, 'invalid_action', 'action must be drain, queue or retry');
   }
 });

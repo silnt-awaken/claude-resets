@@ -8,6 +8,7 @@ import { filtersToQuery, parseFilters } from './domain/filters';
 import { computeStatus } from './domain/service';
 import { siteConfig, type Env } from './env';
 import { isLocale, stripLocale, type Locale } from './i18n';
+import { drainBurns } from './goal/burns';
 import { drainPushJobs } from './push/delivery';
 import { readCount } from './reactions';
 import { admin } from './routes/admin';
@@ -191,6 +192,11 @@ export default {
       drainPushJobs(env, { limit: 50 })
         .then((r) => console.log('push drain', JSON.stringify(r)))
         .catch((err) => console.error('push drain failed', err)),
+    );
+    ctx.waitUntil(
+      drainBurns(env, { limit: 20 })
+        .then((r) => console.log('burn drain', JSON.stringify(r)))
+        .catch((err) => console.error('burn drain failed', err)),
     );
   },
 };

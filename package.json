@@ -30,9 +30,11 @@
     "token:compile": "tsx scripts/token/compile.ts",
     "token:deploy": "tsx scripts/token/deploy.ts",
     "token:burn": "tsx scripts/token/burn.ts",
+    "token:burner": "tsx scripts/token/burner.ts",
     "goal:round": "tsx scripts/goal/round.ts"
   },
   "dependencies": {
+    "viem": "^2.56.8",
     "@block65/webcrypto-web-push": "^2.0.0",
     "@hono/mcp": "^0.3.2",
     "@modelcontextprotocol/sdk": "^1.30.0",
@@ -47,7 +49,6 @@
     "solc": "^0.8.37",
     "tsx": "^4.23.0",
     "typescript": "^5.9.0",
-    "viem": "^2.56.8",
     "vitest": "^4.1.0",
     "wrangler": "^4.134.0"
   },

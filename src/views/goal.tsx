@@ -205,7 +205,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
               </tr>
               <tr>
                 <td>Burn reserve</td>
-                <td>15%, burned on a public schedule: 0.25% of initial supply per published Claude reset, 0.5% per completed goal round.</td>
+                <td>15%, held by the contract itself. Burned automatically: 2,500,000 RESET (0.25% of initial supply) the moment a confirmed Claude reset is published here, 5,000,000 RESET per completed goal round. Each event id burns exactly once; the site's burner wallet can trigger these burns and nothing else.</td>
               </tr>
               <tr>
                 <td>Treasury</td>
@@ -217,14 +217,14 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
               </tr>
               <tr>
                 <td>Control</td>
-                <td>Owner can only adjust the fee downward, set exemptions and the pool address, and burn from its own balance. Ownership will be renounced after launch, freezing everything.</td>
+                <td>Owner can only adjust the fee downward, set exemptions, the pool address, the burner wallet and the burn sizes. Ownership will be renounced after launch, freezing everything.</td>
               </tr>
             </tbody>
           </table>
         </div>
         <h2>Why burns are tied to resets</h2>
         <p>
-          Every reset announcement already sends people to this site. Tying a burn to each one gives holders a reason to care about the exact thing the site tracks, and gives readers a second reason to check: when Anthropic resets limits, RESET supply shrinks the same day. The burn transaction is linked from the reset's event page, with the event id written into the on-chain <code>ResetBurn</code> event.
+          Every reset announcement already sends people to this site. Tying a burn to each one gives holders a reason to care about the exact thing the site tracks, and gives readers a second reason to check: when Anthropic resets limits, RESET supply shrinks the same day. The burn is sent automatically when the reset is published, and the event id is written into the on-chain <code>ResetBurn</code> event so anyone can match the transaction to the announcement.
         </p>
         <h2>Live token stats</h2>
         {token ? (
@@ -245,6 +245,45 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
         ) : (
           <p class="notice notice--warn">The RESET contract is not deployed yet. Stats appear here automatically once it is.</p>
         )}
+        {token ? (
+          <>
+            <h2 id="burns">Burn log</h2>
+            {status.burns.length === 0 ? (
+              <p class="note">No scheduled burns yet. The first one happens when the next confirmed reset is published.</p>
+            ) : (
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Trigger</th>
+                    <th>Status</th>
+                    <th>Transaction</th>
+                    <th>When</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {status.burns.map((b) => (
+                    <tr>
+                      <td>{b.kind === 'reset' ? <a href={localizePath(locale, `/resets/${b.ref}`)}>Reset {b.ref}</a> : `Round ${b.ref}`}</td>
+                      <td>{b.status}</td>
+                      <td>
+                        {b.tx ? (
+                          <a href={`${explorer}/tx/${b.tx}`} target="_blank" rel="noopener noreferrer">
+                            <code>{b.tx.slice(0, 10)}…{b.tx.slice(-6)}</code>
+                          </a>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td>{b.at.slice(0, 16).replace('T', ' ')} UTC</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            )}
+          </>
+        ) : null}
       </section>
 
       <section class="section prose" id="rules">

@@ -1,11 +1,14 @@
-// npm run token:burn -- --event <resetEventId> [--amount <RESET>]   burn for a published Claude reset
-// npm run token:burn -- --round <roundId> [--amount <RESET>]        burn for a completed goal round
-// Signs with DEPLOYER_PRIVATE_KEY (the contract owner). Defaults: 0.25% of initial supply per reset,
-// 0.5% per round, matching docs/goal-and-token.md. Prints the transaction hash to link from the site.
+// Manual fallback. Burns normally happen automatically: publishing a confirmed reset queues a burn and
+// the site's cron sends it from the burner wallet (see src/goal/burns.ts). Use this only if that is not
+// configured yet.
+// npm run token:burn -- --event <resetEventId>   burn for a published Claude reset
+// npm run token:burn -- --round <roundId>        burn for a completed goal round
+// Signs with DEPLOYER_PRIVATE_KEY (the contract owner or the burner). The amount is fixed by the
+// contract (resetBurnAmount / roundBurnAmount) and each id burns once.
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { createPublicClient, createWalletClient, defineChain, http, parseUnits } from 'viem';
+import { createPublicClient, createWalletClient, defineChain, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ROOT, fail, flagString, parseArgs, readContent, readWranglerVars } from '../lib';
 
@@ -25,8 +28,6 @@ if (eventId) {
   if (!ev) fail(`Unknown event ${eventId}`);
   if (ev.kind !== 'usage_reset' || ev.eventStatus !== 'confirmed' || ev.editorialStatus !== 'published') fail(`${eventId} is not a published confirmed reset; only real resets burn.`);
 }
-const INITIAL = parseUnits('1000000000', 18);
-const amount = flagString(flags, 'amount') ? parseUnits(flagString(flags, 'amount')!, 18) : eventId ? (INITIAL * 25n) / 10_000n : (INITIAL * 50n) / 10_000n;
 
 const artifact = JSON.parse(readFileSync(path.join(ROOT, 'build', 'ResetToken.json'), 'utf8')) as { abi: readonly unknown[] };
 const chain = defineChain({ id: 4663, name: 'Robinhood Chain', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [rpc] } } });
@@ -34,8 +35,8 @@ const account = privateKeyToAccount(key as `0x${string}`);
 const publicClient = createPublicClient({ chain, transport: http(rpc) });
 const wallet = createWalletClient({ account, chain, transport: http(rpc) });
 
-const args = eventId ? { functionName: 'burnForReset', args: [eventId, amount] } : { functionName: 'burnForRound', args: [BigInt(roundId!), amount] };
-console.log(`Burning ${amount / 10n ** 18n} RESET for ${eventId ? `reset ${eventId}` : `round ${roundId}`} from ${account.address}`);
+const args = eventId ? { functionName: 'burnForReset', args: [eventId] } : { functionName: 'burnForRound', args: [BigInt(roundId!)] };
+console.log(`Burning the contract's fixed amount for ${eventId ? `reset ${eventId}` : `round ${roundId}`} from ${account.address}`);
 if (flags['dry-run'] === true) {
   await publicClient.simulateContract({ address: token as `0x${string}`, abi: artifact.abi as never, account: account.address, ...args } as never);
   console.log('Dry run: simulation succeeded, nothing sent.');

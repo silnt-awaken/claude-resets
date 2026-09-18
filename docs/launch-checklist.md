@@ -14,8 +14,10 @@ What the owner still has to supply or do. Everything else is implemented and ver
 ## Community goal and RESET token (infrastructure deployed, not opened)
 
 - [ ] Pool wallet you control on Robinhood Chain; a little ETH for gas.
-- [ ] `npm run token:compile`, then `DEPLOYER_PRIVATE_KEY=0x… npm run token:deploy -- --pool 0xPool` and verify on Blockscout.
-- [ ] Liquidity on Uniswap (LP tokens burned), fee exemptions, treasury wallet.
+- [ ] `npm run token:burner -- new`, `npx wrangler secret put BURNER_PRIVATE_KEY`, send the burner ~$3 of ETH on Robinhood Chain.
+- [ ] `npm run token:compile`, then `DEPLOYER_PRIVATE_KEY=0x… npm run token:deploy -- --pool 0xPool --burner 0xBurner` and verify on Blockscout.
+- [ ] Liquidity (RESET/USDG, LP tokens burned), fee exemptions, treasury wallet.
+- [ ] Apply migration 0004 remotely (`npm run db:migrate:remote`); burns then run automatically on every published reset.
 - [ ] Confirm `GOAL_USDG_ADDRESS` is the USDG contributors hold; set `GOAL_POOL_ADDRESS`, `RESET_TOKEN_ADDRESS`, `GOAL_ENABLED: "true"`; `npm run deploy`; `npm run goal:round -- open --env production --yes`.
 - [ ] Full sequence and per-round commands: `docs/goal-and-token.md`.
 
