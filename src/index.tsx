@@ -13,6 +13,8 @@ import { readCount } from './reactions';
 import { admin } from './routes/admin';
 import { api } from './routes/api';
 import { feeds } from './routes/feeds';
+import { goal, goalAdmin, goalStatus } from './routes/goal';
+import { GoalPage } from './views/goal';
 import { mcp } from './routes/mcp';
 import { meta } from './routes/meta';
 import { push } from './routes/push';
@@ -56,6 +58,8 @@ app.use('*', async (c, next) => {
 // ---------- sub-apps ----------
 app.route('/api/v1/reactions', reactions);
 app.route('/api/v1/push', push);
+app.route('/api/v1/goal', goal);
+app.route('/admin/goal', goalAdmin);
 app.route('/api', api);
 app.route('/mcp', mcp);
 app.route('/admin', admin);
@@ -105,12 +109,18 @@ page('/', async (c, locale) => {
     previewSources: content.sources.filter((s) => s.priority === 'primary' || s.priority === 'additional').sort((a, b) => order[a.priority] - order[b.priority]),
     sourceById: new Map(content.sources.map((s) => [s.id, s])),
     begCount: await safeBegCount(c),
+    goal: await goalStatus(c.env),
   };
   const html = (<HomePage ctx={ctx} model={model} />).toString();
   const minute = Math.floor(ctx.now.getTime() / 60_000);
   return cachedHtml(c, `<!doctype html>${html}`, `home:${locale}:${content.revision}:${query}:${minute}:${model.begCount}`, 60);
 });
 
+page('/goal', async (c, locale) => {
+  const ctx = pageContext(c, locale, '/goal');
+  const status = await goalStatus(c.env);
+  return cachedHtml(c, `<!doctype html>${(<GoalPage ctx={ctx} status={status} />).toString()}`, `goal:${locale}:${JSON.stringify(status)}`, 30);
+});
 page('/sources', (c, locale) => {
   const ctx = pageContext(c, locale, '/sources');
   return cachedHtml(c, `<!doctype html>${(<SourcesPage ctx={ctx} />).toString()}`, `sources:${locale}:${ctx.content.revision}`, 300);

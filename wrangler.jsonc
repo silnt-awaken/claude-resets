@@ -34,6 +34,14 @@
     "VAPID_PUBLIC_KEY": "",
     "VAPID_SUBJECT": "",
     "ALERTS_PAUSED": "false",
+    // Community goal on Robinhood Chain (chain id 4663). Set GOAL_POOL_ADDRESS (a wallet you control) and
+    // GOAL_ENABLED to "true" to open it. GOAL_USDC_ADDRESS defaults to the canonically bridged USDC on
+    // Robinhood Chain (derived from the L2 gateway router on 2026-09-18); confirm on the explorer before funding.
+    "GOAL_ENABLED": "false",
+    "GOAL_POOL_ADDRESS": "",
+    "GOAL_USDC_ADDRESS": "0x80e0e24718dbfcad49ecaa6f1e6c89a190586ca8",
+    "GOAL_TARGET_USD": "200",
+    "RESET_TOKEN_ADDRESS": "",
     "REACTION_COOLDOWN_HOURS": "24",
     "ALERT_MAX_AGE_HOURS": "72"
   }

@@ -10,7 +10,7 @@ function stripJsonScripts(html: string): string {
   return html.replace(/<script type="application\/json"[^>]*>[\s\S]*?<\/script>/g, '');
 }
 
-const PAGES = ['/', '/sources', '/about', '/support', '/privacy', '/resets/2026-09-04-max-weekly', '/api/docs', '/mcp/docs'];
+const PAGES = ['/', '/sources', '/about', '/support', '/privacy', '/goal', '/resets/2026-09-04-max-weekly', '/api/docs', '/mcp/docs'];
 
 describe('pages', () => {
   it('renders every page in every locale with security headers and no raw placeholders', async () => {

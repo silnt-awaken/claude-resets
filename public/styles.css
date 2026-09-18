@@ -1485,3 +1485,79 @@ th {
     border-color: CanvasText;
   }
 }
+
+/* ---------- community goal ---------- */
+
+.goal-card {
+  transform: rotate(-0.4deg);
+}
+.goal-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px 16px;
+}
+.goal-head .mono {
+  opacity: 0.8;
+}
+.goal-pitch {
+  margin-top: 10px;
+  max-width: 62ch;
+}
+.goal-meter {
+  margin-top: 14px;
+  height: 22px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+.goal-meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  background-image: repeating-linear-gradient(-45deg, transparent 0 8px, rgba(0, 0, 0, 0.12) 8px 16px);
+  transition: width 0.4s ease;
+}
+.goal-figures {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-top: 8px;
+}
+.goal-raised {
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+.goal-state {
+  margin-top: 12px;
+}
+.goal-entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+.goal-entry input {
+  flex: 1 1 260px;
+  min-width: 0;
+  font: inherit;
+  padding: 8px 14px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-xs);
+}
+.goal-entry .status-line {
+  width: 100%;
+}
+.goal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}

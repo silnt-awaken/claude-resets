@@ -17,6 +17,15 @@ export interface ConfigVars {
   ALERTS_PAUSED?: string;
   REACTION_COOLDOWN_HOURS?: string;
   ALERT_MAX_AGE_HOURS?: string;
+  // community goal + RESET token (Robinhood Chain)
+  GOAL_ENABLED?: string;
+  GOAL_CHAIN_RPC?: string;
+  GOAL_CHAIN_ID?: string;
+  GOAL_EXPLORER_URL?: string;
+  GOAL_POOL_ADDRESS?: string;
+  GOAL_USDC_ADDRESS?: string;
+  GOAL_TARGET_USD?: string;
+  RESET_TOKEN_ADDRESS?: string;
   // secrets (values are never rendered)
   CONTENT_PUBLISH_TOKEN?: string;
   VAPID_PRIVATE_KEY?: string;
@@ -37,9 +46,58 @@ export interface SiteConfig {
   telegramChannelUrl: string | null;
   browserAlerts: { enabled: boolean; publicKey: string | null; reason: string | null };
   alertsPaused: boolean;
+  goal: GoalConfig;
   reactionCooldownHours: number;
   alertMaxAgeHours: number;
   publishConfigured: boolean;
+}
+
+export interface GoalConfig {
+  /** True only when a pool address and USDC address are configured and GOAL_ENABLED is true. */
+  live: boolean;
+  /** Reason the goal is not live (shown only to maintainers). */
+  reason: string | null;
+  rpcUrl: string;
+  chainId: number;
+  explorerUrl: string;
+  poolAddress: string | null;
+  usdcAddress: string | null;
+  targetUsd: number;
+  tokenAddress: string | null;
+}
+
+export const ROBINHOOD_CHAIN = {
+  id: 4663,
+  name: 'Robinhood Chain',
+  rpc: 'https://rpc.mainnet.chain.robinhood.com',
+  explorer: 'https://robinhoodchain.blockscout.com',
+} as const;
+
+export function isEvmAddress(value: string | undefined | null): value is string {
+  return !!value && /^0x[0-9a-fA-F]{40}$/.test(value.trim());
+}
+
+export function goalConfig(env: ConfigVars): GoalConfig {
+  const poolAddress = isEvmAddress(env.GOAL_POOL_ADDRESS) ? env.GOAL_POOL_ADDRESS!.trim() : null;
+  const usdcAddress = isEvmAddress(env.GOAL_USDC_ADDRESS) ? env.GOAL_USDC_ADDRESS!.trim() : null;
+  const tokenAddress = isEvmAddress(env.RESET_TOKEN_ADDRESS) ? env.RESET_TOKEN_ADDRESS!.trim() : null;
+  const enabled = bool(env.GOAL_ENABLED);
+  let reason: string | null = null;
+  if (!enabled) reason = 'GOAL_ENABLED is not true';
+  else if (!poolAddress) reason = 'GOAL_POOL_ADDRESS is missing or invalid';
+  else if (!usdcAddress) reason = 'GOAL_USDC_ADDRESS is missing or invalid';
+  const rpc = httpsUrlOrNull(env.GOAL_CHAIN_RPC) ?? ROBINHOOD_CHAIN.rpc;
+  return {
+    live: reason === null,
+    reason,
+    rpcUrl: rpc,
+    chainId: positiveNumber(env.GOAL_CHAIN_ID, ROBINHOOD_CHAIN.id),
+    explorerUrl: httpsUrlOrNull(env.GOAL_EXPLORER_URL)?.replace(/\/$/, '') ?? ROBINHOOD_CHAIN.explorer,
+    poolAddress,
+    usdcAddress,
+    targetUsd: positiveNumber(env.GOAL_TARGET_USD, 200),
+    tokenAddress,
+  };
 }
 
 const KNOWN_PROVIDERS: Array<[RegExp, string]> = [
@@ -112,6 +170,7 @@ export function siteConfig(env: ConfigVars): SiteConfig {
     telegramChannelUrl: httpsUrlOrNull(env.TELEGRAM_CHANNEL_URL),
     browserAlerts: { enabled: pushReason === null, publicKey: pushReason === null ? publicKey : null, reason: pushReason },
     alertsPaused: bool(env.ALERTS_PAUSED),
+    goal: goalConfig(env),
     reactionCooldownHours: positiveNumber(env.REACTION_COOLDOWN_HOURS, 24),
     alertMaxAgeHours: positiveNumber(env.ALERT_MAX_AGE_HOURS, 72),
     publishConfigured: !!env.CONTENT_PUBLISH_TOKEN && env.CONTENT_PUBLISH_TOKEN.length >= 16,
@@ -146,6 +205,8 @@ export function readiness(env: ConfigVars, hasDb: boolean): { ok: boolean; items
   add('CONTENT_PUBLISH_TOKEN', cfg.publishConfigured ? 'ok' : 'missing', cfg.publishConfigured ? 'present' : 'absent or shorter than 16 characters; publication endpoint disabled.', true);
   add('REACTION_SECRET', env.REACTION_SECRET ? 'ok' : 'missing', env.REACTION_SECRET ? 'present' : 'absent; reactions disabled.', true);
   add('ALERTS_PAUSED', cfg.alertsPaused ? 'off' : 'ok', cfg.alertsPaused ? 'Delivery paused.' : 'Delivery active.');
+  add('GOAL', cfg.goal.live ? 'ok' : 'off', cfg.goal.live ? `Live on chain ${cfg.goal.chainId}, pool ${cfg.goal.poolAddress}, target $${cfg.goal.targetUsd}.` : `Community goal shown as "preparing": ${cfg.goal.reason}.`);
+  add('RESET_TOKEN_ADDRESS', cfg.goal.tokenAddress ? 'ok' : 'off', cfg.goal.tokenAddress ?? 'Token stats hidden until the RESET contract is deployed.');
   add('DB', hasDb ? 'ok' : 'missing', hasDb ? 'D1 bound.' : 'D1 binding missing.');
 
   const ok = items.every((i) => i.status === 'ok' || i.status === 'off');

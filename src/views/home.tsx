@@ -7,6 +7,8 @@ import { formatDate, formatNumber, formatRelativeDays, formatUtcDateTime, interp
 import { AbsoluteTime, LogItem, RelativeTime, ScopeChips, SourceCard, localizedSummary, localizedTitle, primarySource } from './components';
 import { ArrowIcon, BellIcon, CupIcon, DownIcon, RssIcon, SendIcon, UpIcon } from './icons';
 import { Layout, type PageContext } from './layout';
+import { GoalCard } from './goal';
+import type { GoalStatus } from '../routes/goal';
 
 export const CHECK_USAGE_URL = 'https://claude.ai/settings/usage';
 export const USAGE_HELP_URL = 'https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work';
@@ -23,6 +25,7 @@ export interface HomeModel {
   previewSources: SourceAccount[];
   sourceById: Map<string, SourceAccount>;
   begCount: number | null;
+  goal: GoalStatus;
 }
 
 const INITIAL_VISIBLE = 3;
@@ -51,6 +54,7 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
 
       <FiltersForm ctx={ctx} filters={model.filters} />
       <StatsTiles ctx={ctx} stats={model.stats} filters={model.filters} />
+      <GoalCard ctx={ctx} status={model.goal} />
 
       <section class="section" aria-labelledby="graph-heading">
         <div class="section-head">
@@ -145,6 +149,7 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
           )}
         </div>
       </section>
+      <script src="/goal.js" defer></script>
     </Layout>
   );
 };

@@ -11,6 +11,14 @@ What the owner still has to supply or do. Everything else is implemented and ver
 - [ ] `npm run deploy`, then `npm run content:backfill -- --all --env production --yes` with `CONTENT_PUBLISH_TOKEN` exported, so the seed history is recorded as history and can never trigger an alert.
 - [ ] `npm run readiness` shows no ✖ items.
 
+## Community goal and RESET token (infrastructure deployed, not opened)
+
+- [ ] Pool wallet you control on Robinhood Chain; a little ETH for gas.
+- [ ] `npm run token:compile`, then `DEPLOYER_PRIVATE_KEY=0x… npm run token:deploy -- --pool 0xPool` and verify on Blockscout.
+- [ ] Liquidity on Uniswap (LP tokens burned), fee exemptions, treasury wallet.
+- [ ] Confirm `GOAL_USDC_ADDRESS` is the USDC contributors hold; set `GOAL_POOL_ADDRESS`, `RESET_TOKEN_ADDRESS`, `GOAL_ENABLED: "true"`; `npm run deploy`; `npm run goal:round -- open --env production --yes`.
+- [ ] Full sequence and per-round commands: `docs/goal-and-token.md`.
+
 ## Optional
 
 - [ ] **Browser alerts**: `npx tsx scripts/vapid-keys.ts`, put `VAPID_PUBLIC_KEY` and `VAPID_SUBJECT` (`mailto:` you) in `vars`, set `BROWSER_ALERTS_ENABLED` to `"true"`, `npx wrangler secret put VAPID_PRIVATE_KEY`, redeploy. Then do the live check in `docs/acceptance.md` (subscribe in a supported browser, close the tab, publish a test event on a preview deployment, confirm the notification opens the event page). Until then the pill says alerts are not available yet.
