@@ -2,7 +2,7 @@ import type { FC } from 'hono/jsx';
 import { formatUnits } from '../goal/chain';
 import type { GoalStatus } from '../routes/goal';
 import { formatNumber, interpolate, localizePath } from '../i18n';
-import { ArrowIcon } from './icons';
+import { ArrowIcon, CloseIcon } from './icons';
 import { Layout, type PageContext } from './layout';
 
 function shortAddr(a: string): string {
@@ -27,7 +27,7 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
   const open = status.enabled && round?.status === 'open' && !!status.pool.address;
   return (
     <section class="section" aria-labelledby="goal-heading">
-      <div class="card card--sun goal-card" data-role="goal-card">
+      <div class="card card--sun goal-card" data-role="goal-card" data-pool={status.pool.address ?? ''} data-usdc={ctx.cfg.goal.usdcAddress ?? ''} data-chain-id={String(status.chain.id)} data-rpc={ctx.cfg.goal.rpcUrl} data-explorer={status.chain.explorer} data-min={String(status.min_contribution_usd)}>
         <div class="goal-head">
           <div>
             <span class="mono">{t.goal.sub}</span>
@@ -46,29 +46,82 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
         {status.pool.stale ? <p class="status-line">{t.goal.stale}</p> : null}
         {stateLine ? <p class="notice notice--warn goal-state">{stateLine}</p> : null}
         {open ? (
-          <div class="goal-entry" data-role="goal-contribute">
-            <span class="mono">{t.goal.enter}</span>
-            <code class="goal-address" data-role="pool-address">
-              {status.pool.address}
-            </code>
-            <button class="btn btn--accent" type="button" data-role="copy-pool" data-copy={status.pool.address ?? ''} data-copied="✓">
-              <span data-role="copy-label">{t.goal.contribute}</span>
+          <div class="goal-cta" data-role="goal-contribute">
+            <button class="btn btn--accent" type="button" data-role="goal-open" aria-haspopup="dialog">
+              {t.goal.enter} <ArrowIcon />
             </button>
-            <p class="status-line">{t.goal.enterPlaceholder}</p>
+            <span class="status-line">{t.goal.enterPlaceholder}</span>
           </div>
         ) : null}
         <div class="goal-links">
-          {open ? (
-            <a class="btn btn--sun" href={`${status.chain.explorer}/address/${status.pool.address}`} target="_blank" rel="noopener noreferrer">
-              Blockscout <ArrowIcon />
-            </a>
-          ) : null}
           <a class="btn" href={localizePath(locale, '/goal')}>
             {t.goal.learn} <ArrowIcon />
           </a>
+          {open ? (
+            <a class="status-line" href={`${status.chain.explorer}/address/${status.pool.address}`} target="_blank" rel="noopener noreferrer">
+              {t.goal.viewPool}
+            </a>
+          ) : null}
         </div>
+        {open ? <GoalSheet ctx={ctx} status={status} /> : null}
       </div>
     </section>
+  );
+};
+
+/** PerkPond-style contribution sheet: amount → review → wallet approval → submitted → confirmed. */
+const GoalSheet: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }) => {
+  const s = ctx.t.goal.sheet;
+  return (
+    <>
+      <script type="application/json" id="goal-i18n" dangerouslySetInnerHTML={{ __html: JSON.stringify(s).replace(/</g, '\u003c') }} />
+      <dialog id="goal-sheet" class="goal-sheet" aria-labelledby="goal-sheet-title">
+        <div class="dialog-head">
+          <h2 id="goal-sheet-title">{s.title}</h2>
+          <button class="icon-btn" type="button" data-role="sheet-close" aria-label={s.close}>
+            <CloseIcon />
+          </button>
+        </div>
+        <div class="dialog-body">
+          <span class="mono">{s.amount}</span>
+          <div class="goal-presets" role="group" aria-label={s.amount}>
+            {[1, 5, 10, 25].map((n) => (
+              <button class="btn" type="button" data-role="preset" data-amount={String(n)} aria-pressed={n === 5 ? 'true' : 'false'}>
+                ${n}
+              </button>
+            ))}
+          </div>
+          <label class="goal-amount">
+            <span aria-hidden="true">$</span>
+            <input data-role="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="5.00" aria-label={s.custom} />
+          </label>
+          <span class="mono">{s.review}</span>
+          <div class="goal-review">
+            <span>{s.contribution}</span>
+            <span data-role="row-contribution"></span>
+            <span>{s.networkFee}</span>
+            <span data-role="row-fee">—</span>
+            <span class="total">{s.total}</span>
+            <span class="total" data-role="row-total"></span>
+            <span class="note">{s.denomination}</span>
+          </div>
+          <button class="btn btn--accent" type="button" data-role="pay">
+            {s.connect}
+          </button>
+          <p class="goal-sheet-status" data-role="sheet-status" role="status" aria-live="polite"></p>
+          <p class="goal-fallback" data-role="receipt" hidden></p>
+          <div class="goal-fallback" data-role="fallback" hidden>
+            <p>{s.noWallet}</p>
+            <code class="goal-address">{status.pool.address}</code>
+            <p style="margin-top:8px">
+              <button class="btn" type="button" data-role="copy-pool">
+                {s.copy}
+              </button>
+            </p>
+          </div>
+        </div>
+      </dialog>
+    </>
   );
 };
 

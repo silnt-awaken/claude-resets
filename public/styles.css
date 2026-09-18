@@ -1571,3 +1571,68 @@ th {
   overflow-wrap: anywhere;
   font-size: 13px;
 }
+.goal-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.goal-presets .btn[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.goal-amount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-family: var(--font-display);
+  font-size: 28px;
+}
+.goal-amount input {
+  flex: 1 1 120px;
+  min-width: 0;
+  font: inherit;
+  font-size: 28px;
+  padding: 6px 12px;
+  border: var(--border);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.goal-review {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: var(--border);
+  border-radius: 12px;
+  background: var(--paper);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  font-size: 14px;
+}
+.goal-review .total {
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+.goal-review .note {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.goal-sheet-status {
+  min-height: 1.5em;
+  margin-top: 10px;
+  font-weight: 600;
+}
+.goal-fallback {
+  margin-top: 10px;
+  font-size: 14px;
+}
+.goal-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
