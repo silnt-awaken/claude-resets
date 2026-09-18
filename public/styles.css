@@ -1685,3 +1685,11 @@ th {
 .roadmap-when { color: var(--ink-3); font-size: 0.9rem; }
 .roadmap-phase ul { margin: 0.5rem 0 0; }
 .roadmap-phase--later { opacity: 0.8; }
+
+/* ---------- launch bar (contract address at the very top) ---------- */
+.launch-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 14px; padding: 10px 14px; border: var(--border); border-radius: 14px; background: var(--card); box-shadow: var(--shadow); font-size: 0.92rem; }
+.launch-live { font-weight: 700; }
+.launch-ca { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.launch-ca code { font-size: 0.82rem; overflow-wrap: anywhere; }
+.launch-copy { padding: 4px 10px; font-size: 0.85rem; }
+.launch-bar .btn--accent { padding: 4px 12px; font-size: 0.85rem; }

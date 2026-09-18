@@ -31,6 +31,8 @@ export interface ConfigVars {
   RESET_BURNER_ADDRESS?: string;
   RESET_BURN_PER_RESET?: string; // whole RESET
   RESET_BURN_PER_ROUND?: string; // whole RESET
+  /** Where to buy the token (launchpad page). Shown in the launch bar. */
+  RESET_BUY_URL?: string;
   // secrets (values are never rendered)
   CONTENT_PUBLISH_TOKEN?: string;
   VAPID_PRIVATE_KEY?: string;
@@ -76,6 +78,7 @@ export interface GoalConfig {
   burnerAddress: string | null;
   burnPerReset: number; // whole RESET
   burnPerRound: number; // whole RESET
+  buyUrl: string | null;
 }
 
 export const ROBINHOOD_CHAIN = {
@@ -113,6 +116,7 @@ export function goalConfig(env: ConfigVars): GoalConfig {
     burnerAddress: isEvmAddress(env.RESET_BURNER_ADDRESS) ? env.RESET_BURNER_ADDRESS!.trim() : null,
     burnPerReset: positiveNumber(env.RESET_BURN_PER_RESET, 2_500_000),
     burnPerRound: positiveNumber(env.RESET_BURN_PER_ROUND, 5_000_000),
+    buyUrl: httpsUrlOrNull(env.RESET_BUY_URL),
   };
 }
 

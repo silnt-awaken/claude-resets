@@ -221,6 +221,7 @@ export const ko: Dict = {
     notExhaustive: '이 목록은 문서화된 사례를 기반으로 합니다. Anthropic 직원 전체 목록도, 다음에 누가 게시할지에 대한 예측도 아닙니다.',
   },
   goal: {
+    launch: { live: 'Robinhood Chain에서 거래 중', ca: 'CA', copy: '복사', copied: '복사됨', buy: 'pons에서 구매', explorer: '익스플로러' },
     heading: "독자 한 분에게 Max 20x를",
     sub: "Robinhood Chain 커뮤니티 목표",
     pitch: "독자들이 Robinhood Chain에서 USDG를 모읍니다. 풀에 아무 금액이나 보내면 참가 완료. 목표에 도달하면 공개 블록 해시로 기부자 중 한 명을 무작위 추첨해 Claude Max 20x 한 달 비용을 지급합니다. 금액과 상관없이 모든 기부자의 당첨 확률은 같습니다.",

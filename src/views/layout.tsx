@@ -110,15 +110,43 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
         {showSponsors ? <SponsorDialog ctx={ctx} /> : null}
         {cfg.goal.live ? <WalletDialog ctx={ctx} /> : null}
         <script src="/app.js" defer></script>
-        {cfg.goal.live ? <script src="/goal.js" defer></script> : null}
+        {cfg.goal.live || cfg.goal.tokenAddress ? <script src="/goal.js" defer></script> : null}
       </body>
     </html>
+  );
+};
+
+const LaunchBar: FC<{ ctx: PageContext }> = ({ ctx }) => {
+  const { t, cfg } = ctx;
+  const g = cfg.goal;
+  if (!g.tokenAddress) return null;
+  return (
+    <div class="launch-bar" data-role="launch-bar">
+      <span class="chip chip--accent">$RESETS</span>
+      <span class="launch-live">{t.goal.launch.live}</span>
+      <span class="launch-ca">
+        <span class="mono">{t.goal.launch.ca}</span> <code>{g.tokenAddress}</code>
+      </span>
+      <button class="btn launch-copy" type="button" data-copy={g.tokenAddress} data-label-copied={t.goal.launch.copied}>
+        {t.goal.launch.copy}
+      </button>
+      {g.buyUrl ? (
+        <a class="btn btn--accent" href={g.buyUrl} target="_blank" rel="noopener noreferrer">
+          {t.goal.launch.buy}
+        </a>
+      ) : null}
+      <a class="status-line" href={`${g.explorerUrl}/token/${g.tokenAddress}`} target="_blank" rel="noopener noreferrer">
+        {t.goal.launch.explorer}
+      </a>
+    </div>
   );
 };
 
 const Masthead: FC<{ ctx: PageContext }> = ({ ctx }) => {
   const { t, locale, cfg } = ctx;
   return (
+    <>
+    <LaunchBar ctx={ctx} />
     <header class="masthead">
       <a class="brand" href={localizePath(locale, '/')}>
         <span class="brand-mark" aria-hidden="true">
@@ -168,6 +196,7 @@ const Masthead: FC<{ ctx: PageContext }> = ({ ctx }) => {
         </button>
       </div>
     </header>
+    </>
   );
 };
 

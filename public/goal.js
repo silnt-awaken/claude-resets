@@ -13,6 +13,18 @@
     min: parseFloat(body.getAttribute('data-goal-min') || '1'),
     locale: body.getAttribute('data-locale') || 'en',
   };
+  // Copy buttons (launch bar CA) work on every page, even before a round is open.
+  document.querySelectorAll('[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var label = btn.textContent;
+      (navigator.clipboard ? navigator.clipboard.writeText(btn.getAttribute('data-copy')) : Promise.reject()).then(function () {
+        btn.textContent = btn.getAttribute('data-label-copied') || 'Copied';
+        setTimeout(function () {
+          btn.textContent = label;
+        }, 1600);
+      }, function () {});
+    });
+  });
   if (!cfg.pool) return;
   var strings = {};
   try {

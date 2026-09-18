@@ -222,6 +222,7 @@ export const en = {
     notExhaustive: 'This list is based on documented examples. It is not an exhaustive list of Anthropic staff or a prediction of who will post next.',
   },
   goal: {
+    launch: { live: 'live on Robinhood Chain', ca: 'CA', copy: 'Copy', copied: 'Copied', buy: 'Buy on pons', explorer: 'Explorer' },
     heading: "Max 20x for a reader",
     sub: "Community goal on Robinhood Chain",
     pitch: "Readers pool USDG on Robinhood Chain. Send any amount to the pool and you are in: when it reaches the target, one contributor is drawn at random by a public block hash and gets one month of Claude Max 20x paid for. Every contributor has the same chance, whatever the amount.",

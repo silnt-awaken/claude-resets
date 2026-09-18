@@ -219,6 +219,7 @@ export const zhCN: Dict = {
     notExhaustive: '本列表基于有据可查的示例，并非 Anthropic 员工的完整名单，也不是对谁会下一个发帖的预测。',
   },
   goal: {
+    launch: { live: '已在 Robinhood Chain 上线', ca: '合约地址', copy: '复制', copied: '已复制', buy: '在 pons 购买', explorer: '浏览器' },
     heading: "为一位读者赢取 Max 20x",
     sub: "Robinhood Chain 上的社区目标",
     pitch: "读者在 Robinhood Chain 上共同凑集 USDG。向资金池转入任意金额即可参与：达到目标后，由公开的区块哈希随机抽出一位出资者，为其支付一个月的 Claude Max 20x。无论金额多少，每位出资者中奖机会相同。",

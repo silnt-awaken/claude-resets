@@ -221,6 +221,7 @@ export const ja: Dict = {
     notExhaustive: 'この一覧は記録済みの事例に基づいています。Anthropic スタッフの網羅的なリストでも、次に誰が投稿するかの予測でもありません。',
   },
   goal: {
+    launch: { live: 'Robinhood Chain で取引開始', ca: 'CA', copy: 'コピー', copied: 'コピーしました', buy: 'pons で購入', explorer: 'エクスプローラー' },
     heading: "読者 1 人に Max 20x を",
     sub: "Robinhood Chain 上のコミュニティ目標",
     pitch: "読者が Robinhood Chain 上で USDG を出し合います。プールに任意の金額を送れば参加完了。目標額に達すると、公開されたブロックハッシュで出資者から 1 人が無作為に選ばれ、Claude Max 20x の 1 か月分が支払われます。金額に関係なく、出資者全員の当選確率は同じです。",
