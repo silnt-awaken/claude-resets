@@ -4,12 +4,16 @@
   "main": "src/index.tsx",
   "compatibility_date": "2026-08-22",
   "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    { "pattern": "clauderesets.com", "custom_domain": true },
+    { "pattern": "www.clauderesets.com", "custom_domain": true }
+  ],
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "claude-resets",
-      "database_id": "replace-with-your-d1-database-id",
+      "database_id": "8bc08432-7794-4cf8-84b7-a57a67107a83",
       "migrations_dir": "migrations"
     }
   ],
@@ -18,7 +22,7 @@
   // Public, non-secret settings. Secrets go in .dev.vars locally and `wrangler secret put` in production.
   "vars": {
     "SITE_NAME": "Claude Resets",
-    "SITE_URL": "http://localhost:8787",
+    "SITE_URL": "https://clauderesets.com",
     "OWNER_NAME": "Mike",
     "OWNER_X_URL": "",
     "PROJECT_X_URL": "",

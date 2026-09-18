@@ -7,3 +7,4 @@ dist/
 screenshots/*.png
 !screenshots/.gitkeep
 exports/
+.production-secrets.env
