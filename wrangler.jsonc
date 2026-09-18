@@ -40,7 +40,7 @@
     "GOAL_ENABLED": "true",
     // Endpoints tried in order. The official RPC serves eth_getLogs (contributor discovery) but sometimes 429s;
     // publicnode is the fallback for simple reads (it refuses eth_getLogs without a token).
-    "GOAL_CHAIN_RPC": "https://rpc.mainnet.chain.robinhood.com,https://robinhood-rpc.publicnode.com",
+    "GOAL_CHAIN_RPC": "https://rpc.mainnet.chain.robinhood.com,https://rpc-robinhood.blockmachine.io,https://robinhood.api.pocket.network,https://robinhood-rpc.publicnode.com",
     "GOAL_POOL_ADDRESS": "0xCA6d06946e498b03112cFE0812C44Ac165dd4747",
     "GOAL_USDG_ADDRESS": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
     "GOAL_TARGET_USD": "200",
