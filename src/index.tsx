@@ -119,7 +119,7 @@ page('/', async (c, locale) => {
   };
   const html = (<HomePage ctx={ctx} model={model} />).toString();
   const minute = Math.floor(ctx.now.getTime() / 60_000);
-  return cachedHtml(c, `<!doctype html>${html}`, `home:${locale}:${content.revision}:${query}:${minute}:${model.begCount}`, 60);
+  return cachedHtml(c, `<!doctype html>${html}`, `home:${locale}:${content.revision}:${query}:${minute}:${model.begCount}:${model.goal.pool.usdg}:${model.goal.round?.contributors}`, model.goal.enabled ? 20 : 60);
 });
 
 page('/goal', async (c, locale) => {

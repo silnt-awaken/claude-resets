@@ -40,7 +40,7 @@ export function cachedJson(c: Context, body: unknown, etagSeed: string, maxAge =
   const inm = c.req.header('if-none-match');
   const headers: Record<string, string> = {
     etag,
-    'cache-control': `public, max-age=${maxAge}, stale-while-revalidate=${maxAge * 5}`,
+    'cache-control': `public, max-age=${maxAge}, stale-while-revalidate=${maxAge * 2}`,
     vary: 'Accept-Encoding',
   };
   if (inm && inm.split(',').map((s) => s.trim()).includes(etag)) {
@@ -56,7 +56,7 @@ export function cachedHtml(c: Context, html: string, etagSeed: string, maxAge = 
   const inm = c.req.header('if-none-match');
   const headers: Record<string, string> = {
     etag,
-    'cache-control': status === 200 ? `public, max-age=${maxAge}, stale-while-revalidate=${maxAge * 5}` : 'no-store',
+    'cache-control': status === 200 ? `public, max-age=${maxAge}, stale-while-revalidate=${maxAge * 2}` : 'no-store',
     vary: 'Accept-Encoding',
   };
   if (status === 200 && inm && inm.split(',').map((s) => s.trim()).includes(etag)) {
