@@ -1661,3 +1661,10 @@ th {
     border-radius: 50%;
   }
 }
+[hidden] {
+  display: none !important;
+}
+.dialog-body .goal-address {
+  display: block;
+  flex: none;
+}
