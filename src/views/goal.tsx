@@ -197,15 +197,15 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
               </tr>
               <tr>
                 <td>Launch</td>
-                <td>Fair launch on the pons launchpad: a bonding curve paired with USDG, open to everyone at the same time. No presale, no team allocation, no mint function.</td>
+                <td>Fair launch on the pons launchpad: a bonding curve paired with ETH, open to everyone at the same time. No presale, no team allocation, no mint function.</td>
               </tr>
               <tr>
                 <td>Liquidity</td>
-                <td>When the curve has raised 8,090 USDG it graduates and the launchpad locks the liquidity. Nobody, including us, can pull it.</td>
+                <td>When the curve has raised 4.2 ETH it graduates and the launchpad locks the liquidity. Nobody, including us, can pull it.</td>
               </tr>
               <tr>
                 <td>Trade fee</td>
-                <td>3% per trade, set by the launchpad. The creator share (2%) is forwarded to the goal pool, so trading RESET funds the next Max 20x prize in USDG.</td>
+                <td>3% per trade, set by the launchpad. The creator share (2%) is routed to RESET holders by the launchpad, permanently: holding RESET earns a cut of every trade. The goal pool is funded by contributions only.</td>
               </tr>
               <tr>
                 <td>Burn reserve</td>

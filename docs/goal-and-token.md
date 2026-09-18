@@ -20,13 +20,13 @@ Infrastructure is deployed; the goal is **not open** until `GOAL_ENABLED`, `GOAL
 
 ## RESET token
 
-RESET is launched on the **pons launchpad** (ponsfamily.com) on Robinhood Chain: a fair-launch bonding curve paired with **USDG**, graduating once the curve has raised 8,090 USDG, after which the launchpad locks the liquidity. The token contract is pons' standard ERC-20; we have no admin power over it. The site's only lever is the **burner wallet**, which holds the burn reserve and sends fixed amounts to `0x000…dEaD`.
+RESET is launched on the **pons launchpad** (ponsfamily.com) on Robinhood Chain: a fair-launch bonding curve paired with **ETH**, graduating once the curve has raised 4.2 ETH, after which the launchpad locks the liquidity. The token contract is pons' standard ERC-20; we have no admin power over it. The site's only lever is the **burner wallet**, which holds the burn reserve and sends fixed amounts to `0x000…dEaD`.
 
 | Item | Value |
 | --- | --- |
-| Launch | pons launchpad, USDG pair, no presale, no team allocation, no mint function |
-| Liquidity | Locked by the launchpad at graduation (8,090 USDG raised) |
-| Trade fee | 3% per trade (launchpad setting); the 2% creator share is forwarded to the goal pool wallet |
+| Launch | pons launchpad, ETH pair, no presale, no team allocation, no mint function |
+| Liquidity | Locked by the launchpad at graduation (4.2 ETH raised) |
+| Trade fee | 3% per trade (launchpad setting); the 2% creator share is routed to RESET holders by the launchpad (permanent "holder fee sharing"). The goal pool is funded by contributions only |
 | Burn reserve | Bought on the curve at launch (the "developer buy") and transferred to the burner wallet, whose address is published (`RESET_BURNER_ADDRESS`) |
 | Burn schedule | `RESET_BURN_PER_RESET` (default 2,500,000) per published confirmed reset; `RESET_BURN_PER_ROUND` (default 5,000,000) per paid round. Automatic, once per event id |
 | Control | None over the token. The burner wallet's balance is public and only shrinks |
@@ -34,11 +34,10 @@ RESET is launched on the **pons launchpad** (ponsfamily.com) on Robinhood Chain:
 ### Launch sequence (pons)
 
 1. `npm run token:burner -- new` → burner address + key. `npx wrangler secret put BURNER_PRIVATE_KEY` with the key; send the burner ~$3 of ETH on Robinhood Chain for gas.
-2. On pons: name `Reset`, ticker `RESET`, paired asset USDG, description without links, X profile `clauderesets`. Set a developer buy: that is the burn reserve. Launch.
+2. On pons: name `Reset`, ticker `RESET`, paired asset ETH, description without links, X profile `clauderesets`, holder fee sharing on. Set a developer buy in ETH: that is the burn reserve. Launch.
 3. Transfer the developer-buy RESET from the launching wallet to the burner wallet.
 4. In `wrangler.jsonc`: `RESET_TOKEN_ADDRESS` (from pons / Blockscout), `RESET_BURNER_ADDRESS`, `GOAL_POOL_ADDRESS`, `GOAL_ENABLED: "true"`; adjust `RESET_BURN_PER_RESET` / `RESET_BURN_PER_ROUND` to the supply pons minted (defaults assume 1B). `npm run deploy`, then `npm run goal:round -- open --env production --yes`.
 5. `npm run token:burner -- status` shows the burner's gas and RESET balance. `npm run readiness -- --env production` should show BURNER_PRIVATE_KEY and RESET_BURNER_ADDRESS ok.
-6. Forward creator fees from pons to the pool wallet as they accrue (manual; the pool meter reads the wallet, so it shows up).
 
 ### Per reset (automatic)
 

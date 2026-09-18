@@ -45,7 +45,7 @@
     // RESET is launched on the pons launchpad (a standard token), so burns are transfers from the burner wallet
     // to 0xdEaD ("transfer"). "contract" switches to contracts/ResetToken.sol with burnForReset. Amounts are whole RESET.
     "RESET_BURN_MODE": "transfer",
-    "RESET_BURNER_ADDRESS": "",
+    "RESET_BURNER_ADDRESS": "0xA0599e6b56bC2E605920b370151b7a530E74C51C",
     "RESET_BURN_PER_RESET": "2500000",
     "RESET_BURN_PER_ROUND": "5000000",
     "REACTION_COOLDOWN_HOURS": "24",
