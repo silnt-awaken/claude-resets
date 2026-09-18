@@ -153,12 +153,15 @@ describe('rounds', () => {
     expect(s1.progress).toBe(1);
     const html = await (await request('/', {}, LIVE)).text();
     expect(html).toContain('data-role="goal-contribute"');
-    expect(html).toContain('data-role="wallet-connect"');
-    expect(html).toContain('id="wallet-options"');
+    expect(html).toContain('id="goal-sheet"');
+    expect(html).toContain('data-role="fallback"'); // no-wallet help lives inside the sheet, never as a popup
+    expect(html).not.toContain('data-role="wallet-connect"');
+    expect(html).not.toContain('id="wallet-options"');
     expect(html).toContain('src="/goal.js"');
     expect(html).toContain(`data-goal-pool="${POOL}"`);
     const about = await (await request('/about', {}, LIVE)).text();
-    expect(about).toContain('data-role="wallet-connect"'); // header button on every page while the goal is live
+    expect(about).not.toContain('data-role="wallet-connect"'); // wallet stays out of the header
+    expect(about).not.toContain('id="wallet-options"');
     const off = await (await request('/about')).text();
     expect(off).not.toContain('data-role="wallet-connect"');
 

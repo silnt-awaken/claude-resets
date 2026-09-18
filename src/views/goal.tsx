@@ -84,6 +84,7 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
 /** PerkPond-style contribution sheet: amount → review → wallet approval → submitted → confirmed. */
 const GoalSheet: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }) => {
   const s = ctx.t.goal.sheet;
+  const w = ctx.t.goal.wallet;
   return (
     <>
       <dialog id="goal-sheet" class="goal-sheet" aria-labelledby="goal-sheet-title">
@@ -121,14 +122,23 @@ const GoalSheet: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }
           </button>
           <p class="goal-sheet-status" data-role="sheet-status" role="status" aria-live="polite"></p>
           <p class="goal-fallback" data-role="receipt" hidden></p>
-          <div class="goal-fallback" data-role="fallback" hidden>
+          <div class="goal-fallback" data-role="fallback" role="status" hidden>
             <p>{s.noWallet}</p>
             <code class="goal-address">{status.pool.address}</code>
-            <p style="margin-top:8px">
+            <div class="goal-cta">
+              <a class="btn" href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer">
+                {w.install} {w.metamask}
+              </a>
+              <a class="btn" href="https://rabby.io/" target="_blank" rel="noopener noreferrer">
+                {w.install} {w.rabby}
+              </a>
+              <a class="btn btn--accent" href="https://metamask.app.link/" data-role="open-in-app" rel="noopener noreferrer" hidden>
+                {w.openInApp}
+              </a>
               <button class="btn" type="button" data-role="copy-pool">
                 {s.copy}
               </button>
-            </p>
+            </div>
           </div>
         </div>
       </dialog>

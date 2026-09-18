@@ -47,9 +47,6 @@
   function pad(addr) {
     return addr.replace(/^0x/, '').toLowerCase().padStart(64, '0');
   }
-  function short(a) {
-    return a.slice(0, 6) + '…' + a.slice(-4);
-  }
   function transferData(to, units) {
     return '0xa9059cbb' + pad(to) + units.toString(16).padStart(64, '0');
   }
@@ -114,7 +111,8 @@
   } catch (e) {
     /* ignore */
   }
-  // Wallets sometimes inject after our script runs (or after a "which extension?" prompt), so retry quietly.
+  // The wallet is only touched after someone opens the contribution sheet: a silent account read,
+  // never a connect prompt, and nothing at all for readers who only came for reset news.
   function restore() {
     if (!remembered || wallet.account) return;
     var eth = provider();
@@ -127,74 +125,12 @@
     }
     connect(false).catch(function () {});
   }
-  restore();
   window.addEventListener('ethereum#initialized', restore, { once: true });
-  setTimeout(restore, 1000);
-  setTimeout(restore, 3000);
-
-  // ---------- no-wallet options dialog ----------
-  var optionsDialog = document.getElementById('wallet-options');
-  function showOptions() {
-    if (!optionsDialog || typeof optionsDialog.showModal !== 'function') return;
-    var deep = optionsDialog.querySelector('[data-role="open-in-app"]');
-    if (deep) {
-      deep.href = 'https://metamask.app.link/dapp/' + location.host + location.pathname;
-      deep.hidden = !isMobile;
-    }
-    optionsDialog.showModal();
-  }
-  if (optionsDialog) {
-    optionsDialog.querySelectorAll('[data-role="sheet-close"]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        optionsDialog.close();
-      });
-    });
-    optionsDialog.querySelectorAll('[data-role="copy-pool"]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var label = btn.textContent;
-        (navigator.clipboard ? navigator.clipboard.writeText(cfg.pool) : Promise.reject()).then(function () {
-          btn.textContent = t('copied', 'Copied');
-          setTimeout(function () {
-            btn.textContent = label;
-          }, 1600);
-        }, function () {});
-      });
-    });
-  }
-
-  // ---------- header button ----------
-  var headerBtn = document.querySelector('[data-role="wallet-connect"]');
-  if (headerBtn) {
-    var label = headerBtn.querySelector('[data-role="wallet-label"]');
-    var render = function (account) {
-      if (account) {
-        label.textContent = short(account);
-        headerBtn.setAttribute('aria-pressed', 'true');
-        headerBtn.setAttribute('title', t('walletConnected', 'Wallet connected') + ' · ' + account);
-      } else {
-        label.textContent = t('walletConnect', 'Connect wallet');
-        headerBtn.setAttribute('aria-pressed', 'false');
-        headerBtn.setAttribute('title', t('walletConnect', 'Connect wallet'));
-      }
-    };
-    wallet.listeners.push(render);
-    render(wallet.account);
-    headerBtn.addEventListener('click', function () {
-      if (wallet.account) {
-        if (window.confirm(t('walletDisconnect', 'Disconnect') + ' ' + short(wallet.account) + '?')) setAccount(null);
-        return;
-      }
-      if (!provider()) return showOptions();
-      headerBtn.disabled = true;
-      connect(true)
-        .then(function () {
-          return ensureChain(provider());
-        })
-        .catch(function () {})
-        .then(function () {
-          headerBtn.disabled = false;
-        });
-    });
+  // Wallets sometimes inject after our script runs (or after a "which extension?" prompt), so retry quietly.
+  function restoreSoon() {
+    restore();
+    setTimeout(restore, 1000);
+    setTimeout(restore, 3000);
   }
 
   // ---------- contribution sheet ----------
@@ -212,6 +148,7 @@
   var payBtn = $('[data-role="pay"]');
   var status = $('[data-role="sheet-status"]');
   var receipt = $('[data-role="receipt"]');
+  var fallback = $('[data-role="fallback"]');
   var opener = null;
   var amount = 5;
   var busy = false;
@@ -219,6 +156,27 @@
   function say(text) {
     status.textContent = text || '';
   }
+  // No wallet installed: keep the sheet open and show the inline help instead of a popup.
+  function showFallback() {
+    if (!fallback) return;
+    var deep = fallback.querySelector('[data-role="open-in-app"]');
+    if (deep) {
+      deep.href = 'https://metamask.app.link/dapp/' + location.host + location.pathname;
+      deep.hidden = !isMobile;
+    }
+    fallback.hidden = false;
+  }
+  sheet.querySelectorAll('[data-role="copy-pool"]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var label = btn.textContent;
+      (navigator.clipboard ? navigator.clipboard.writeText(cfg.pool) : Promise.reject()).then(function () {
+        btn.textContent = t('copied', 'Copied');
+        setTimeout(function () {
+          btn.textContent = label;
+        }, 1600);
+      }, function () {});
+    });
+  });
   function payLabel() {
     var pay = t('pay', 'Contribute {amount}').replace('{amount}', usd.format(amount));
     return wallet.account ? pay : t('connect', 'Connect wallet') + ' · ' + pay;
@@ -234,13 +192,16 @@
     if (amount > 0 && amount < cfg.min) say(t('minAmount', 'Minimum is $1.'));
     else if (!busy) say('');
   }
-  wallet.listeners.push(function () {
+  wallet.listeners.push(function (account) {
     payBtn.textContent = payLabel();
+    if (account && fallback) fallback.hidden = true;
   });
   card.querySelectorAll('[data-role="goal-open"]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       opener = btn;
       receipt.hidden = true;
+      if (fallback) fallback.hidden = true;
+      restoreSoon();
       setAmount(amount);
       sheet.showModal();
       amountInput.focus();
@@ -295,8 +256,9 @@
     if (busy || amount < cfg.min) return;
     var eth = provider();
     if (!eth) {
-      sheet.close();
-      return showOptions();
+      showFallback();
+      say('');
+      return;
     }
     busy = true;
     payBtn.disabled = true;
