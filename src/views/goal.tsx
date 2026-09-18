@@ -27,7 +27,7 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
   const open = status.enabled && round?.status === 'open' && !!status.pool.address;
   return (
     <section class="section" aria-labelledby="goal-heading">
-      <div class="card card--sun goal-card" data-role="goal-card" data-pool={status.pool.address ?? ''} data-usdc={ctx.cfg.goal.usdcAddress ?? ''} data-chain-id={String(status.chain.id)} data-rpc={ctx.cfg.goal.rpcUrl} data-explorer={status.chain.explorer} data-min={String(status.min_contribution_usd)}>
+      <div class="card card--sun goal-card" data-role="goal-card">
         <div class="goal-head">
           <div>
             <span class="mono">{t.goal.sub}</span>
@@ -74,7 +74,6 @@ const GoalSheet: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }
   const s = ctx.t.goal.sheet;
   return (
     <>
-      <script type="application/json" id="goal-i18n" dangerouslySetInnerHTML={{ __html: JSON.stringify(s).replace(/</g, '\u003c') }} />
       <dialog id="goal-sheet" class="goal-sheet" aria-labelledby="goal-sheet-title">
         <div class="dialog-head">
           <h2 id="goal-sheet-title">{s.title}</h2>
@@ -297,7 +296,6 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
           </>
         ) : null}
       </section>
-      <script src="/goal.js" defer></script>
     </Layout>
   );
 };

@@ -48,6 +48,15 @@ export const GitHubIcon: FC<IconProps> = (p) => (
   </svg>
 );
 
+export const WalletIcon: FC<IconProps> = (p) => (
+  <svg {...base(p)}>
+    {p.title ? <title>{p.title}</title> : null}
+    <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H18v3" />
+    <path d="M3 7.5V17a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H5.5A2.5 2.5 0 0 1 3 7.5z" />
+    <circle cx="16.5" cy="14" r="1.3" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 export const SunIcon: FC<IconProps> = (p) => (
   <svg {...base(p)}>
     {p.title ? <title>{p.title}</title> : null}

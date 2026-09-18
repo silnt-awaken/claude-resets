@@ -4,7 +4,7 @@ import { activeSponsors } from '../domain/content';
 import type { Sponsor } from '../domain/types';
 import type { SiteConfig } from '../env';
 import { LOCALES, dict, formatDate, interpolate, localizePath, ogLocale, type Dict, type Locale } from '../i18n';
-import { CloseIcon, CupIcon, GitHubIcon, GlobeIcon, MoonIcon, ResetMark, SunIcon, XIcon } from './icons';
+import { CloseIcon, CupIcon, GitHubIcon, GlobeIcon, MoonIcon, ResetMark, SunIcon, WalletIcon, XIcon } from './icons';
 
 export interface PageContext {
   locale: Locale;
@@ -91,6 +91,12 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
         data-push-key={cfg.browserAlerts.publicKey ?? ''}
         data-push-enabled={cfg.browserAlerts.enabled ? 'true' : 'false'}
         data-cooldown-hours={String(cfg.reactionCooldownHours)}
+        data-goal-pool={cfg.goal.live ? (cfg.goal.poolAddress ?? '') : ''}
+        data-goal-usdc={cfg.goal.usdcAddress ?? ''}
+        data-goal-chain-id={String(cfg.goal.chainId)}
+        data-goal-rpc={cfg.goal.rpcUrl}
+        data-goal-explorer={cfg.goal.explorerUrl}
+        data-goal-min="1"
       >
         <a class="skip-link" href="#main">
           {t.nav.skip}
@@ -102,7 +108,9 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
           <SiteFooter ctx={ctx} />
         </div>
         {showSponsors ? <SponsorDialog ctx={ctx} /> : null}
+        {cfg.goal.live ? <WalletDialog ctx={ctx} /> : null}
         <script src="/app.js" defer></script>
+        {cfg.goal.live ? <script src="/goal.js" defer></script> : null}
       </body>
     </html>
   );
@@ -138,6 +146,11 @@ const Masthead: FC<{ ctx: PageContext }> = ({ ctx }) => {
           <a class="icon-btn" href={cfg.repoUrl} target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub">
             <GitHubIcon />
           </a>
+        ) : null}
+        {cfg.goal.live ? (
+          <button class="pill wallet-btn" type="button" data-role="wallet-connect" aria-pressed="false" title={t.goal.wallet.connect}>
+            <WalletIcon /> <span data-role="wallet-label">{t.goal.wallet.connect}</span>
+          </button>
         ) : null}
         <button class="icon-btn" type="button" data-role="theme-toggle" aria-pressed="false" aria-label={t.nav.themeToDark} data-label-light={t.nav.themeToLight} data-label-dark={t.nav.themeToDark} title={t.nav.themeToDark}>
           <span class="theme-icon-moon">
@@ -293,5 +306,45 @@ const SponsorDialog: FC<{ ctx: PageContext }> = ({ ctx }) => {
         )}
       </div>
     </dialog>
+  );
+};
+
+/** Shown when no wallet is injected: install links, a mobile deep link, and the pool address as a last resort. */
+const WalletDialog: FC<{ ctx: PageContext }> = ({ ctx }) => {
+  const { t, cfg } = ctx;
+  const w = t.goal.wallet;
+  const strings = { ...t.goal.sheet, walletConnect: w.connect, walletConnected: w.connected, walletDisconnect: w.disconnect, copied: t.goal.sheet.copied };
+  return (
+    <>
+      <script type="application/json" id="goal-i18n" dangerouslySetInnerHTML={{ __html: JSON.stringify(strings).replace(/</g, '\u003c') }} />
+      <dialog id="wallet-options" aria-labelledby="wallet-options-title">
+        <div class="dialog-head">
+          <h2 id="wallet-options-title">{w.noWalletTitle}</h2>
+          <button class="icon-btn" type="button" data-role="sheet-close" aria-label={t.goal.sheet.close}>
+            <CloseIcon />
+          </button>
+        </div>
+        <div class="dialog-body">
+          <p>{w.noWalletBody}</p>
+          <div class="goal-cta">
+            <a class="btn btn--sun" href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer">
+              {w.install} {w.metamask}
+            </a>
+            <a class="btn" href="https://rabby.io/" target="_blank" rel="noopener noreferrer">
+              {w.install} {w.rabby}
+            </a>
+            <a class="btn btn--accent" href="https://metamask.app.link/" data-role="open-in-app" rel="noopener noreferrer" hidden>
+              {w.openInApp}
+            </a>
+          </div>
+          <code class="goal-address">{cfg.goal.poolAddress}</code>
+          <p>
+            <button class="btn" type="button" data-role="copy-pool">
+              {t.goal.sheet.copy}
+            </button>
+          </p>
+        </div>
+      </dialog>
+    </>
   );
 };

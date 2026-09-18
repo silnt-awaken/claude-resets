@@ -148,7 +148,14 @@ describe('rounds', () => {
     expect(s1.progress).toBe(1);
     const html = await (await request('/', {}, LIVE)).text();
     expect(html).toContain('data-role="goal-contribute"');
-    expect(html).toContain(POOL);
+    expect(html).toContain('data-role="wallet-connect"');
+    expect(html).toContain('id="wallet-options"');
+    expect(html).toContain('src="/goal.js"');
+    expect(html).toContain(`data-goal-pool="${POOL}"`);
+    const about = await (await request('/about', {}, LIVE)).text();
+    expect(about).toContain('data-role="wallet-connect"'); // header button on every page while the goal is live
+    const off = await (await request('/about')).text();
+    expect(off).not.toContain('data-role="wallet-connect"');
 
     // Freeze: snapshot contributors from the chain into the entry list (equal odds regardless of amount).
     const transfers = await transfersTo(rpc, 'x', USDC, POOL, round.open_block!, 150);

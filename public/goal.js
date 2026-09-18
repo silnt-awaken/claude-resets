@@ -1,20 +1,19 @@
-// Contribution sheet for the community goal (PerkPond-style):
-// Contribute → amount → review (contribution, network fee, total) → wallet approval → submitted → confirmed.
-// The wallet is only asked for when the visitor presses pay. USDC transfer to the pool via EIP-1193.
+// Wallet connection (header button on every page) and the contribution sheet for the community goal.
+// PerkPond-style: Contribute → amount → review (contribution, network fee, total) → wallet approval → submitted → confirmed.
+// Works with any EIP-1193 wallet (MetaMask, Rabby, Coinbase Wallet, Brave…). Nothing here holds keys.
 (function () {
   'use strict';
-  var card = document.querySelector('[data-role="goal-card"]');
-  var sheet = document.getElementById('goal-sheet');
-  if (!card || !sheet || typeof sheet.showModal !== 'function') return;
+  var body = document.body;
   var cfg = {
-    pool: card.getAttribute('data-pool') || '',
-    usdc: card.getAttribute('data-usdc') || '',
-    chainId: parseInt(card.getAttribute('data-chain-id') || '4663', 10),
-    rpc: card.getAttribute('data-rpc') || '',
-    explorer: card.getAttribute('data-explorer') || '',
-    min: parseFloat(card.getAttribute('data-min') || '1'),
-    locale: document.body.getAttribute('data-locale') || 'en',
+    pool: body.getAttribute('data-goal-pool') || '',
+    usdc: body.getAttribute('data-goal-usdc') || '',
+    chainId: parseInt(body.getAttribute('data-goal-chain-id') || '4663', 10),
+    rpc: body.getAttribute('data-goal-rpc') || '',
+    explorer: body.getAttribute('data-goal-explorer') || '',
+    min: parseFloat(body.getAttribute('data-goal-min') || '1'),
+    locale: body.getAttribute('data-locale') || 'en',
   };
+  if (!cfg.pool) return;
   var strings = {};
   try {
     strings = JSON.parse((document.getElementById('goal-i18n') || {}).textContent || '{}');
@@ -26,84 +25,8 @@
   };
   var intl = { en: 'en-US', 'zh-CN': 'zh-CN', 'zh-TW': 'zh-TW', ja: 'ja-JP', ko: 'ko-KR' }[cfg.locale] || 'en-US';
   var usd = new Intl.NumberFormat(intl, { style: 'currency', currency: 'USD' });
-
-  var $ = function (sel) {
-    return sheet.querySelector(sel);
-  };
-  var amountInput = $('[data-role="amount"]');
-  var presets = sheet.querySelectorAll('[data-role="preset"]');
-  var rowContribution = $('[data-role="row-contribution"]');
-  var rowFee = $('[data-role="row-fee"]');
-  var rowTotal = $('[data-role="row-total"]');
-  var payBtn = $('[data-role="pay"]');
-  var status = $('[data-role="sheet-status"]');
-  var receipt = $('[data-role="receipt"]');
-  var fallback = $('[data-role="fallback"]');
-  var opener = null;
-  var amount = 5;
-  var feeUsd = null;
-  var busy = false;
-
-  function fmtUsdc(n) {
-    return n.toFixed(2) + ' USDC';
-  }
-  function setAmount(n) {
-    amount = Math.max(0, Math.round(n * 100) / 100);
-    for (var i = 0; i < presets.length; i++) presets[i].setAttribute('aria-pressed', parseFloat(presets[i].getAttribute('data-amount')) === amount ? 'true' : 'false');
-    rowContribution.textContent = usd.format(amount) + ' · ' + fmtUsdc(amount);
-    rowFee.textContent = feeUsd == null ? '—' : '≈ ' + usd.format(feeUsd);
-    rowTotal.textContent = usd.format(amount + (feeUsd || 0));
-    payBtn.textContent = t('pay', 'Contribute {amount}').replace('{amount}', usd.format(amount));
-    payBtn.disabled = !(amount >= cfg.min) || busy;
-    if (amount > 0 && amount < cfg.min) say(t('minAmount', 'Minimum is $1.'));
-  }
-  function say(text) {
-    status.textContent = text || '';
-  }
-  function open(btn) {
-    opener = btn;
-    receipt.hidden = true;
-    fallback.hidden = true;
-    say('');
-    setAmount(amount);
-    sheet.showModal();
-    amountInput.focus();
-  }
-  card.querySelectorAll('[data-role="goal-open"]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      open(btn);
-    });
-  });
-  sheet.querySelectorAll('[data-role="sheet-close"]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      sheet.close();
-    });
-  });
-  sheet.addEventListener('close', function () {
-    if (opener) opener.focus();
-  });
-  for (var i = 0; i < presets.length; i++) {
-    presets[i].addEventListener('click', function (ev) {
-      var v = parseFloat(ev.currentTarget.getAttribute('data-amount'));
-      amountInput.value = '';
-      setAmount(v);
-    });
-  }
-  amountInput.addEventListener('input', function () {
-    var v = parseFloat(String(amountInput.value).replace(',', '.'));
-    setAmount(isFinite(v) ? v : 0);
-  });
-  sheet.querySelectorAll('[data-role="copy-pool"]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var label = btn.textContent;
-      (navigator.clipboard ? navigator.clipboard.writeText(cfg.pool) : Promise.reject()).then(function () {
-        btn.textContent = t('copied', 'Copied');
-        setTimeout(function () {
-          btn.textContent = label;
-        }, 1600);
-      }, function () {});
-    });
-  });
+  var STORE = 'claude-resets-wallet';
+  var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   // ---------- chain helpers ----------
   function hex(n) {
@@ -111,6 +34,9 @@
   }
   function pad(addr) {
     return addr.replace(/^0x/, '').toLowerCase().padStart(64, '0');
+  }
+  function short(a) {
+    return a.slice(0, 6) + '…' + a.slice(-4);
   }
   function transferData(to, units) {
     return '0xa9059cbb' + pad(to) + units.toString(16).padStart(64, '0');
@@ -128,10 +54,10 @@
   function provider() {
     return window.ethereum || null;
   }
-  function ensureChain(eth) {
+  function ensureChain(eth, onSwitching) {
     return eth.request({ method: 'eth_chainId' }).then(function (id) {
       if (parseInt(id, 16) === cfg.chainId) return;
-      say(t('switching', 'Switching your wallet to Robinhood Chain…'));
+      if (onSwitching) onSwitching();
       return eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: hex(cfg.chainId) }] }).catch(function (err) {
         if (err && (err.code === 4902 || /unrecognized|not added/i.test(String(err.message)))) {
           return eth.request({
@@ -143,17 +69,193 @@
       });
     });
   }
-  // Fee estimate: gas for a USDC transfer × gas price, in ETH. Shown as USD only if we can price ETH; otherwise "≈ 0.0001 ETH".
-  function estimateFee(from) {
-    var units = BigInt(Math.round(amount * 1e6));
-    return Promise.all([rpc('eth_gasPrice'), rpc('eth_estimateGas', [{ from: from, to: cfg.usdc, data: transferData(cfg.pool, units) }]).catch(function () {
-      return '0xea60';
-    })]).then(function (r) {
-      var wei = BigInt(r[0]) * BigInt(r[1]);
-      var eth = Number(wei) / 1e18;
-      rowFee.textContent = '≈ ' + eth.toFixed(6) + ' ETH';
-      rowTotal.textContent = usd.format(amount) + ' + ' + eth.toFixed(6) + ' ETH';
-    }).catch(function () {});
+
+  // ---------- wallet state shared by the header button and the sheet ----------
+  var wallet = { account: null, listeners: [] };
+  function setAccount(a) {
+    wallet.account = a ? a.toLowerCase() : null;
+    try {
+      if (a) window.localStorage.setItem(STORE, '1');
+      else window.localStorage.removeItem(STORE);
+    } catch (e) {
+      /* ignore */
+    }
+    wallet.listeners.forEach(function (fn) {
+      fn(wallet.account);
+    });
+  }
+  function connect(interactive) {
+    var eth = provider();
+    if (!eth) return Promise.reject(Object.assign(new Error('no wallet'), { code: 'no_wallet' }));
+    return eth.request({ method: interactive ? 'eth_requestAccounts' : 'eth_accounts' }).then(function (accounts) {
+      if (!accounts || !accounts[0]) {
+        if (interactive) throw Object.assign(new Error('no account'), { code: 'no_account' });
+        return null;
+      }
+      setAccount(accounts[0]);
+      return wallet.account;
+    });
+  }
+  var eth0 = provider();
+  if (eth0 && eth0.on) {
+    eth0.on('accountsChanged', function (accounts) {
+      setAccount(accounts && accounts[0] ? accounts[0] : null);
+    });
+  }
+  var remembered = false;
+  try {
+    remembered = window.localStorage.getItem(STORE) === '1';
+  } catch (e) {
+    /* ignore */
+  }
+  if (remembered && eth0) connect(false).catch(function () {});
+
+  // ---------- no-wallet options dialog ----------
+  var optionsDialog = document.getElementById('wallet-options');
+  function showOptions() {
+    if (!optionsDialog || typeof optionsDialog.showModal !== 'function') return;
+    var deep = optionsDialog.querySelector('[data-role="open-in-app"]');
+    if (deep) {
+      deep.href = 'https://metamask.app.link/dapp/' + location.host + location.pathname;
+      deep.hidden = !isMobile;
+    }
+    optionsDialog.showModal();
+  }
+  if (optionsDialog) {
+    optionsDialog.querySelectorAll('[data-role="sheet-close"]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        optionsDialog.close();
+      });
+    });
+    optionsDialog.querySelectorAll('[data-role="copy-pool"]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var label = btn.textContent;
+        (navigator.clipboard ? navigator.clipboard.writeText(cfg.pool) : Promise.reject()).then(function () {
+          btn.textContent = t('copied', 'Copied');
+          setTimeout(function () {
+            btn.textContent = label;
+          }, 1600);
+        }, function () {});
+      });
+    });
+  }
+
+  // ---------- header button ----------
+  var headerBtn = document.querySelector('[data-role="wallet-connect"]');
+  if (headerBtn) {
+    var label = headerBtn.querySelector('[data-role="wallet-label"]');
+    var render = function (account) {
+      if (account) {
+        label.textContent = short(account);
+        headerBtn.setAttribute('aria-pressed', 'true');
+        headerBtn.setAttribute('title', t('walletConnected', 'Wallet connected') + ' · ' + account);
+      } else {
+        label.textContent = t('walletConnect', 'Connect wallet');
+        headerBtn.setAttribute('aria-pressed', 'false');
+        headerBtn.setAttribute('title', t('walletConnect', 'Connect wallet'));
+      }
+    };
+    wallet.listeners.push(render);
+    render(wallet.account);
+    headerBtn.addEventListener('click', function () {
+      if (wallet.account) {
+        if (window.confirm(t('walletDisconnect', 'Disconnect') + ' ' + short(wallet.account) + '?')) setAccount(null);
+        return;
+      }
+      if (!provider()) return showOptions();
+      headerBtn.disabled = true;
+      connect(true)
+        .then(function () {
+          return ensureChain(provider());
+        })
+        .catch(function () {})
+        .then(function () {
+          headerBtn.disabled = false;
+        });
+    });
+  }
+
+  // ---------- contribution sheet ----------
+  var card = document.querySelector('[data-role="goal-card"]');
+  var sheet = document.getElementById('goal-sheet');
+  if (!card || !sheet || typeof sheet.showModal !== 'function') return;
+  var $ = function (sel) {
+    return sheet.querySelector(sel);
+  };
+  var amountInput = $('[data-role="amount"]');
+  var presets = sheet.querySelectorAll('[data-role="preset"]');
+  var rowContribution = $('[data-role="row-contribution"]');
+  var rowFee = $('[data-role="row-fee"]');
+  var rowTotal = $('[data-role="row-total"]');
+  var payBtn = $('[data-role="pay"]');
+  var status = $('[data-role="sheet-status"]');
+  var receipt = $('[data-role="receipt"]');
+  var opener = null;
+  var amount = 5;
+  var busy = false;
+
+  function say(text) {
+    status.textContent = text || '';
+  }
+  function payLabel() {
+    var pay = t('pay', 'Contribute {amount}').replace('{amount}', usd.format(amount));
+    return wallet.account ? pay : t('connect', 'Connect wallet') + ' · ' + pay;
+  }
+  function setAmount(n) {
+    amount = Math.max(0, Math.round(n * 100) / 100);
+    for (var i = 0; i < presets.length; i++) presets[i].setAttribute('aria-pressed', parseFloat(presets[i].getAttribute('data-amount')) === amount ? 'true' : 'false');
+    rowContribution.textContent = usd.format(amount) + ' · ' + amount.toFixed(2) + ' USDC';
+    rowFee.textContent = '—';
+    rowTotal.textContent = usd.format(amount);
+    payBtn.textContent = payLabel();
+    payBtn.disabled = !(amount >= cfg.min) || busy;
+    if (amount > 0 && amount < cfg.min) say(t('minAmount', 'Minimum is $1.'));
+    else if (!busy) say('');
+  }
+  wallet.listeners.push(function () {
+    payBtn.textContent = payLabel();
+  });
+  card.querySelectorAll('[data-role="goal-open"]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      opener = btn;
+      receipt.hidden = true;
+      setAmount(amount);
+      sheet.showModal();
+      amountInput.focus();
+    });
+  });
+  sheet.querySelectorAll('[data-role="sheet-close"]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      sheet.close();
+    });
+  });
+  sheet.addEventListener('close', function () {
+    if (opener) opener.focus();
+  });
+  for (var i = 0; i < presets.length; i++) {
+    presets[i].addEventListener('click', function (ev) {
+      amountInput.value = '';
+      setAmount(parseFloat(ev.currentTarget.getAttribute('data-amount')));
+    });
+  }
+  amountInput.addEventListener('input', function () {
+    var v = parseFloat(String(amountInput.value).replace(',', '.'));
+    setAmount(isFinite(v) ? v : 0);
+  });
+
+  function estimateFee(from, units) {
+    return Promise.all([
+      rpc('eth_gasPrice'),
+      rpc('eth_estimateGas', [{ from: from, to: cfg.usdc, data: transferData(cfg.pool, units) }]).catch(function () {
+        return '0xea60';
+      }),
+    ])
+      .then(function (r) {
+        var eth = Number(BigInt(r[0]) * BigInt(r[1])) / 1e18;
+        rowFee.textContent = '≈ ' + eth.toFixed(6) + ' ETH';
+        rowTotal.textContent = usd.format(amount) + ' + ' + eth.toFixed(6) + ' ETH';
+      })
+      .catch(function () {});
   }
   function waitReceipt(hash, tries) {
     return rpc('eth_getTransactionReceipt', [hash]).then(function (rcpt) {
@@ -171,28 +273,28 @@
     if (busy || amount < cfg.min) return;
     var eth = provider();
     if (!eth) {
-      fallback.hidden = false;
-      say(t('noWallet', 'No wallet found.'));
-      return;
+      sheet.close();
+      return showOptions();
     }
     busy = true;
     payBtn.disabled = true;
     receipt.hidden = true;
-    say(t('connect', 'Connect wallet'));
-    var from = null;
     var units = BigInt(Math.round(amount * 1e6));
-    eth
-      .request({ method: 'eth_requestAccounts' })
-      .then(function (accounts) {
-        from = accounts[0];
-        return ensureChain(eth);
+    var from = null;
+    say(t('connect', 'Connect wallet'));
+    connect(true)
+      .then(function (account) {
+        from = account;
+        return ensureChain(eth, function () {
+          say(t('switching', 'Switching your wallet to Robinhood Chain…'));
+        });
       })
       .then(function () {
         return rpc('eth_call', [{ to: cfg.usdc, data: '0x70a08231' + pad(from) }, 'latest']);
       })
       .then(function (bal) {
         if (BigInt(bal) < units) throw Object.assign(new Error('insufficient'), { code: 'insufficient' });
-        return estimateFee(from);
+        return estimateFee(from, units);
       })
       .then(function () {
         say(t('awaiting', 'Awaiting wallet approval'));
@@ -220,7 +322,7 @@
       })
       .catch(function (err) {
         var code = err && err.code;
-        if (code === 4001 || code === 'ACTION_REJECTED') say(t('rejected', 'Payment was not submitted.'));
+        if (code === 4001 || code === 'ACTION_REJECTED' || code === 'no_account') say(t('rejected', 'Payment was not submitted.'));
         else if (code === 'insufficient') say(t('insufficient', 'Not enough USDC in this wallet on Robinhood Chain.'));
         else say((err && err.message) || t('failed', 'The transaction failed.'));
       })

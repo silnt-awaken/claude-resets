@@ -149,7 +149,6 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
           )}
         </div>
       </section>
-      <script src="/goal.js" defer></script>
     </Layout>
   );
 };
