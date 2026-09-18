@@ -58,6 +58,14 @@ describe('private publication endpoint', () => {
     const ledger = await json<{ publications: unknown[]; alerts: unknown[] }>('/admin/ledger', { headers: adminInit({}).headers });
     expect(ledger.body.publications).toHaveLength(1);
     expect(ledger.body.alerts).toHaveLength(1);
+    // A wording edit that bumps revision AND alertRevision, pushed with the default policy, must not replay the reset alert.
+    const edited = { ...fresh, summary: 'Reworded.', revision: 2, alertRevision: 2 };
+    __setContentForTests(snapshotFor([edited]));
+    const again = await json<{ alert: { created: boolean; reason: string } }>('/admin/publish', adminInit({ eventId: 'fresh', mode: 'publish', event: edited }));
+    expect(again.status).toBe(200);
+    expect(again.body.alert.created).toBe(false);
+    expect(again.body.alert.reason).toMatch(/already sent/);
+    expect(await jobCount()).toBe(1);
   });
 
   it('historical import never enqueues alerts, even with subscribers, and blocks later default alerts', async () => {
@@ -98,9 +106,9 @@ describe('private publication endpoint', () => {
     expect((await json<{ alert: { created: boolean } }>('/admin/publish', adminInit({ eventId: 'policy', mode: 'publish', event: policy }))).body.alert.created).toBe(false);
     expect((await json<{ alert: { created: boolean } }>('/admin/publish', adminInit({ eventId: 'soon', mode: 'publish', event: announced }))).body.alert.created).toBe(false);
     expect(await jobCount()).toBe(0);
-    // A subscriber joins between announcement and confirmation.
+    // A subscriber joins between announcement and confirmation; the confirmation lands days after the original post.
     await subscribe(2, new Date(Date.now() - 60_000).toISOString());
-    const confirmed = { ...announced, eventStatus: 'confirmed' as const, revision: 2, alertRevision: 2, schedule: undefined, revisedAt: recent };
+    const confirmed = { ...announced, time: { precision: 'exact' as const, announcedAt: new Date(Date.now() - 5 * 86_400_000).toISOString().replace(/\.\d{3}Z$/, 'Z') }, eventStatus: 'confirmed' as const, revision: 2, alertRevision: 2, schedule: undefined, revisedAt: recent };
     delete (confirmed as { schedule?: unknown }).schedule;
     __setContentForTests(snapshotFor([policy, confirmed]));
     const res = await json<{ alert: { created: boolean; jobs: number } }>('/admin/publish', adminInit({ eventId: 'soon', mode: 'publish', event: confirmed }));

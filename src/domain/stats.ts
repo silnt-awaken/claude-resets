@@ -10,10 +10,27 @@
 //   shown in the hero and is never included here.
 // - When the newest events cannot be ordered within a day, the latest is "ambiguous".
 
-import { eventDay, eventInstant, sortEventsAsc } from './content';
+import { addDays } from './calendar';
+import { eventDay, eventInstant, eventUtcDay, sortEventsAsc } from './content';
 import type { ResetEvent } from './types';
 
 export const DAY_MS = 86_400_000;
+
+/**
+ * The UTC days a date-only record may really fall on. A record whose date is known in UTC
+ * covers one day; a record known only in a local or unknown zone may straddle the
+ * neighbouring UTC days, so it is treated as spanning three.
+ */
+export function dateOnlySpan(e: ResetEvent): { from: string; to: string } | null {
+  if (e.time.precision !== 'date' || !e.time.announcedOn) return null;
+  const day = e.time.announcedOn;
+  if (eventUtcDay(e)) return { from: day, to: day };
+  return { from: addDays(day, -1), to: addDays(day, 1) };
+}
+
+function spansOverlap(span: { from: string; to: string }, from: string, to: string): boolean {
+  return span.from <= to && span.to >= from;
+}
 
 export type LatestState =
   | { kind: 'none' }
@@ -41,7 +58,7 @@ export function computeStats(events: ResetEvent[], now: Date): Stats {
   const sorted = sortEventsAsc(events);
   const total = sorted.length;
   const exactCount = sorted.filter((e) => e.time.precision === 'exact').length;
-  const dateOnlyDays = sorted.filter((e) => e.time.precision === 'date').map(eventDay);
+  const dateOnlySpans = sorted.map(dateOnlySpan).filter((s): s is { from: string; to: string } => s !== null);
 
   const gaps: number[] = [];
   for (let i = 0; i + 1 < sorted.length; i++) {
@@ -52,8 +69,8 @@ export function computeStats(events: ResetEvent[], now: Date): Stats {
     if (ia == null || ib == null) continue;
     const dayA = eventDay(a);
     const dayB = eventDay(b);
-    // Never measure across a day that holds a date-only event (its position inside the day is unknown).
-    if (dateOnlyDays.some((d) => d >= dayA && d <= dayB)) continue;
+    // Never measure across days that may hold a date-only event (its position inside the day is unknown).
+    if (dateOnlySpans.some((s) => spansOverlap(s, dayA, dayB))) continue;
     const gap = ib - ia;
     if (gap < 0) continue;
     gaps.push(gap);
@@ -68,14 +85,20 @@ export function computeStats(events: ResetEvent[], now: Date): Stats {
   if (total > 0) {
     const last = sorted[total - 1]!;
     const lastDay = eventDay(last);
-    const sameDay = sorted.filter((e) => eventDay(e) === lastDay);
-    const dateOnlySameDay = sameDay.filter((e) => e.time.precision === 'date');
-    if (last.time.precision === 'exact' && dateOnlySameDay.length === 0) {
+    const lastSpan = dateOnlySpan(last) ?? { from: lastDay, to: lastDay };
+    // Every event whose possible days overlap the newest event's possible days cannot be ordered against it.
+    const contenders = sorted.filter((e) => {
+      if (e === last) return true;
+      const span = dateOnlySpan(e) ?? { from: eventDay(e), to: eventDay(e) };
+      return spansOverlap(span, lastSpan.from, lastSpan.to);
+    });
+    const dateOnlyContenders = contenders.filter((e) => e.time.precision === 'date');
+    if (last.time.precision === 'exact' && dateOnlyContenders.length === 0) {
       latest = { kind: 'exact', event: last, instant: eventInstant(last)! };
-    } else if (sameDay.length === 1) {
+    } else if (contenders.length === 1) {
       latest = { kind: 'date', event: last, day: lastDay };
     } else {
-      latest = { kind: 'ambiguous', events: sameDay, day: lastDay };
+      latest = { kind: 'ambiguous', events: contenders, day: lastDay };
     }
   }
 

@@ -99,6 +99,14 @@ describe('GET /api/v1/resets', () => {
     expect(body.data.map((e) => e.id)).toEqual(['2026-06-01-pro-max', '2026-06-09-all-users', '2026-06-13-all-users', '2026-06-19-affected-users', '2026-06-20-everyone-all-plans']);
   });
 
+  it('treats a bare "to" date as inclusive of the whole UTC day', async () => {
+    __setContentForTests(snapshotFor([makeEvent({ id: 'late-evening', at: '2026-06-06T23:30:00Z' }), makeEvent({ id: 'next-day', at: '2026-06-07T00:30:00Z' })]));
+    const { body } = await json<ListResponse>('/api/v1/resets?to=2026-06-06');
+    expect(body.data.map((e) => e.id)).toEqual(['late-evening']);
+    const precise = await json<ListResponse>('/api/v1/resets?to=2026-06-06T23:00:00Z');
+    expect(precise.body.data).toHaveLength(0);
+  });
+
   it('treats date-only records by their stated date in date filters', async () => {
     __setContentForTests(snapshotFor([makeEvent({ id: 'exact', at: '2026-06-05T23:00:00Z' }), makeEvent({ id: 'dated', on: '2026-06-06', dateTimezone: 'unknown' })]));
     const { body } = await json<ListResponse>('/api/v1/resets?from=2026-06-06&to=2026-06-06');

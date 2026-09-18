@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { siteConfig, type Env } from '../env';
-import { deactivateSubscription, isSubscriptionActive, upsertSubscription, validateSubscription } from '../push/subscriptions';
+import { deleteSubscription, isSubscriptionActive, rotateSubscription, upsertSubscription, validateSubscription } from '../push/subscriptions';
 import { clientIp, problem, readJson } from '../util/http';
 import { rateLimit } from '../util/ratelimit';
 
@@ -23,9 +23,11 @@ push.post('/subscriptions', async (c) => {
   if (!validation.ok) return problem(c, 400, 'invalid_subscription', validation.error, { parameter: 'subscription' });
   try {
     const now = new Date();
-    const stored = await upsertSubscription(c.env.DB, validation.subscription, now);
-    const previous = typeof input.previousEndpoint === 'string' ? input.previousEndpoint : null;
-    if (previous && previous !== stored.endpoint) await deactivateSubscription(c.env.DB, previous, now, 'replaced by pushsubscriptionchange');
+    const previous = typeof input.previousEndpoint === 'string' && input.previousEndpoint.length <= 2048 ? input.previousEndpoint : null;
+    const stored =
+      previous && previous !== validation.subscription.endpoint
+        ? await rotateSubscription(c.env.DB, previous, validation.subscription, now)
+        : await upsertSubscription(c.env.DB, validation.subscription, now);
     return c.json({ id: stored.id, active: true }, 201);
   } catch (err) {
     console.error('subscription store failed', err);
@@ -52,7 +54,7 @@ push.delete('/subscriptions', async (c) => {
   const endpoint = (body.value as Record<string, unknown>).endpoint;
   if (typeof endpoint !== 'string' || endpoint.length > 2048) return problem(c, 400, 'invalid_body', 'endpoint required', { parameter: 'endpoint' });
   try {
-    const removed = await deactivateSubscription(c.env.DB, endpoint, new Date());
+    const removed = await deleteSubscription(c.env.DB, endpoint);
     return c.json({ removed });
   } catch (err) {
     console.error('unsubscribe failed', err);

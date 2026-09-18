@@ -87,21 +87,54 @@ export async function upsertSubscription(db: D1Database, sub: Omit<StoredSubscri
   return { id, ...sub };
 }
 
-export async function deactivateSubscription(db: D1Database, endpoint: string, now: Date, reason = 'unsubscribed'): Promise<boolean> {
-  const res = await db
-    .prepare('UPDATE push_subscriptions SET active = 0, revoked_at = ?1, last_error = ?2 WHERE endpoint = ?3 AND active = 1')
-    .bind(now.toISOString(), reason, endpoint)
-    .run();
-  return (res.meta.changes ?? 0) > 0;
+/**
+ * Unsubscribe = delete. The endpoint and keys are removed together with any undelivered jobs,
+ * so nothing about the browser is retained (the privacy page promises exactly this).
+ * Delivered job rows keep only the opaque subscription id, which no longer resolves to anything.
+ */
+export async function deleteSubscription(db: D1Database, endpoint: string): Promise<boolean> {
+  const id = await subscriptionId(endpoint);
+  const [, removed] = await db.batch([
+    db.prepare("DELETE FROM push_jobs WHERE subscription_id = ?1 AND status = 'pending'").bind(id),
+    db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?1').bind(endpoint),
+  ]);
+  return (removed?.meta.changes ?? 0) > 0;
 }
 
-export async function deactivateSubscriptionById(db: D1Database, id: string, now: Date, reason: string): Promise<void> {
-  await db.prepare('UPDATE push_subscriptions SET active = 0, revoked_at = ?1, last_error = ?2 WHERE id = ?3').bind(now.toISOString(), reason, id).run();
+export async function deleteSubscriptionById(db: D1Database, id: string): Promise<void> {
+  await db.batch([
+    db.prepare("DELETE FROM push_jobs WHERE subscription_id = ?1 AND status = 'pending'").bind(id),
+    db.prepare('DELETE FROM push_subscriptions WHERE id = ?1').bind(id),
+  ]);
+}
+
+/**
+ * The browser rotated its subscription (pushsubscriptionchange): keep the original consent
+ * time and locale, move undelivered jobs to the new subscription, and remove the old endpoint.
+ */
+export async function rotateSubscription(db: D1Database, previousEndpoint: string, next: Omit<StoredSubscription, 'id'>, now: Date): Promise<StoredSubscription> {
+  const oldId = await subscriptionId(previousEndpoint);
+  const old = await db.prepare('SELECT created_at, locale FROM push_subscriptions WHERE id = ?1').bind(oldId).first<{ created_at: string; locale: string }>();
+  const stored = await upsertSubscription(db, { ...next, locale: old && isLocale(old.locale) ? (old.locale as Locale) : next.locale }, now);
+  if (old) {
+    await db.batch([
+      db.prepare('UPDATE push_subscriptions SET created_at = ?1 WHERE id = ?2').bind(old.created_at, stored.id),
+      db.prepare("UPDATE OR IGNORE push_jobs SET subscription_id = ?1 WHERE subscription_id = ?2 AND status = 'pending'").bind(stored.id, oldId),
+      db.prepare('DELETE FROM push_jobs WHERE subscription_id = ?1').bind(oldId),
+      db.prepare('DELETE FROM push_subscriptions WHERE id = ?1').bind(oldId),
+    ]);
+  }
+  return stored;
 }
 
 export async function isSubscriptionActive(db: D1Database, endpoint: string): Promise<boolean> {
   const row = await db.prepare('SELECT active FROM push_subscriptions WHERE endpoint = ?1').bind(endpoint).first<{ active: number }>();
   return !!row && row.active === 1;
+}
+
+export async function subscriptionLocale(db: D1Database, endpoint: string): Promise<Locale | null> {
+  const row = await db.prepare('SELECT locale FROM push_subscriptions WHERE endpoint = ?1').bind(endpoint).first<{ locale: string }>();
+  return row && isLocale(row.locale) ? (row.locale as Locale) : null;
 }
 
 export async function countActiveSubscriptions(db: D1Database): Promise<number> {

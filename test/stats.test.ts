@@ -97,6 +97,19 @@ describe('computeStats', () => {
     if (s.latest.kind === 'ambiguous') expect(s.latest.events.map((e) => e.id).sort()).toEqual(['a', 'b']);
   });
 
+  it('treats a date-only record in an unknown timezone as possibly overlapping the neighbouring UTC days', () => {
+    // Local date June 9 could be as late as June 10 05:00 UTC, so an exact June 10 event is not safely "latest".
+    const events = [makeEvent({ id: 'dated', on: '2026-06-09', dateTimezone: 'unknown' }), makeEvent({ id: 'exact', at: '2026-06-10T02:00:00Z' })];
+    const s = computeStats(events, NOW);
+    expect(s.latest.kind).toBe('ambiguous');
+    // But a UTC-resolved date does not spill over.
+    const resolved = [makeEvent({ id: 'dated2', on: '2026-06-09', dateTimezone: 'UTC', utcDayResolved: true }), makeEvent({ id: 'exact2', at: '2026-06-10T02:00:00Z' })];
+    expect(computeStats(resolved, NOW).latest.kind).toBe('exact');
+    // Gap exclusion uses the same span: an exact event two days after an unknown-zone date is still not bridged.
+    const gap = [makeEvent({ at: '2026-06-01T00:00:00Z' }), makeEvent({ on: '2026-06-05', dateTimezone: 'unknown' }), makeEvent({ at: '2026-06-06T01:00:00Z' })];
+    expect(computeStats(gap, NOW).eligibleGaps).toBe(0);
+  });
+
   it('clamps clock skew: a latest event slightly in the future has zero age, never negative', () => {
     const s = computeStats([makeEvent({ at: '2026-09-17T12:00:30Z' })], NOW);
     expect(s.sinceLatestMs).toBe(0);

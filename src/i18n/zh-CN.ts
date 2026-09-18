@@ -226,7 +226,7 @@ export const zhCN: Dict = {
     noEffect: '打赏绝不会改变重置资格或 Anthropic 的用量限制。',
     provider: '由 {provider} 托管',
     sponsorship: '赞助',
-    sponsorshipIntro: '赞助与打赏是分开的，通过邮件联系安排。',
+    sponsorshipIntro: '赞助与打赏是分开的。公布联系邮箱后，可通过邮件洽谈。',
     contact: '联系',
   },
   sponsors: {
@@ -314,7 +314,7 @@ export const zhCN: Dict = {
       },
       {
         heading: '提醒',
-        body: '浏览器提醒、Telegram 频道和订阅源只在经核实的重置发布时触发。发现公告和在 X 上发帖仍由人工完成。',
+        body: '浏览器提醒（在此启用时）、Telegram 频道（已关联时）和订阅源只会在经核实的重置发布后传达。发现公告和在 X 上发帖仍由人工完成。',
       },
       {
         heading: '更正',
@@ -322,6 +322,7 @@ export const zhCN: Dict = {
       },
     ],
     officialHelp: '官方帮助',
+    apiRateLimits: 'API 速率限制（官方文档）',
   },
   privacy: {
     pageTitle: '隐私',

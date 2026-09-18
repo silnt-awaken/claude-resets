@@ -134,15 +134,20 @@ describe('alert creation and delivery', () => {
     expect(transport.calls.get(broken)).toBe(2);
   });
 
-  it('skips a subscriber who unsubscribed during retry and expires stale alerts', async () => {
+  it('removes a subscriber who unsubscribed during retry (endpoint, keys and pending jobs) and expires stale alerts', async () => {
     __setContentForTests(snapshotFor([event]));
     const endpoint = await subscribe(1, 'en', '2026-09-17T10:00:00Z');
     await createAlert(db(), event, 'reset', NOW, NOW);
     const transport = fakeTransport(() => 503);
     await drainPushJobs(env as unknown as Env, { now: NOW, transport });
     await request('/api/v1/push/subscriptions', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ endpoint }) });
+    const rows = await db().prepare('SELECT COUNT(*) AS n FROM push_subscriptions').first<{ n: number }>();
+    expect(rows?.n).toBe(0);
+    const pending = await db().prepare("SELECT COUNT(*) AS n FROM push_jobs WHERE status = 'pending'").first<{ n: number }>();
+    expect(pending?.n).toBe(0);
     const r = await drainPushJobs(env as unknown as Env, { now: new Date(NOW.getTime() + 120_000), transport });
-    expect(r.skipped).toBe(1);
+    expect(r.leased).toBe(0);
+    expect(transport.calls.get(endpoint)).toBe(1);
 
     await clearDb();
     await subscribe(2, 'en', '2026-09-01T10:00:00Z');
@@ -166,6 +171,24 @@ describe('alert creation and delivery', () => {
     expect(await countActiveSubscriptions(db())).toBe(1);
     const resumed = await drainPushJobs(env as unknown as Env, { now: NOW, transport });
     expect(resumed.sent).toBe(1);
+  });
+
+  it('keeps consent time, locale and pending jobs when the browser rotates its subscription', async () => {
+    __setContentForTests(snapshotFor([event]));
+    const oldEndpoint = await subscribe(1, 'ja', '2026-09-01T10:00:00Z');
+    await createAlert(db(), event, 'reset', NOW, NOW);
+    const rotated = await request('/api/v1/push/subscriptions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ subscription: fakeSubscription(2), previousEndpoint: oldEndpoint }) });
+    expect(rotated.status).toBe(201);
+    const row = await db().prepare('SELECT endpoint, locale, created_at FROM push_subscriptions').all<{ endpoint: string; locale: string; created_at: string }>();
+    expect(row.results).toHaveLength(1);
+    expect(row.results[0]!.endpoint).toBe(fakeSubscription(2).endpoint);
+    expect(row.results[0]!.locale).toBe('ja');
+    expect(row.results[0]!.created_at).toBe('2026-09-01T10:00:00Z');
+    const transport = fakeTransport(() => 201);
+    const r = await drainPushJobs(env as unknown as Env, { now: NOW, transport });
+    expect(r.sent).toBe(1);
+    expect(transport.sent[0]!.endpoint).toBe(fakeSubscription(2).endpoint);
+    expect(transport.sent[0]!.url).toBe('/ja/resets/fresh');
   });
 
   it('never double-sends when two drains overlap', async () => {

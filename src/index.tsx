@@ -7,7 +7,7 @@ import { findEvent, loadContent, otherAnnouncements, publishedEvents, sortEvents
 import { filtersToQuery, parseFilters } from './domain/filters';
 import { computeStatus } from './domain/service';
 import { siteConfig, type Env } from './env';
-import { isLocale, type Locale } from './i18n';
+import { isLocale, stripLocale, type Locale } from './i18n';
 import { drainPushJobs } from './push/delivery';
 import { readCount } from './reactions';
 import { admin } from './routes/admin';
@@ -48,6 +48,7 @@ app.use('*', async (c, next) => {
   if (!h.has('content-security-policy') && (h.get('content-type') ?? '').includes('text/html')) h.set('content-security-policy', CSP);
   h.set('x-content-type-options', 'nosniff');
   h.set('referrer-policy', 'strict-origin-when-cross-origin');
+  if (c.req.url.startsWith('https://')) h.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   h.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=()');
   if (!c.req.path.startsWith('/api/') && !c.req.path.startsWith('/mcp')) h.set('x-frame-options', 'DENY');
 });
@@ -146,7 +147,7 @@ page('/mcp/docs', (c, locale) => {
 });
 
 function notFound(c: Ctx, locale: Locale): Response {
-  const ctx = pageContext(c, locale, c.req.path);
+  const ctx = pageContext(c, locale, stripLocale(c.req.path).path);
   return cachedHtml(c, `<!doctype html>${(<NotFoundPage ctx={ctx} />).toString()}`, 'nf', 0, 404);
 }
 

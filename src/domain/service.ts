@@ -130,8 +130,8 @@ export interface ListResult {
 /**
  * Keyset pagination over the qualifying resets. Ordering is (day, instant, id), which does not
  * change when an event is edited, so edits during pagination never skip or duplicate records.
- * Date filters: exact times compare as instants; a date-only record matches when its stated
- * date lies within the [from, to] UTC dates.
+ * Date filters: exact times compare as instants (a bare `to` date covers its whole UTC day);
+ * a date-only record matches when its stated date lies within the [from, to] UTC dates.
  */
 export function listResets(content: ContentSnapshot, filters: Filters, options: ListOptions): ListResult {
   let events = applyFilters(qualifyingResets(content.events), filters).sort(compareEventsAsc);
@@ -144,7 +144,8 @@ export function listResets(content: ContentSnapshot, filters: Filters, options: 
     });
   }
   if (options.to) {
-    const toT = Date.parse(options.to);
+    // A bare date is inclusive of the whole UTC day.
+    const toT = options.to.length === 10 ? Date.parse(`${options.to}T23:59:59.999Z`) : Date.parse(options.to);
     const toDay = options.to.slice(0, 10);
     events = events.filter((e) => {
       const i = eventInstant(e);

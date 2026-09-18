@@ -229,7 +229,7 @@ export const en = {
     noEffect: 'Tipping never changes reset access or Anthropic usage limits.',
     provider: 'Hosted by {provider}',
     sponsorship: 'Sponsorship',
-    sponsorshipIntro: 'Sponsorship is separate from tips and is arranged by email.',
+    sponsorshipIntro: 'Sponsorship is separate from tips. Enquiries go by email once a contact address is published.',
     contact: 'Contact',
   },
   sponsors: {
@@ -319,7 +319,7 @@ export const en = {
       },
       {
         heading: 'Alerts',
-        body: 'Browser alerts, the Telegram channel, and the feeds are only triggered when a verified reset is published. Discovering announcements and posting to X stay manual.',
+        body: 'Browser alerts (when enabled here), the Telegram channel (when one is linked) and the feeds only carry verified resets after they are published. Discovering announcements and posting to X stay manual.',
       },
       {
         heading: 'Corrections',
@@ -327,6 +327,7 @@ export const en = {
       },
     ],
     officialHelp: 'Official help',
+    apiRateLimits: 'API rate limits (official docs)',
   },
   privacy: {
     pageTitle: 'Privacy',
@@ -334,7 +335,7 @@ export const en = {
     items: [
       {
         heading: 'Browser alerts',
-        body: 'If you turn on browser alerts, the push subscription your browser generates (an endpoint URL and encryption keys) is stored so that reset notifications can be sent. No name or email is involved. Turning alerts off deletes the subscription; expired subscriptions are removed automatically.',
+        body: 'If you turn on browser alerts, the push subscription your browser generates (an endpoint URL and encryption keys) is stored so that reset notifications can be sent. No name or email is involved. Turning alerts off deletes the subscription and any undelivered alert; subscriptions the push service reports as expired are deleted automatically.',
       },
       {
         heading: 'Reactions',

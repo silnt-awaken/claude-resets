@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS push_jobs (
   attempts INTEGER NOT NULL DEFAULT 0,
   next_attempt_at TEXT NOT NULL,
   leased_until TEXT,
+  lease_token TEXT,
   last_error TEXT,
   created_at TEXT NOT NULL,
   sent_at TEXT,

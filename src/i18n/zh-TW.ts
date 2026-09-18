@@ -228,7 +228,7 @@ export const zhTW: Dict = {
     noEffect: '打賞絕不會改變重置資格或 Anthropic 的用量限制。',
     provider: '由 {provider} 提供',
     sponsorship: '贊助',
-    sponsorshipIntro: '贊助與打賞是分開的，需透過電子郵件洽談。',
+    sponsorshipIntro: '贊助與打賞是分開的。公布聯絡信箱後，可透過電子郵件洽談。',
     contact: '聯絡',
   },
   sponsors: {
@@ -318,7 +318,7 @@ export const zhTW: Dict = {
       },
       {
         heading: '通知',
-        body: '瀏覽器通知、Telegram 頻道與訂閱源只會在經驗證的重置發布時觸發。發現公告與在 X 上發文仍由人工進行。',
+        body: '瀏覽器通知（在此啟用時）、Telegram 頻道（已連結時）與訂閱源只會在經驗證的重置發布後傳達。發現公告與在 X 上發文仍由人工進行。',
       },
       {
         heading: '更正',
@@ -326,6 +326,7 @@ export const zhTW: Dict = {
       },
     ],
     officialHelp: '官方說明',
+    apiRateLimits: 'API 速率限制（官方文件）',
   },
   privacy: {
     pageTitle: '隱私',

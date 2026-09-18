@@ -86,7 +86,9 @@ export const resetEventSchema = z
   })
   .superRefine((e, ctx) => {
     if (e.eventStatus === 'announced' && !e.schedule) ctx.addIssue({ code: 'custom', message: `${e.id}: announced events need a schedule (statedAt/statedWindow)` });
+    if (e.schedule && !e.schedule.statedAt && !e.schedule.statedWindow) ctx.addIssue({ code: 'custom', message: `${e.id}: schedule must state a time (statedAt) or an approximate window (statedWindow)` });
     if ((e.eventStatus === 'cancelled' || e.eventStatus === 'retracted') && !e.correction) ctx.addIssue({ code: 'custom', message: `${e.id}: cancelled/retracted events need a correction with a reason` });
+    if (e.correction?.kind === 'retraction' && e.eventStatus !== 'retracted') ctx.addIssue({ code: 'custom', message: `${e.id}: a retraction correction requires eventStatus retracted` });
     if (e.editorialStatus === 'published' && e.verificationStatus !== 'verified') ctx.addIssue({ code: 'custom', message: `${e.id}: published events must be verified` });
     if (e.editorialStatus === 'published') {
       for (const l of otherLocales) if (!e.translations[l]) ctx.addIssue({ code: 'custom', message: `${e.id}: published events need a ${l} translation` });
@@ -95,7 +97,7 @@ export const resetEventSchema = z
     if (e.sources.filter((s) => s.role === 'original').length === 0 && e.editorialStatus === 'published')
       ctx.addIssue({ code: 'custom', message: `${e.id}: published events need at least one original source` });
     if (e.alertRevision > e.revision) ctx.addIssue({ code: 'custom', message: `${e.id}: alertRevision cannot exceed revision` });
-    if (e.revisedAt < e.firstPublishedAt) ctx.addIssue({ code: 'custom', message: `${e.id}: revisedAt precedes firstPublishedAt` });
+    if (Date.parse(e.revisedAt) < Date.parse(e.firstPublishedAt)) ctx.addIssue({ code: 'custom', message: `${e.id}: revisedAt precedes firstPublishedAt` });
   });
 
 export const sourceAccountSchema = z.object({
@@ -203,10 +205,13 @@ export function validateContent(raw: RawContent): ValidationResult {
     seenSlugs.add(s.slug);
   }
   const seenHandles = new Set<string>();
+  const seenSourceIds = new Set<string>();
   for (const s of sources.data) {
     const h = s.handle.toLowerCase();
     if (seenHandles.has(h)) errors.push(`sources.json: duplicate handle ${s.handle}`);
     seenHandles.add(h);
+    if (seenSourceIds.has(s.id)) errors.push(`sources.json: duplicate source id ${s.id}`);
+    seenSourceIds.add(s.id);
   }
 
   if (errors.length) return { ok: false, errors, warnings };

@@ -1,7 +1,7 @@
 import type { FC } from 'hono/jsx';
 import type { ResetEvent, SourceAccount } from '../domain/types';
 import { formatDate, formatUtcDateTime, interpolate, localizePath } from '../i18n';
-import { AbsoluteTime, Avatar, RelativeTime, ScopeChips, SourceCard, StatusChips, localizedSummary, localizedTitle, planChipLabel } from './components';
+import { AbsoluteTime, Avatar, RelativeTime, ScopeChips, SourceCard, localizedSummary, localizedTitle, planChipLabel } from './components';
 import { ArrowIcon, CupIcon } from './icons';
 import { Layout, type PageContext } from './layout';
 
@@ -150,7 +150,7 @@ export const AboutPage: FC<{ ctx: PageContext }> = ({ ctx }) => {
           </li>
           <li>
             <a href={API_RATE_LIMITS_URL} target="_blank" rel="noopener noreferrer">
-              API rate limits
+              {t.about.apiRateLimits}
             </a>
           </li>
           <li>
@@ -213,7 +213,7 @@ export const ResetPage: FC<{ ctx: PageContext; e: ResetEvent; related: ResetEven
         <span class="chip chip--sun">{t.kinds[e.kind]}</span>
         <span class="chip">{t.statuses[e.eventStatus]}</span>
         <ScopeChips e={e} t={t} />
-        <StatusChips e={e} t={t} />
+        {e.correction && e.correction.kind === 'correction' && e.eventStatus === 'confirmed' ? <span class="chip chip--mint">{t.archive.corrected}</span> : null}
       </div>
       <div class="section card">
         <div class="log-meta">

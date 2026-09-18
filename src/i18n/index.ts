@@ -115,6 +115,17 @@ export function formatRelative(ms: number, locale: Locale): string {
   return rtf.format(-Math.floor(d / 365), 'year');
 }
 
+/** Relative age for a date-only record, at day granularity (never invents hours or minutes). */
+export function formatRelativeDays(day: string, now: Date, locale: Locale): string {
+  const rtf = new Intl.RelativeTimeFormat(intlLocale(locale), { numeric: 'always' });
+  const today = now.toISOString().slice(0, 10);
+  const days = Math.max(0, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`)) / 86_400_000));
+  if (days < 7) return rtf.format(-days, 'day');
+  if (days < 30) return rtf.format(-Math.floor(days / 7), 'week');
+  if (days < 365) return rtf.format(-Math.floor(days / 30), 'month');
+  return rtf.format(-Math.floor(days / 365), 'year');
+}
+
 export function formatNumber(n: number, locale: Locale): string {
   return new Intl.NumberFormat(intlLocale(locale)).format(n);
 }

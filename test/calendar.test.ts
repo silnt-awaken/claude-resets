@@ -86,7 +86,8 @@ describe('buildCalendar', () => {
 
   it('does not place events after today even if data claims a future date', () => {
     const now = new Date('2026-09-17T12:00:00Z');
-    const grid = buildCalendar([], now, COVERAGE);
-    expect(grid.weeks.flat().filter((c) => c.date > '2026-09-17').every((c) => c.state === 'future')).toBe(true);
+    const grid = buildCalendar([makeEvent({ at: '2026-09-18T01:00:00Z' })], now, COVERAGE);
+    expect(grid.weeks.flat().filter((c) => c.date > '2026-09-17').every((c) => c.state === 'future' && c.events.length === 0)).toBe(true);
+    expect(grid.unplaced).toHaveLength(1);
   });
 });

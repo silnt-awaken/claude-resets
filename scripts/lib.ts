@@ -79,7 +79,8 @@ export function readDevVars(): Record<string, string> {
 
 /** Public vars from wrangler.jsonc (comments stripped). */
 export function readWranglerVars(): Record<string, string> {
-  const raw = readFileSync(path.join(ROOT, 'wrangler.jsonc'), 'utf8').replace(/\/\/[^\n]*\n/g, '\n');
+  // Strip whole-line `//` comments only, so `https://` inside string values survives.
+  const raw = readFileSync(path.join(ROOT, 'wrangler.jsonc'), 'utf8').replace(/^\s*\/\/.*$/gm, '');
   const cfg = JSON.parse(raw) as { vars?: Record<string, string> };
   return cfg.vars ?? {};
 }

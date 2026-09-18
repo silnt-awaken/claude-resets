@@ -16,7 +16,8 @@ self.addEventListener('push', function (event) {
       var parsed = event.data.json();
       payload.title = String(parsed.title || payload.title).slice(0, 120);
       payload.body = String(parsed.body || '').slice(0, 300);
-      payload.url = typeof parsed.url === 'string' && parsed.url.indexOf('/') === 0 ? parsed.url : payload.url;
+      // Same-origin paths only: a single leading slash, never protocol-relative "//host".
+      payload.url = typeof parsed.url === 'string' && /^\/(?!\/)/.test(parsed.url) ? parsed.url : payload.url;
       payload.tag = String(parsed.tag || payload.tag).slice(0, 60);
     }
   } catch (e) {

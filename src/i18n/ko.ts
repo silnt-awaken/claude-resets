@@ -228,7 +228,7 @@ export const ko: Dict = {
     noEffect: '후원은 리셋 이용이나 Anthropic 사용량 한도에 어떤 영향도 주지 않습니다.',
     provider: '{provider}에서 호스팅',
     sponsorship: '스폰서십',
-    sponsorshipIntro: '스폰서십은 후원과 별개이며 이메일로 협의합니다.',
+    sponsorshipIntro: '스폰서십은 후원과 별개입니다. 연락처가 공개되면 이메일로 문의할 수 있습니다.',
     contact: '문의',
   },
   sponsors: {
@@ -318,7 +318,7 @@ export const ko: Dict = {
       },
       {
         heading: '알림',
-        body: '브라우저 알림, Telegram 채널, 피드는 검증된 리셋이 게시될 때만 발송됩니다. 발표를 찾는 일과 X에 게시하는 일은 계속 수작업입니다.',
+        body: '브라우저 알림(여기서 활성화된 경우), Telegram 채널(연결된 경우), 피드는 검증된 리셋이 게시된 뒤에만 전달됩니다. 발표를 찾는 일과 X에 게시하는 일은 계속 수작업입니다.',
       },
       {
         heading: '정정',
@@ -326,6 +326,7 @@ export const ko: Dict = {
       },
     ],
     officialHelp: '공식 도움말',
+    apiRateLimits: 'API 속도 제한(공식 문서)',
   },
   privacy: {
     pageTitle: '개인정보',

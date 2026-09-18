@@ -1,6 +1,6 @@
 // npm run content:publish -- --event <id> [--env production] [--no-alert] [--late]
 // npm run content:backfill -- --event <id> | --all      (never sends alerts)
-// npm run content:correct  -- --event <id> --reason "..." [--alert-correction]
+// npm run content:correct  -- --event <id> [--alert-correction]   (the reason lives in the event's correction record)
 //
 // Calls the private publication endpoint of the running site with the local copy of the
 // event. The server refuses when the deployed content differs (deploy first), records the

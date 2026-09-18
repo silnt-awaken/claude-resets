@@ -1,16 +1,18 @@
 // Durable push alert creation and delivery.
 //
 // - createAlert() runs at publication time: one `alerts` row per (event, alertRevision, kind),
-//   fanned out into `push_jobs` for subscriptions that existed at the consent cutoff.
+//   fanned out into `push_jobs` for subscriptions that existed at the consent cutoff. Both
+//   statements run in one D1 batch (transaction), so an alert can never exist without its jobs.
 // - drainPushJobs() runs from the cron trigger: leases a bounded batch, sends, and records
-//   sent / retry / failed / expired. Overlapping invocations cannot double-send a leased job.
+//   sent / retry / failed / expired. A job is only finalised by the drain that still holds
+//   its lease, so overlapping or slow runs cannot double-send.
 
 import { buildPushPayload, type PushSubscription, type VapidKeys } from '@block65/webcrypto-web-push';
-import { findEvent, loadContent } from '../domain/content';
+import { findEvent, hashString, loadContent } from '../domain/content';
 import type { Locale, ResetEvent } from '../domain/types';
 import { siteConfig, type Env } from '../env';
 import { localizePath } from '../i18n';
-import { deactivateSubscriptionById, type StoredSubscription } from './subscriptions';
+import { deleteSubscriptionById, type StoredSubscription } from './subscriptions';
 
 export interface PushPayloadBody {
   title: string;
@@ -23,12 +25,17 @@ export interface PushTransport {
   send(subscription: StoredSubscription, payload: PushPayloadBody, vapid: VapidKeys): Promise<{ status: number }>;
 }
 
+export const PUSH_FETCH_TIMEOUT_MS = 10_000;
+export const LEASE_MS = 5 * 60_000;
+
 /** Real Web Push delivery over the Push API with VAPID (RFC 8291 / 8292), using Web Crypto in the Worker. */
 export const webPushTransport: PushTransport = {
   async send(subscription, payload, vapid) {
     const sub: PushSubscription = { endpoint: subscription.endpoint, expirationTime: null, keys: { p256dh: subscription.p256dh, auth: subscription.auth } };
-    const request = await buildPushPayload({ data: JSON.stringify(payload), options: { ttl: 6 * 3600, urgency: 'high', topic: payload.tag.slice(0, 32) } }, sub, vapid);
-    const res = await fetch(subscription.endpoint, request);
+    // Topic: at most 32 URL-safe characters; hashed so reset and correction pushes never collide.
+    const topic = `${payload.tag.includes('-correction') ? 'c' : 'r'}-${hashString(payload.tag)}`.slice(0, 32);
+    const request = await buildPushPayload({ data: JSON.stringify(payload), options: { ttl: 6 * 3600, urgency: 'high', topic } }, sub, vapid);
+    const res = await fetch(subscription.endpoint, { ...request, signal: AbortSignal.timeout(PUSH_FETCH_TIMEOUT_MS) });
     return { status: res.status };
   },
 };
@@ -41,51 +48,48 @@ export interface CreateAlertResult {
 }
 
 /**
- * Create the alert row and fan out jobs. Idempotent: a second call for the same
- * (event, alertRevision, kind) creates nothing and enqueues nothing.
- * `kind: 'correction'` targets only recipients of the original reset alert that are still active.
+ * Create the alert row and fan out jobs atomically. Idempotent: a second call for the same
+ * (event, alertRevision, kind) creates nothing and enqueues nothing, because the fan-out uses
+ * the cutoff stored on the alert row and jobs are unique per (alert, subscription).
+ * `kind: 'correction'` targets only recipients of the original reset alert that are still subscribed.
  */
-export async function createAlert(
-  db: D1Database,
-  event: ResetEvent,
-  kind: 'reset' | 'correction',
-  cutoff: Date,
-  now: Date,
-): Promise<CreateAlertResult> {
-  const inserted = await db
+export async function createAlert(db: D1Database, event: ResetEvent, kind: 'reset' | 'correction', cutoff: Date, now: Date): Promise<CreateAlertResult> {
+  const nowIso = now.toISOString();
+  const insertAlert = db
     .prepare('INSERT OR IGNORE INTO alerts (event_id, alert_revision, kind, cutoff_at, created_at) VALUES (?1, ?2, ?3, ?4, ?5)')
-    .bind(event.id, event.alertRevision, kind, cutoff.toISOString(), now.toISOString())
-    .run();
-  const row = await db
-    .prepare('SELECT id FROM alerts WHERE event_id = ?1 AND alert_revision = ?2 AND kind = ?3')
-    .bind(event.id, event.alertRevision, kind)
-    .first<{ id: number }>();
+    .bind(event.id, event.alertRevision, kind, cutoff.toISOString(), nowIso);
+  const alertIdSubquery = `(SELECT id FROM alerts WHERE event_id = ?1 AND alert_revision = ?2 AND kind = ?3)`;
+  const fanOut =
+    kind === 'reset'
+      ? db
+          .prepare(
+            `INSERT OR IGNORE INTO push_jobs (alert_id, subscription_id, status, attempts, next_attempt_at, created_at)
+             SELECT ${alertIdSubquery}, id, 'pending', 0, ?4, ?4 FROM push_subscriptions
+             WHERE active = 1 AND created_at <= (SELECT cutoff_at FROM alerts WHERE event_id = ?1 AND alert_revision = ?2 AND kind = ?3)`,
+          )
+          .bind(event.id, event.alertRevision, kind, nowIso)
+      : db
+          .prepare(
+            `INSERT OR IGNORE INTO push_jobs (alert_id, subscription_id, status, attempts, next_attempt_at, created_at)
+             SELECT ${alertIdSubquery}, s.id, 'pending', 0, ?4, ?4
+             FROM push_subscriptions s
+             JOIN push_jobs j ON j.subscription_id = s.id AND j.status = 'sent'
+             JOIN alerts a ON a.id = j.alert_id AND a.event_id = ?1 AND a.kind = 'reset'
+             WHERE s.active = 1`,
+          )
+          .bind(event.id, event.alertRevision, kind, nowIso);
+  const [inserted, fanned] = await db.batch([insertAlert, fanOut]);
+  const row = await db.prepare('SELECT id FROM alerts WHERE event_id = ?1 AND alert_revision = ?2 AND kind = ?3').bind(event.id, event.alertRevision, kind).first<{ id: number }>();
   if (!row) return { created: false, alertId: null, jobs: 0, reason: 'alert row missing' };
-  if ((inserted.meta.changes ?? 0) === 0) return { created: false, alertId: row.id, jobs: 0, reason: 'alert already exists' };
+  const created = (inserted?.meta.changes ?? 0) > 0;
+  if (!created) return { created: false, alertId: row.id, jobs: 0, reason: 'alert already exists' };
+  return { created: true, alertId: row.id, jobs: fanned?.meta.changes ?? 0 };
+}
 
-  let fanout;
-  if (kind === 'reset') {
-    fanout = await db
-      .prepare(
-        `INSERT OR IGNORE INTO push_jobs (alert_id, subscription_id, status, attempts, next_attempt_at, created_at)
-         SELECT ?1, id, 'pending', 0, ?2, ?2 FROM push_subscriptions WHERE active = 1 AND created_at <= ?3`,
-      )
-      .bind(row.id, now.toISOString(), cutoff.toISOString())
-      .run();
-  } else {
-    fanout = await db
-      .prepare(
-        `INSERT OR IGNORE INTO push_jobs (alert_id, subscription_id, status, attempts, next_attempt_at, created_at)
-         SELECT ?1, s.id, 'pending', 0, ?2, ?2
-         FROM push_subscriptions s
-         JOIN push_jobs j ON j.subscription_id = s.id AND j.status = 'sent'
-         JOIN alerts a ON a.id = j.alert_id AND a.event_id = ?3 AND a.kind = 'reset'
-         WHERE s.active = 1`,
-      )
-      .bind(row.id, now.toISOString(), event.id)
-      .run();
-  }
-  return { created: true, alertId: row.id, jobs: fanout.meta.changes ?? 0 };
+/** True when a reset alert (any alert revision) has already been created for the event. */
+export async function hasResetAlert(db: D1Database, eventId: string): Promise<boolean> {
+  const row = await db.prepare("SELECT 1 AS x FROM alerts WHERE event_id = ?1 AND kind = 'reset' LIMIT 1").bind(eventId).first();
+  return !!row;
 }
 
 export interface DrainOptions {
@@ -102,6 +106,8 @@ export interface DrainResult {
   failed: number;
   expired: number;
   skipped: number;
+  /** Jobs whose lease had been taken over by another run before they could be finalised. */
+  lost: number;
   paused: boolean;
 }
 
@@ -116,11 +122,11 @@ interface JobContext {
   alert_created_at: string;
   alert_kind: string;
   event_id: string;
-  endpoint: string;
-  p256dh: string;
-  auth: string;
-  locale: string;
-  active: number;
+  endpoint: string | null;
+  p256dh: string | null;
+  auth: string | null;
+  locale: string | null;
+  active: number | null;
 }
 
 export function truncate(s: string, max: number): string {
@@ -149,18 +155,20 @@ export async function drainPushJobs(env: Env, options: DrainOptions = {}): Promi
   const limit = options.limit ?? 50;
   const maxAttempts = options.maxAttempts ?? 6;
   const cfg = siteConfig(env);
-  const result: DrainResult = { leased: 0, sent: 0, retried: 0, failed: 0, expired: 0, skipped: 0, paused: cfg.alertsPaused };
+  const result: DrainResult = { leased: 0, sent: 0, retried: 0, failed: 0, expired: 0, skipped: 0, lost: 0, paused: cfg.alertsPaused };
   if (cfg.alertsPaused) return result;
   if (!cfg.browserAlerts.enabled) return result;
   const transport = options.transport ?? webPushTransport;
   const vapid: VapidKeys = { subject: env.VAPID_SUBJECT!, publicKey: env.VAPID_PUBLIC_KEY!, privateKey: env.VAPID_PRIVATE_KEY! };
   const db = env.DB;
   const nowIso = now.toISOString();
-  const leaseUntil = new Date(now.getTime() + 5 * 60_000).toISOString();
+  // A unique lease token per run: the finalising UPDATE only succeeds while this run still holds the lease.
+  const leaseUntil = new Date(now.getTime() + LEASE_MS).toISOString();
+  const leaseToken = crypto.randomUUID();
 
   const leased = await db
     .prepare(
-      `UPDATE push_jobs SET leased_until = ?1, attempts = attempts + 1
+      `UPDATE push_jobs SET leased_until = ?1, lease_token = ?4, attempts = attempts + 1
        WHERE id IN (
          SELECT id FROM push_jobs
          WHERE status = 'pending' AND next_attempt_at <= ?2 AND (leased_until IS NULL OR leased_until < ?2)
@@ -168,7 +176,7 @@ export async function drainPushJobs(env: Env, options: DrainOptions = {}): Promi
        )
        RETURNING id, alert_id, subscription_id, attempts`,
     )
-    .bind(leaseUntil, nowIso, limit)
+    .bind(leaseUntil, nowIso, limit, leaseToken)
     .all<LeasedJob>();
   const jobs = leased.results ?? [];
   result.leased = jobs.length;
@@ -181,66 +189,68 @@ export async function drainPushJobs(env: Env, options: DrainOptions = {}): Promi
     const ctx = await db
       .prepare(
         `SELECT a.created_at AS alert_created_at, a.kind AS alert_kind, a.event_id, s.endpoint, s.p256dh, s.auth, s.locale, s.active
-         FROM alerts a, push_subscriptions s WHERE a.id = ?1 AND s.id = ?2`,
+         FROM alerts a LEFT JOIN push_subscriptions s ON s.id = ?2 WHERE a.id = ?1`,
       )
       .bind(job.alert_id, job.subscription_id)
       .first<JobContext>();
-    const finish = (status: string, error: string | null, nextAttempt?: string) =>
-      db
-        .prepare('UPDATE push_jobs SET status = ?1, last_error = ?2, leased_until = NULL, next_attempt_at = COALESCE(?3, next_attempt_at), sent_at = CASE WHEN ?1 = ?4 THEN ?5 ELSE sent_at END WHERE id = ?6')
-        .bind(status, error, nextAttempt ?? null, 'sent', nowIso, job.id)
+    /** Finalise only while this run still holds the lease. Returns false when another run took over. */
+    const finish = async (status: string, error: string | null, nextAttempt?: string): Promise<boolean> => {
+      const res = await db
+        .prepare(
+          `UPDATE push_jobs SET status = ?1, last_error = ?2, leased_until = NULL, lease_token = NULL, next_attempt_at = COALESCE(?3, next_attempt_at),
+             sent_at = CASE WHEN ?1 = 'sent' THEN ?4 ELSE sent_at END
+           WHERE id = ?5 AND lease_token = ?6`,
+        )
+        .bind(status, error, nextAttempt ?? null, nowIso, job.id, leaseToken)
         .run();
+      if ((res.meta.changes ?? 0) === 0) {
+        result.lost++;
+        return false;
+      }
+      return true;
+    };
 
     if (!ctx) {
-      await finish('failed', 'missing alert or subscription');
-      result.failed++;
+      if (await finish('failed', 'missing alert')) result.failed++;
       continue;
     }
-    if (ctx.active !== 1) {
-      await finish('skipped', 'subscription no longer active');
-      result.skipped++;
+    if (!ctx.endpoint || ctx.active !== 1) {
+      if (await finish('skipped', 'subscription removed')) result.skipped++;
       continue;
     }
     if (now.getTime() - Date.parse(ctx.alert_created_at) > maxAgeMs) {
-      await finish('expired', `alert older than ${cfg.alertMaxAgeHours}h`);
-      result.expired++;
+      if (await finish('expired', `alert older than ${cfg.alertMaxAgeHours}h`)) result.expired++;
       continue;
     }
     const event = findEvent(content.events, ctx.event_id);
     if (!event || event.editorialStatus !== 'published') {
-      await finish('skipped', 'event not published in deployed content');
-      result.skipped++;
+      if (await finish('skipped', 'event not published in deployed content')) result.skipped++;
       continue;
     }
     const locale = (['en', 'zh-CN', 'zh-TW', 'ja', 'ko'] as const).includes(ctx.locale as Locale) ? (ctx.locale as Locale) : 'en';
     const payload = buildPayload(event, locale, cfg.siteName, ctx.alert_kind);
-    const subscription: StoredSubscription = { id: job.subscription_id, endpoint: ctx.endpoint, p256dh: ctx.p256dh, auth: ctx.auth, locale };
+    const subscription: StoredSubscription = { id: job.subscription_id, endpoint: ctx.endpoint, p256dh: ctx.p256dh!, auth: ctx.auth!, locale };
     try {
       const res = await transport.send(subscription, payload, vapid);
       if (res.status >= 200 && res.status < 300) {
-        await finish('sent', null);
-        result.sent++;
+        if (await finish('sent', null)) result.sent++;
       } else if (res.status === 404 || res.status === 410) {
-        await deactivateSubscriptionById(db, job.subscription_id, now, `push service returned ${res.status}`);
-        await finish('failed', `subscription gone (${res.status})`);
-        result.failed++;
+        // Record the outcome first so the job row is not swept away with the subscription's pending jobs.
+        if (await finish('failed', `subscription gone (${res.status})`)) result.failed++;
+        await deleteSubscriptionById(db, job.subscription_id);
       } else if (job.attempts >= maxAttempts) {
-        await finish('failed', `giving up after ${job.attempts} attempts (last status ${res.status})`);
-        result.failed++;
+        if (await finish('failed', `giving up after ${job.attempts} attempts (last status ${res.status})`)) result.failed++;
       } else {
         const next = new Date(now.getTime() + backoffSeconds(job.attempts) * 1000).toISOString();
-        await finish('pending', `status ${res.status}; retry scheduled`, next);
-        result.retried++;
+        if (await finish('pending', `status ${res.status}; retry scheduled`, next)) result.retried++;
       }
     } catch (err) {
       const message = err instanceof Error ? err.message.slice(0, 200) : 'send failed';
       if (job.attempts >= maxAttempts) {
-        await finish('failed', `giving up after ${job.attempts} attempts (${message})`);
-        result.failed++;
+        if (await finish('failed', `giving up after ${job.attempts} attempts (${message})`)) result.failed++;
       } else {
         const next = new Date(now.getTime() + backoffSeconds(job.attempts) * 1000).toISOString();
-        await finish('pending', `${message}; retry scheduled`, next);
-        result.retried++;
+        if (await finish('pending', `${message}; retry scheduled`, next)) result.retried++;
       }
     }
   }

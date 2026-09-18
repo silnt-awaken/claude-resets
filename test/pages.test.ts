@@ -51,10 +51,22 @@ describe('pages', () => {
     expect(html).not.toContain('Claim reset');
   });
 
-  it('keeps the tracker readable without JavaScript: all archive entries are in the HTML', async () => {
+  it('keeps the tracker readable without JavaScript: all archive entries, anchors and full text are in the HTML', async () => {
     const html = await (await request('/')).text();
-    for (const e of loadContent().events.filter((x) => x.kind === 'usage_reset')) expect(html).toContain(`data-event-id="${e.id}"`);
-    expect(html).toContain('<noscript>');
+    for (const e of loadContent().events.filter((x) => x.kind === 'usage_reset')) {
+      expect(html).toContain(`data-event-id="${e.id}"`);
+      expect(html).toContain(`id="event-${e.id}"`); // calendar cells link here without JS
+    }
+    expect(html).toContain('<noscript><style>[data-role="log-extra"]{display:block !important}');
+    expect(html).not.toContain('is-clamped'); // clamping is applied by the script, never server-side
+    expect(html).toContain('href="#event-2026-09-04-max-weekly"');
+  });
+
+  it('language links on a localized 404 keep a single locale prefix', async () => {
+    const html = await (await request('/ja/resets/nope')).text();
+    expect(html).toContain('href="/zh-CN/resets/nope"');
+    expect(html).not.toContain('/zh-CN/ja/');
+    expect(html).toContain('hreflang="en" href="http://test.local/resets/nope"');
   });
 
   it('persists filters in the URL and applies them to hero, stats, calendar and archive', async () => {

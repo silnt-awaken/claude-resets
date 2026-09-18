@@ -97,6 +97,21 @@ describe('classification fixtures', () => {
     }
   });
 
+  it('rejects a confirmed event that carries a retraction, an empty schedule, and duplicate source ids', () => {
+    const stillCounted = makeEvent({ eventStatus: 'confirmed', correction: { kind: 'retraction', reason: 'Withdrawn.', at: '2026-09-02T00:00:00Z' } });
+    const emptySchedule = makeEvent({ eventStatus: 'announced', schedule: { statedAt: null, statedWindow: null } });
+    const result = validateContent({ events: [stillCounted, emptySchedule], sources: snapshotFor([]).sources, sponsors: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.join('\n')).toMatch(/retraction correction requires eventStatus retracted/);
+      expect(result.errors.join('\n')).toMatch(/schedule must state/);
+    }
+    const sources = [...snapshotFor([]).sources, { ...snapshotFor([]).sources[0]!, handle: 'AnotherHandle' }];
+    const dup = validateContent({ events: [], sources, sponsors: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
+    expect(dup.ok).toBe(false);
+    if (!dup.ok) expect(dup.errors.join('\n')).toMatch(/duplicate source id/);
+  });
+
   it('rejects an exact record without a timestamp and a date record without a timezone', () => {
     const bad1 = makeEvent({ time: { precision: 'exact' } });
     const bad2 = makeEvent({ time: { precision: 'date', announcedOn: '2026-06-01' } });

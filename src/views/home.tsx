@@ -3,7 +3,7 @@ import type { CalendarGrid } from '../domain/calendar';
 import { AUDIENCE_FILTERS, WINDOW_FILTERS, filtersToQuery, isDefaultFilters, type Filters } from '../domain/filters';
 import { formatDays, type Stats } from '../domain/stats';
 import type { ResetEvent, SourceAccount } from '../domain/types';
-import { formatDate, formatNumber, formatRelative, formatUtcDateTime, interpolate, localizePath } from '../i18n';
+import { formatDate, formatNumber, formatRelativeDays, formatUtcDateTime, interpolate, localizePath } from '../i18n';
 import { AbsoluteTime, LogItem, RelativeTime, ScopeChips, SourceCard, localizedSummary, localizedTitle, primarySource } from './components';
 import { ArrowIcon, BellIcon, CupIcon, DownIcon, RssIcon, SendIcon, UpIcon } from './icons';
 import { Layout, type PageContext } from './layout';
@@ -231,7 +231,7 @@ const HeroCard: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, model }) =>
       <button class="beg" type="button" data-role="beg" aria-describedby="beg-help" title={t.beg.title}>
         <span aria-hidden="true">🙏</span>
         <span>{t.beg.label}</span>
-        <span class="beg-count" data-role="beg-count" aria-label={interpolate(t.beg.count, { count: model.begCount ?? 0 })}>
+        <span class="beg-count" data-role="beg-count" aria-label={model.begCount == null ? t.beg.unavailable : interpolate(t.beg.count, { count: model.begCount })}>
           {model.begCount == null ? '—' : formatNumber(model.begCount, locale)}
         </span>
       </button>
@@ -286,7 +286,7 @@ const HeroCard: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, model }) =>
         {latest.kind === 'exact' ? (
           <RelativeTime e={e} locale={locale} now={now} t={t} class="hero-figure" />
         ) : (
-          <span class="hero-figure hero-figure--small">{interpolate(t.time.approx, { rel: formatRelative(now.getTime() - Date.parse(`${latest.day}T12:00:00Z`), locale) })}</span>
+          <span class="hero-figure hero-figure--small">{interpolate(t.time.approx, { rel: formatRelativeDays(latest.day, now, locale) })}</span>
         )}
       </div>
       <div class="hero-row">
@@ -380,8 +380,7 @@ const StatsTiles: FC<{ ctx: PageContext; stats: Stats; filters: Filters }> = ({ 
         </div>
       </div>
       <p class="stats-note" id="stats-note">
-        {showing ? `${showing} ` : ''}
-        {t.stats.scope}{' '}
+        {showing ? `${showing} ` : `${t.stats.scope} `}
         {stats.partialSample && stats.eligibleGaps > 0 ? `${interpolate(t.stats.partial, { eligible: stats.eligibleGaps, total: stats.totalGaps })} ` : ''}
         {interpolate(t.stats.coverage, { date: formatDate(ctx.content.coverageStart, locale) })}{' '}
         <a href={localizePath(locale, '/about')}>{t.stats.explain}</a>
@@ -434,6 +433,7 @@ const Calendar: FC<{ ctx: PageContext; grid: CalendarGrid; events: ResetEvent[] 
                     data-date={cell.date}
                     aria-label={`${label} (${cell.events.length})`}
                     aria-expanded="false"
+                    aria-controls="cg-details"
                   ></a>
                 );
               }
@@ -442,7 +442,7 @@ const Calendar: FC<{ ctx: PageContext; grid: CalendarGrid; events: ResetEvent[] 
           )}
         </div>
       </div>
-      <div class="cg-details" data-role="cg-details" hidden tabindex={-1}></div>
+      <div class="cg-details" id="cg-details" data-role="cg-details" hidden tabindex={-1} aria-live="polite"></div>
       <script type="application/json" data-role="cg-data" dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, '\\u003c') }} />
       <div class="cg-foot">
         <span>{t.calendar.timezone} · {t.calendar.selectHint}</span>
@@ -475,7 +475,7 @@ const Archive: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, model }) => 
       {rest.length > 0 ? (
         <>
           <noscript>
-            <style>{`[data-role="log-extra"]{display:block !important}[data-role="log-toggle"]{display:none}`}</style>
+            <style dangerouslySetInnerHTML={{ __html: '[data-role="log-extra"]{display:block !important}[data-role="log-toggle"]{display:none}' }} />
           </noscript>
           <div data-role="log-extra" hidden>
             <ol class="log" style="margin-top:18px">

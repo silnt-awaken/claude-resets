@@ -126,8 +126,15 @@ mcp.all('/', async (c) => {
   const rl = rateLimit(`mcp:${clientIp(c)}`, 60, 60_000);
   if (!rl.allowed) return problem(c, 429, 'rate_limited', 'Too many requests. Please slow down.', { retryAfter: rl.retryAfterSeconds });
   if (c.req.method !== 'POST' && c.req.method !== 'GET' && c.req.method !== 'DELETE') return problem(c, 405, 'method_not_allowed', 'Use POST for MCP requests.');
-  const len = Number(c.req.header('content-length') ?? '0');
-  if (len > 64 * 1024) return problem(c, 413, 'payload_too_large', 'MCP request body too large.');
+  if (c.req.method === 'POST') {
+    // Clients that stream bodies omit Content-Length; the request is still fully buffered before parsing.
+    const lenHeader = c.req.header('content-length');
+    if (lenHeader != null && Number(lenHeader) > 64 * 1024) return problem(c, 413, 'payload_too_large', 'MCP request body too large.');
+    if (lenHeader == null) {
+      const text = await c.req.raw.clone().text();
+      if (text.length > 64 * 1024) return problem(c, 413, 'payload_too_large', 'MCP request body too large.');
+    }
+  }
   // Stateless mode: a fresh server + transport per request, no session ids to manage.
   // The response body streams after handleRequest returns, so the server is not closed here;
   // it is released with the request scope.

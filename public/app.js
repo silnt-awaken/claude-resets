@@ -116,7 +116,7 @@
   (function localTimes() {
     var fmtLocal;
     try {
-      fmtLocal = new Intl.DateTimeFormat(intl, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+      fmtLocal = new Intl.DateTimeFormat(intl, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
     } catch (e) {
       return;
     }
@@ -166,6 +166,11 @@
   $$('[data-role="read-more"]').forEach(function (btn) {
     var text = btn.previousElementSibling;
     if (!text) return;
+    // Progressive enhancement: the server sends the full text; clamp it now that we can expand it again.
+    text.classList.add('is-clamped');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.textContent = btn.getAttribute('data-more');
+    btn.hidden = false;
     btn.addEventListener('click', function () {
       var expanded = btn.getAttribute('aria-expanded') === 'true';
       text.classList.toggle('is-clamped', expanded);
@@ -399,7 +404,9 @@
         })
         .then(function (sub) {
           if (!sub) {
-            setState(Notification.permission === 'granted' ? 'granted' : 'idle');
+            var granted = Notification.permission === 'granted';
+            setState(granted ? 'granted' : 'idle');
+            if (granted) btn.setAttribute('title', s('push.granted', btn.getAttribute('title')));
             return;
           }
           return api('POST', '/api/v1/push/subscriptions/check', { endpoint: sub.endpoint })
@@ -411,7 +418,11 @@
               else {
                 // The browser still holds a subscription the server no longer knows: re-register it.
                 return api('POST', '/api/v1/push/subscriptions', { subscription: sub.toJSON(), locale: locale }).then(function (r) {
-                  setState(r.ok ? 'subscribed' : 'revoked');
+                  if (r.ok) setState('subscribed');
+                  else {
+                    setState('revoked');
+                    showHint(s('push.revoked', 'This browser’s subscription expired. Turn alerts on again to resubscribe.'));
+                  }
                 });
               }
             });

@@ -56,7 +56,8 @@ export function buildCalendar(events: ResetEvent[], now: Date, coverageStart: st
   const unplaced: ResetEvent[] = [];
   for (const e of events) {
     const day = eventUtcDay(e);
-    if (!day) {
+    if (!day || day > todayUtc) {
+      // No established UTC day, or a day that has not happened yet: future cells stay blank.
       unplaced.push(e);
       continue;
     }

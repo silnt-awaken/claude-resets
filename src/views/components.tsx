@@ -1,7 +1,7 @@
 import type { FC } from 'hono/jsx';
 import type { EventSource, ResetEvent, SourceAccount } from '../domain/types';
 import { eventInstant } from '../domain/content';
-import { formatDate, formatRelative, formatUtcDateTime, interpolate, localizePath, type Dict, type Locale } from '../i18n';
+import { formatDate, formatRelative, formatRelativeDays, formatUtcDateTime, interpolate, localizePath, type Dict, type Locale } from '../i18n';
 import type { PageContext } from './layout';
 import { ArrowIcon } from './icons';
 
@@ -87,8 +87,7 @@ export const RelativeTime: FC<{ e: ResetEvent; locale: Locale; now: Date; t: Dic
       </span>
     );
   }
-  const dayMs = Date.parse(`${e.time.announcedOn}T12:00:00Z`);
-  return <span class={cls ?? 'time-pill'}>{interpolate(t.time.approx, { rel: formatRelative(now.getTime() - dayMs, locale) })}</span>;
+  return <span class={cls ?? 'time-pill'}>{interpolate(t.time.approx, { rel: formatRelativeDays(e.time.announcedOn ?? '', now, locale) })}</span>;
 };
 
 export const ScopeChips: FC<{ e: ResetEvent; t: Dict }> = ({ e, t }) => (
@@ -121,7 +120,7 @@ export const LogItem: FC<{ ctx: PageContext; e: ResetEvent; sourceById: Map<stri
   const summary = localizedSummary(e, locale);
   const long = summary.length > 220;
   return (
-    <li class="log-item" data-event-id={e.id} hidden={hidden}>
+    <li class="log-item" id={`event-${e.id}`} data-event-id={e.id} hidden={hidden}>
       <Avatar name={src.displayName} classification={account?.classification} href={account?.profileUrl} />
       <div class="bubble">
         <div class="log-meta">
@@ -134,12 +133,13 @@ export const LogItem: FC<{ ctx: PageContext; e: ResetEvent; sourceById: Map<stri
         <h3 class="log-title">
           <a href={localizePath(locale, `/resets/${e.id}`)}>{localizedTitle(e, locale)}</a>
         </h3>
-        <p class={`log-text${long ? ' is-clamped' : ''}`} data-role="log-text">
+        <p class="log-text" data-role="log-text" data-long={long ? 'true' : undefined}>
           {summary}
         </p>
         {long ? (
-          <button class="link-btn" type="button" data-role="read-more" data-more={t.archive.readMore} data-less={t.archive.readLess} aria-expanded="false">
-            {t.archive.readMore}
+          // Full text is in the HTML; the script clamps it and reveals this button only when JavaScript runs.
+          <button class="link-btn" type="button" data-role="read-more" data-more={t.archive.readMore} data-less={t.archive.readLess} aria-expanded="true" hidden>
+            {t.archive.readLess}
           </button>
         ) : null}
         {src.excerpt ? (

@@ -228,7 +228,7 @@ export const ja: Dict = {
     noEffect: '支援してもリセットへのアクセスや Anthropic の使用制限が変わることは一切ありません。',
     provider: '{provider} でホスト',
     sponsorship: 'スポンサーシップ',
-    sponsorshipIntro: 'スポンサーシップは支援とは別で、メールで調整します。',
+    sponsorshipIntro: 'スポンサーシップは支援とは別です。連絡先が公開され次第、メールでお問い合わせいただけます。',
     contact: '連絡先',
   },
   sponsors: {
@@ -318,7 +318,7 @@ export const ja: Dict = {
       },
       {
         heading: '通知',
-        body: 'ブラウザ通知、Telegram チャンネル、フィードは、検証済みのリセットが公開されたときにのみ発信されます。発表の発見と X への投稿は手作業のままです。',
+        body: 'ブラウザ通知（ここで有効な場合）、Telegram チャンネル（リンクされている場合）、フィードは、検証済みのリセットが公開された後にのみ伝えます。発表の発見と X への投稿は手作業のままです。',
       },
       {
         heading: '訂正',
@@ -326,6 +326,7 @@ export const ja: Dict = {
       },
     ],
     officialHelp: '公式ヘルプ',
+    apiRateLimits: 'API レート制限（公式ドキュメント）',
   },
   privacy: {
     pageTitle: 'プライバシー',

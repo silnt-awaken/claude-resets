@@ -13,7 +13,8 @@ const excerpt = flagString(flags, 'excerpt');
 const kind = (flagString(flags, 'kind') ?? 'usage_reset') as ResetEvent['kind'];
 const statement = flagString(flags, 'audience') ?? fail('--audience "<wording used by the source, e.g. all users>" is required');
 const plansFlag = flagString(flags, 'plans') ?? 'unspecified';
-const scope = (flagString(flags, 'scope') ?? (plansFlag === 'all' || plansFlag === 'subscribers' ? 'broad' : 'limited')) as ResetEvent['audience']['scope'];
+// Unknown stays unknown: only an explicit plan list defaults to "limited".
+const scope = (flagString(flags, 'scope') ?? (plansFlag === 'all' || plansFlag === 'subscribers' ? 'broad' : plansFlag === 'unspecified' ? 'unspecified' : 'limited')) as ResetEvent['audience']['scope'];
 const windowsFlag = flagString(flags, 'windows') ?? 'unspecified';
 const status = (flagString(flags, 'status') ?? 'confirmed') as ResetEvent['eventStatus'];
 const statedAt = flagString(flags, 'stated-at') ?? null;

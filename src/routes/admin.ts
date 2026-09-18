@@ -6,7 +6,7 @@ import { eventContentHash, findEvent, isQualifyingReset, loadContent } from '../
 import { resetEventSchema } from '../domain/schema';
 import type { ResetEvent } from '../domain/types';
 import { siteConfig, type Env } from '../env';
-import { createAlert, drainPushJobs } from '../push/delivery';
+import { createAlert, drainPushJobs, hasResetAlert } from '../push/delivery';
 import { countActiveSubscriptions } from '../push/subscriptions';
 import { problem, readJson, timingSafeEqual } from '../util/http';
 
@@ -85,13 +85,17 @@ admin.post('/publish', async (c) => {
   const cfg = siteConfig(c.env);
   let alert: { created: boolean; alertId: number | null; jobs: number; reason?: string } | null = null;
   const backfilled = await db.prepare("SELECT 1 AS x FROM publications WHERE event_id = ?1 AND mode = 'backfill'").bind(req.eventId).first();
+  const previouslyAnnounced = await db.prepare("SELECT 1 AS x FROM publications WHERE event_id = ?1 AND event_status = 'announced'").bind(req.eventId).first();
 
   if (req.mode === 'publish' && req.alertPolicy === 'default') {
     if (!isQualifyingReset(req.event)) alert = { created: false, alertId: null, jobs: 0, reason: 'not a confirmed usage reset; no default alert' };
     else if (backfilled) alert = { created: false, alertId: null, jobs: 0, reason: 'event was imported as history; alerts suppressed' };
+    else if (await hasResetAlert(db, req.eventId)) alert = { created: false, alertId: null, jobs: 0, reason: 'a reset alert was already sent for this event; use a correction if subscribers must be told' };
     else {
+      // Freshness is judged from the announcement, except when this publication confirms a reset that
+      // was previously published as announced: the confirmation itself is the news.
       const announced = req.event.time.precision === 'exact' && req.event.time.announcedAt ? Date.parse(req.event.time.announcedAt) : Date.parse(`${req.event.time.announcedOn}T12:00:00Z`);
-      const ageHours = (now.getTime() - announced) / 3_600_000;
+      const ageHours = previouslyAnnounced ? 0 : (now.getTime() - announced) / 3_600_000;
       if (ageHours > cfg.alertMaxAgeHours && !req.late) {
         alert = { created: false, alertId: null, jobs: 0, reason: `announcement is ${Math.round(ageHours)}h old (limit ${cfg.alertMaxAgeHours}h); pass late=true to alert anyway` };
       } else {
