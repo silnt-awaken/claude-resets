@@ -221,16 +221,16 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
               <tr>
                 <td>Burn reserve</td>
                 <td>
-                  Bought on the curve at launch by the creator, like anyone else, and held by the site's burner wallet
-                  {token?.burner ? (
+                  The developer buy (5,740,664 RESETS, 0.57% of supply) is locked in a vault contract
+                  {token?.vault ? (
                     <>
                       {' '}
-                      <a href={`${explorer}/address/${token.burner}`} target="_blank" rel="noopener noreferrer">
-                        <code>{token.burner}</code>
+                      <a href={`${explorer}/address/${token.vault}`} target="_blank" rel="noopener noreferrer">
+                        <code>{token.vault}</code>
                       </a>
                     </>
                   ) : null}
-                  . That wallet does one thing: send RESETS to the dead address.
+                  {' '}that can send tokens to exactly one place: the dead address. No owner, no withdraw, no upgrade. The site's burner wallet can trigger the scheduled burns and nothing else.
                 </td>
               </tr>
               <tr>
@@ -241,7 +241,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
               </tr>
               <tr>
                 <td>Control</td>
-                <td>The token contract is the launchpad's standard contract; we hold no admin power over it. The only thing we control is the burner wallet, whose balance is public and only ever shrinks.</td>
+                <td>The token contract is the launchpad's standard contract; we hold no admin power over it. The reserve sits in the vault, which nobody can withdraw from. The only thing we control is when the scheduled burns fire.</td>
               </tr>
             </tbody>
           </table>
@@ -268,7 +268,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             {token.reserve != null ? (
               <>
                 <dt>Burn reserve</dt>
-                <dd>{formatUnits(BigInt(token.reserve), token.decimals, 0)} RESETS waiting for the next resets</dd>
+                <dd>{formatUnits(BigInt(token.reserve), token.decimals, 0)} RESETS locked in the vault, waiting for the next resets</dd>
               </>
             ) : null}
           </dl>

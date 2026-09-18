@@ -28,7 +28,7 @@ export interface GoalStatus {
     payout_tx: string | null;
   };
   past_rounds: Array<{ id: number; title: string; status: string; winner: string | null; payout_tx: string | null; paid_at: string | null }>;
-  token: null | { address: string; total_supply: string; burned: string; circulating: string; reserve: string | null; burner: string | null; burn_per_reset: number; burn_per_round: number; decimals: number; read_at: string };
+  token: null | { address: string; total_supply: string; burned: string; circulating: string; reserve: string | null; burner: string | null; vault: string | null; burn_per_reset: number; burn_per_round: number; decimals: number; read_at: string };
   /** Scheduled burns triggered by the site (newest first). Automatic once the burner wallet is configured. */
   burns: Array<{ kind: TokenBurn['kind']; ref: string; status: TokenBurn['status']; tx: string | null; block: number | null; at: string }>;
   progress: number; // 0..1
@@ -78,7 +78,7 @@ export async function goalStatus(env: Env, fetchFn: FetchLike = fetch): Promise<
   if (cfg.tokenAddress) {
     try {
       const t = await cached<TokenSnapshot>(`token:${cfg.tokenAddress}`, 60_000, () => readToken(cfg, fetchFn));
-      status.token = { address: t.address, total_supply: t.totalSupply.toString(), burned: t.burned.toString(), circulating: t.circulating.toString(), reserve: t.reserve?.toString() ?? null, burner: cfg.burnerAddress, burn_per_reset: cfg.burnPerReset, burn_per_round: cfg.burnPerRound, decimals: t.decimals, read_at: t.readAt };
+      status.token = { address: t.address, total_supply: t.totalSupply.toString(), burned: t.burned.toString(), circulating: t.circulating.toString(), reserve: t.reserve?.toString() ?? null, burner: cfg.burnerAddress, vault: cfg.vaultAddress, burn_per_reset: cfg.burnPerReset, burn_per_round: cfg.burnPerRound, decimals: t.decimals, read_at: t.readAt };
     } catch (err) {
       console.error('token read failed', err instanceof Error ? err.message : err);
     }

@@ -82,6 +82,8 @@ export function viemSigner(env: Env, cfg: GoalConfig, fetchFn: FetchLike): BurnS
   return {
     address: account.address,
     async send(kind, ref) {
+      // Vault mode: same interface as our own contract (burnForReset / burnForRound), on the vault address.
+      const target = (cfg.burnMode === 'vault' ? cfg.vaultAddress! : token) as `0x${string}`;
       if (cfg.burnMode === 'transfer') {
         // Launchpad token: the burner wallet holds the reserve and sends a fixed amount to the dead address.
         const decimals = await erc20Decimals(fetchFn, cfg.rpcUrl, token);
@@ -93,10 +95,10 @@ export function viemSigner(env: Env, cfg: GoalConfig, fetchFn: FetchLike): BurnS
       }
       // Own contract: simulate first so a revert reason ('already burned', 'rate limit', 'not burner') is readable.
       if (kind === 'reset') {
-        const { request } = await publicClient.simulateContract({ address: token, abi: RESET_TOKEN_ABI, functionName: 'burnForReset', args: [ref], account });
+        const { request } = await publicClient.simulateContract({ address: target, abi: RESET_TOKEN_ABI, functionName: 'burnForReset', args: [ref], account });
         return wallet.writeContract(request);
       }
-      const { request } = await publicClient.simulateContract({ address: token, abi: RESET_TOKEN_ABI, functionName: 'burnForRound', args: [BigInt(ref)], account });
+      const { request } = await publicClient.simulateContract({ address: target, abi: RESET_TOKEN_ABI, functionName: 'burnForRound', args: [BigInt(ref)], account });
       return wallet.writeContract(request);
     },
   };
@@ -104,7 +106,8 @@ export function viemSigner(env: Env, cfg: GoalConfig, fetchFn: FetchLike): BurnS
 
 /** Read-only: has the contract already burned for this id? (Self-heals after a lost tx hash.) */
 export async function alreadyBurnedOnChain(fetchFn: FetchLike, cfg: GoalConfig, kind: BurnKind, ref: string): Promise<boolean> {
-  if (!cfg.tokenAddress || cfg.burnMode !== 'contract') return false; // a plain transfer leaves no per-id mark; the D1 row is the guard
+  if (!cfg.tokenAddress || cfg.burnMode === 'transfer') return false; // a plain transfer leaves no per-id mark; the D1 row is the guard
+  const target = cfg.burnMode === 'vault' ? cfg.vaultAddress! : cfg.tokenAddress;
   const data =
     kind === 'reset'
       ? encodeFunctionData({
@@ -117,7 +120,7 @@ export async function alreadyBurnedOnChain(fetchFn: FetchLike, cfg: GoalConfig, 
           functionName: 'roundBurned',
           args: [BigInt(ref)],
         });
-  const out = await rpc<string>(fetchFn, cfg.rpcUrl, 'eth_call', [{ to: cfg.tokenAddress, data }, 'latest']);
+  const out = await rpc<string>(fetchFn, cfg.rpcUrl, 'eth_call', [{ to: target, data }, 'latest']);
   return hexToBigInt(out) === 1n;
 }
 

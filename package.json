@@ -31,6 +31,7 @@
     "token:deploy": "tsx scripts/token/deploy.ts",
     "token:burn": "tsx scripts/token/burn.ts",
     "token:burner": "tsx scripts/token/burner.ts",
+    "token:vault": "tsx scripts/token/vault.ts",
     "goal:round": "tsx scripts/goal/round.ts"
   },
   "dependencies": {

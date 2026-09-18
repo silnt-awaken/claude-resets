@@ -138,7 +138,7 @@ export async function readToken(cfg: GoalConfig, fetchFn: FetchLike): Promise<To
   const [decimals, totalSupply, reserve, ...burns] = await Promise.all([
     erc20Decimals(fetchFn, cfg.rpcUrl, cfg.tokenAddress),
     erc20TotalSupply(fetchFn, cfg.rpcUrl, cfg.tokenAddress),
-    cfg.burnerAddress ? erc20Balance(fetchFn, cfg.rpcUrl, cfg.tokenAddress, cfg.burnerAddress) : Promise.resolve(null),
+    cfg.vaultAddress ?? cfg.burnerAddress ? erc20Balance(fetchFn, cfg.rpcUrl, cfg.tokenAddress, (cfg.vaultAddress ?? cfg.burnerAddress)!) : Promise.resolve(null),
     ...BURN_ADDRESSES.map((a) => erc20Balance(fetchFn, cfg.rpcUrl, cfg.tokenAddress!, a)),
   ]);
   const burned = burns.reduce((s, b) => s + b, 0n);

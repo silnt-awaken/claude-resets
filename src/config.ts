@@ -26,8 +26,9 @@ export interface ConfigVars {
   GOAL_USDG_ADDRESS?: string;
   GOAL_TARGET_USD?: string;
   RESET_TOKEN_ADDRESS?: string;
-  /** transfer (launchpad token: burner wallet sends RESET to 0xdEaD) | contract (contracts/ResetToken.sol burnForReset) */
+  /** vault (contracts/BurnVault.sol holds the reserve; burner triggers) | transfer (burner wallet sends to 0xdEaD) | contract (contracts/ResetToken.sol) */
   RESET_BURN_MODE?: string;
+  RESET_VAULT_ADDRESS?: string;
   RESET_BURNER_ADDRESS?: string;
   RESET_BURN_PER_RESET?: string; // whole RESET
   RESET_BURN_PER_ROUND?: string; // whole RESET
@@ -73,7 +74,9 @@ export interface GoalConfig {
   usdgAddress: string | null;
   targetUsd: number;
   tokenAddress: string | null;
-  burnMode: 'transfer' | 'contract';
+  burnMode: 'vault' | 'transfer' | 'contract';
+  /** BurnVault address when burnMode is vault: the locked reserve that can only send to 0xdEaD. */
+  vaultAddress: string | null;
   /** Public address of the burner wallet (the reserve), shown on /goal. */
   burnerAddress: string | null;
   burnPerReset: number; // whole RESET
@@ -112,7 +115,8 @@ export function goalConfig(env: ConfigVars): GoalConfig {
     usdgAddress,
     targetUsd: positiveNumber(env.GOAL_TARGET_USD, 200),
     tokenAddress,
-    burnMode: env.RESET_BURN_MODE?.trim() === 'contract' ? 'contract' : 'transfer',
+    burnMode: env.RESET_BURN_MODE?.trim() === 'contract' ? 'contract' : env.RESET_BURN_MODE?.trim() === 'vault' && isEvmAddress(env.RESET_VAULT_ADDRESS) ? 'vault' : 'transfer',
+    vaultAddress: isEvmAddress(env.RESET_VAULT_ADDRESS) ? env.RESET_VAULT_ADDRESS!.trim() : null,
     burnerAddress: isEvmAddress(env.RESET_BURNER_ADDRESS) ? env.RESET_BURNER_ADDRESS!.trim() : null,
     burnPerReset: positiveNumber(env.RESET_BURN_PER_RESET, 2_500_000),
     burnPerRound: positiveNumber(env.RESET_BURN_PER_ROUND, 5_000_000),
