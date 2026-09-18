@@ -1561,3 +1561,13 @@ th {
   gap: 10px;
   margin-top: 14px;
 }
+.goal-address {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 8px 12px;
+  border: var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}

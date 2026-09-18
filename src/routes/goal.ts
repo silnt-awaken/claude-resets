@@ -1,11 +1,8 @@
 import { Hono } from 'hono';
-import { getCookie, setCookie } from 'hono/cookie';
 import { siteConfig, type Env } from '../env';
-import { blockHash, blockNumber, cached, formatUnits, readPool, readToken, type PoolSnapshot, type TokenSnapshot } from '../goal/chain';
-import { addEntry, cancelRound, countEntries, currentRound, freezeRound, latestRound, markPaid, openRound, parseEntry, pastRounds, recordDraw, winnerOf, type GoalRound } from '../goal/rounds';
-import { REACTION_COOKIE, mintIdentity, verifyIdentity } from '../reactions';
-import { clientIp, problem, readJson, timingSafeEqual } from '../util/http';
-import { rateLimit } from '../util/ratelimit';
+import { blockHash, blockNumber, cached, formatUnits, readPool, readToken, summarizeContributors, transfersTo, type ContributorSummary, type FetchLike, type PoolSnapshot, type TokenSnapshot } from '../goal/chain';
+import { MIN_CONTRIBUTION_UNITS, cancelRound, countEntries, currentRound, freezeRound, latestRound, markPaid, openRound, pastRounds, recordDraw, syncContributors, winnerOf, type GoalRound } from '../goal/rounds';
+import { problem, readJson, timingSafeEqual } from '../util/http';
 
 export const goal = new Hono<{ Bindings: Env }>();
 
@@ -13,13 +10,15 @@ export interface GoalStatus {
   enabled: boolean;
   chain: { id: number; name: string; explorer: string };
   target_usd: number;
+  min_contribution_usd: number;
   pool: { address: string | null; usdc: number | null; eth: string | null; block: number | null; read_at: string | null; stale: boolean };
   round: null | {
     id: number;
     title: string;
     status: GoalRound['status'];
     opened_at: string;
-    entries: number;
+    open_block: number | null;
+    contributors: number;
     frozen_at: string | null;
     draw_block: number | null;
     draw_hash: string | null;
@@ -31,13 +30,30 @@ export interface GoalStatus {
   progress: number; // 0..1
 }
 
+/** Contributors of the open round, read from the chain (unique senders ≥ minimum), cached 60 s. */
+async function liveContributors(env: Env, round: GoalRound, fetchFn: FetchLike): Promise<ContributorSummary[] | null> {
+  const cfg = siteConfig(env).goal;
+  if (!cfg.live || round.open_block == null) return null;
+  try {
+    return await cached<ContributorSummary[]>(`contrib:${cfg.poolAddress}:${round.id}:${round.freeze_block ?? 'open'}`, 60_000, async () => {
+      const end = round.freeze_block ?? (await blockNumber(fetchFn, cfg.rpcUrl));
+      const transfers = await transfersTo(fetchFn, cfg.rpcUrl, cfg.usdcAddress!, cfg.poolAddress!, round.open_block!, end);
+      return summarizeContributors(transfers, MIN_CONTRIBUTION_UNITS);
+    });
+  } catch (err) {
+    console.error('contributor read failed', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
 /** Shared by the API and the page renderer. Chain reads are cached per isolate for 60 s and never throw. */
-export async function goalStatus(env: Env, fetchFn: typeof fetch = fetch): Promise<GoalStatus> {
+export async function goalStatus(env: Env, fetchFn: FetchLike = fetch): Promise<GoalStatus> {
   const cfg = siteConfig(env).goal;
   const status: GoalStatus = {
     enabled: cfg.live,
     chain: { id: cfg.chainId, name: 'Robinhood Chain', explorer: cfg.explorerUrl },
     target_usd: cfg.targetUsd,
+    min_contribution_usd: Number(MIN_CONTRIBUTION_UNITS) / 1e6,
     pool: { address: cfg.poolAddress, usdc: null, eth: null, block: null, read_at: null, stale: false },
     round: null,
     past_rounds: [],
@@ -66,12 +82,14 @@ export async function goalStatus(env: Env, fetchFn: typeof fetch = fetch): Promi
     const round = (await currentRound(env.DB)) ?? (await latestRound(env.DB));
     if (round) {
       const winner = await winnerOf(env.DB, round);
+      const live = round.status === 'open' ? await liveContributors(env, round, fetchFn) : null;
       status.round = {
         id: round.id,
         title: round.title,
         status: round.status,
         opened_at: round.opened_at,
-        entries: await countEntries(env.DB, round.id),
+        open_block: round.open_block,
+        contributors: live ? live.length : await countEntries(env.DB, round.id),
         frozen_at: round.frozen_at,
         draw_block: round.draw_block,
         draw_hash: round.draw_hash,
@@ -95,28 +113,20 @@ goal.get('/', async (c) => {
   return c.json(body, 200, { 'cache-control': 'public, max-age=30', 'access-control-allow-origin': '*' });
 });
 
-goal.post('/entries', async (c) => {
-  const cfg = siteConfig(c.env);
-  if (!cfg.goal.live) return problem(c, 503, 'goal_not_open', 'The community goal is not open yet.');
-  const rl = rateLimit(`goal:${clientIp(c)}`, 10, 60_000);
-  if (!rl.allowed) return problem(c, 429, 'rate_limited', 'Too many requests. Please slow down.', { retryAfter: rl.retryAfterSeconds });
-  const body = await readJson(c, 2048);
-  if (!body.ok) return problem(c, 400, 'invalid_body', body.error);
-  const input = parseEntry((body.value as Record<string, unknown>).identity);
-  if (!input.ok) return problem(c, 400, 'invalid_entry', input.error, { parameter: 'identity' });
+/** Public contributor list for the current round (addresses shortened), so draws can be verified. */
+goal.get('/contributors', async (c) => {
   const round = await currentRound(c.env.DB);
-  if (!round || round.status !== 'open') return problem(c, 409, 'round_closed', 'Entries are closed until the next round opens.');
-  let browserId: string | null = null;
-  if (c.env.REACTION_SECRET) {
-    browserId = await verifyIdentity(c.env.REACTION_SECRET, getCookie(c, REACTION_COOKIE));
-    if (!browserId) {
-      browserId = await mintIdentity(c.env.REACTION_SECRET);
-      setCookie(c, REACTION_COOKIE, browserId, { path: '/', httpOnly: true, sameSite: 'Lax', secure: cfg.siteUrl.startsWith('https://'), maxAge: 60 * 60 * 24 * 400 });
-    }
+  if (!round) return c.json({ round: null, contributors: [] }, 200, { 'cache-control': 'public, max-age=30' });
+  const cfg = siteConfig(c.env).goal;
+  let list: Array<{ index: number; address: string; usdc: number }> = [];
+  if (round.status === 'open') {
+    const live = await liveContributors(c.env, round, fetch);
+    list = (live ?? []).map((x, i) => ({ index: i, address: x.address, usdc: Number(x.units) / 1e6 }));
+  } else {
+    const { listEntries } = await import('../goal/rounds');
+    list = (await listEntries(c.env.DB, round.id)).map((e, i) => ({ index: i, address: e.identity, usdc: e.amount_units / 1e6 }));
   }
-  const result = await addEntry(c.env.DB, round, input, browserId, new Date());
-  if (!result.ok) return problem(c, result.code === 'closed' ? 409 : 429, result.code, result.message);
-  return c.json({ ok: true, round: round.id, entry: result.entry.display, created: result.created, entries: await countEntries(c.env.DB, round.id) }, result.created ? 201 : 200, { 'cache-control': 'no-store' });
+  return c.json({ round: round.id, status: round.status, min_contribution_usd: Number(MIN_CONTRIBUTION_UNITS) / 1e6, explorer: cfg.explorerUrl, contributors: list }, 200, { 'cache-control': 'public, max-age=30', 'access-control-allow-origin': '*' });
 });
 
 // ---------- maintainer actions (Bearer CONTENT_PUBLISH_TOKEN) ----------
@@ -142,17 +152,24 @@ goalAdmin.post('/rounds', async (c) => {
   try {
     switch (v.action) {
       case 'open': {
-        const title = typeof v.title === 'string' && v.title.trim() ? v.title.trim().slice(0, 120) : 'One month of Claude Max 20x for a reader';
+        if (!cfg.live) return problem(c, 409, 'goal_not_configured', `Goal is not configured: ${cfg.reason}`);
+        const title = typeof v.title === 'string' && v.title.trim() ? v.title.trim().slice(0, 120) : 'One month of Claude Max 20x for a contributor';
         const target = typeof v.targetUsd === 'number' && v.targetUsd > 0 ? Math.round(v.targetUsd) : cfg.targetUsd;
-        return c.json({ ok: true, round: await openRound(c.env.DB, title, target, now) });
+        const openBlock = typeof v.openBlock === 'number' ? Math.floor(v.openBlock) : await blockNumber(fetch, cfg.rpcUrl);
+        return c.json({ ok: true, round: await openRound(c.env.DB, title, target, openBlock, now) });
       }
       case 'freeze': {
         const round = await currentRound(c.env.DB);
-        if (!round) return problem(c, 409, 'no_round', 'No open round.');
+        if (!round || round.status !== 'open') return problem(c, 409, 'no_round', 'No open round.');
         const current = await blockNumber(fetch, cfg.rpcUrl);
         const lead = typeof v.blocksAhead === 'number' && v.blocksAhead >= 10 ? Math.floor(v.blocksAhead) : 600; // ~1 minute at 100 ms blocks
+        // Snapshot the contributor set from the chain for [open_block, current] and store it as the entry list.
+        const transfers = await transfersTo(fetch, cfg.rpcUrl, cfg.usdcAddress!, cfg.poolAddress!, round.open_block ?? current, current);
+        const contributors = summarizeContributors(transfers, MIN_CONTRIBUTION_UNITS);
+        if (contributors.length === 0) return problem(c, 409, 'no_contributors', 'No contributions at or above the minimum yet; nothing to draw from.');
+        await syncContributors(c.env.DB, round.id, contributors, now);
         await freezeRound(c.env.DB, round.id, current, current + lead, now);
-        return c.json({ ok: true, round: round.id, freezeBlock: current, drawBlock: current + lead, entries: await countEntries(c.env.DB, round.id) });
+        return c.json({ ok: true, round: round.id, freezeBlock: current, drawBlock: current + lead, contributors: contributors.length });
       }
       case 'draw': {
         const round = await currentRound(c.env.DB);
@@ -162,7 +179,7 @@ goalAdmin.post('/rounds', async (c) => {
         const hash = await blockHash(fetch, cfg.rpcUrl, round.draw_block);
         if (!hash) return problem(c, 503, 'block_unavailable', 'Could not read the draw block yet.');
         const result = await recordDraw(c.env.DB, round.id, hash);
-        return c.json({ ok: true, round: round.id, drawBlock: round.draw_block, drawHash: hash, index: result.index, entries: result.entries, winner: result.winner.display, winnerIdentity: result.winner.identity, kind: result.winner.identity_kind });
+        return c.json({ ok: true, round: round.id, drawBlock: round.draw_block, drawHash: hash, index: result.index, entries: result.entries, winner: result.winner.display, winnerAddress: result.winner.identity });
       }
       case 'paid': {
         const round = await currentRound(c.env.DB);

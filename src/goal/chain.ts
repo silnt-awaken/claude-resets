@@ -62,6 +62,49 @@ export async function blockHash(fetchFn: FetchLike, url: string, block: number):
   return b?.hash ?? null;
 }
 
+export const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+
+export interface Contribution {
+  from: string; // lowercase
+  units: bigint; // token base units
+  tx: string;
+  block: number;
+}
+
+/** All ERC-20 transfers INTO `to` between two blocks (inclusive), oldest first. Chunked so public RPCs accept it. */
+export async function transfersTo(fetchFn: FetchLike, url: string, token: string, to: string, fromBlock: number, toBlock: number, chunk = 5000): Promise<Contribution[]> {
+  const out: Contribution[] = [];
+  const topicTo = `0x${pad32(to.replace(/^0x/, ''))}`;
+  for (let start = fromBlock; start <= toBlock; start += chunk) {
+    const end = Math.min(toBlock, start + chunk - 1);
+    const logs = await rpc<Array<{ topics: string[]; data: string; transactionHash: string; blockNumber: string }>>(fetchFn, url, 'eth_getLogs', [
+      { address: token, fromBlock: `0x${start.toString(16)}`, toBlock: `0x${end.toString(16)}`, topics: [TRANSFER_TOPIC, null, topicTo] },
+    ]);
+    for (const l of logs) {
+      const from = `0x${(l.topics[1] ?? '').slice(26)}`.toLowerCase();
+      out.push({ from, units: hexToBigInt(l.data), tx: l.transactionHash, block: Number(hexToBigInt(l.blockNumber)) });
+    }
+  }
+  return out;
+}
+
+export interface ContributorSummary {
+  address: string;
+  units: bigint;
+  firstTx: string;
+}
+
+/** Group transfers by sender, keeping only senders at or above the minimum. */
+export function summarizeContributors(transfers: Contribution[], minUnits: bigint): ContributorSummary[] {
+  const map = new Map<string, ContributorSummary>();
+  for (const t of transfers) {
+    const prev = map.get(t.from);
+    if (prev) prev.units += t.units;
+    else map.set(t.from, { address: t.from, units: t.units, firstTx: t.tx });
+  }
+  return [...map.values()].filter((c) => c.units >= minUnits);
+}
+
 export interface PoolSnapshot {
   usdcUnits: bigint; // 6-decimal units
   usd: number;

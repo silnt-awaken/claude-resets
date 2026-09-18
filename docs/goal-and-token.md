@@ -9,11 +9,11 @@ Infrastructure is deployed; the goal is **not open** until `GOAL_ENABLED`, `GOAL
 ## How a round works
 
 1. **Open a round**: `npm run goal:round -- open --env production --yes` (title and `--target` optional; default $200 = one month of Max 20x).
-2. **Readers enter free** at `/goal` or the homepage card with a 0x address or an X handle. One entry per identity per round and one per browser (signed cookie). Contributions of USDC to the pool wallet are welcome and buy nothing extra.
+2. **Readers enter by contributing**: any wallet that sends at least 1 USDC to the pool during the round is one entry, regardless of amount or number of transfers. The open-round contributor count is read live from the USDC transfer log (`eth_getLogs`), cached 60 s.
 3. **Meter**: `/api/v1/goal` reads the pool wallet's USDC balance (and ETH, informational) straight from the chain, cached 60 s per isolate. RPC failure shows "stale", never a made-up figure.
-4. **Freeze** when the target is reached: `npm run goal:round -- freeze --env production --yes`. Records the current block and announces `drawBlock = current + 600` (≈1 minute at 100 ms blocks; `--blocks` overrides).
+4. **Freeze** when the target is reached: `npm run goal:round -- freeze --env production --yes`. Snapshots the contributor set from the chain for `[open_block, current]` into D1, records the current block and announces `drawBlock = current + 600` (≈1 minute at 100 ms blocks; `--blocks` overrides). Refuses if nobody contributed at least the minimum.
 5. **Draw** after the draw block exists: `npm run goal:round -- draw --env production --yes`. Winner index = `uint256(blockhash(drawBlock)) mod entries` over entries ordered by id. The hash, block and index are stored and shown publicly.
-6. **Pay** $200 USDC from the pool wallet to the winner (X-handle entrants provide a wallet by DM within 14 days), then `npm run goal:round -- paid --tx 0x… --env production --yes`.
+6. **Pay** $200 USDC from the pool wallet to the winning wallet, then `npm run goal:round -- paid --tx 0x… --env production --yes`.
 7. **Burn** for the round: `npm run token:burn -- --round <id>` (0.5% of initial supply from the reserve), then open the next round.
 
 `npm run goal:round -- status` prints the public status JSON. `cancel --note "…"` closes a round without a draw.
@@ -48,7 +48,7 @@ After `content:publish` for a confirmed reset: `DEPLOYER_PRIVATE_KEY=0x… npm r
 
 ## What is on chain vs. in D1
 
-On chain: contributions, pool balance, token supply, burns, the draw block hash, payouts. In D1: rounds (status, blocks, hash, winner id, payout tx) and free entries (identity, display, browser cookie id). No private keys, no funds, no personal data beyond the entrant's chosen handle or address.
+On chain: contributions, pool balance, token supply, burns, the draw block hash, payouts. In D1: rounds (status, blocks, hash, winner id, payout tx) and the frozen contributor snapshot (wallet, amount, first tx). No private keys, no funds, no personal data beyond public wallet addresses that already appear on chain.
 
 ## Verification for readers
 

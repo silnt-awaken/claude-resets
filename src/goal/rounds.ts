@@ -1,5 +1,8 @@
-// Goal rounds and free entries (D1). Money never touches this code: contributions go
-// straight to the on-chain pool, and the winner is chosen by a public block hash.
+// Goal rounds and contributor entries (D1). Money never touches this code: contributions go
+// straight to the on-chain pool, entries are the unique wallets that contributed during the
+// round (read from the chain), and the winner is chosen by a public block hash.
+
+import type { ContributorSummary } from './chain';
 
 export type RoundStatus = 'open' | 'frozen' | 'drawn' | 'paid' | 'cancelled';
 
@@ -9,6 +12,7 @@ export interface GoalRound {
   target_usd: number;
   status: RoundStatus;
   opened_at: string;
+  open_block: number | null;
   frozen_at: string | null;
   freeze_block: number | null;
   draw_block: number | null;
@@ -22,23 +26,18 @@ export interface GoalRound {
 export interface GoalEntry {
   id: number;
   round_id: number;
-  identity_kind: 'wallet' | 'x';
-  identity: string;
-  display: string;
+  identity: string; // lowercase wallet
+  display: string; // 0x1234…abcd
+  amount_units: number;
+  first_tx: string | null;
   created_at: string;
 }
 
-export type EntryInput = { ok: true; kind: 'wallet' | 'x'; identity: string; display: string } | { ok: false; error: string };
+/** Minimum contribution that counts as an entry (USDC base units): 1 USDC. Keeps dust spam out. */
+export const MIN_CONTRIBUTION_UNITS = 1_000_000n;
 
-/** Accept an EVM address or an X handle. One entry per identity per round. */
-export function parseEntry(raw: unknown): EntryInput {
-  if (typeof raw !== 'string') return { ok: false, error: 'enter a wallet address or an X handle' };
-  const value = raw.trim();
-  if (/^0x[0-9a-fA-F]{40}$/.test(value)) return { ok: true, kind: 'wallet', identity: value.toLowerCase(), display: `${value.slice(0, 6)}…${value.slice(-4)}` };
-  if (/^0x/i.test(value)) return { ok: false, error: 'a wallet address must be 0x followed by 40 hex characters' };
-  const handle = value.replace(/^@/, '').replace(/^https?:\/\/(x|twitter)\.com\//i, '').split(/[/?#]/)[0] ?? '';
-  if (/^[A-Za-z0-9_]{1,15}$/.test(handle)) return { ok: true, kind: 'x', identity: handle.toLowerCase(), display: `@${handle}` };
-  return { ok: false, error: 'enter a 0x wallet address (42 characters) or an X handle' };
+export function shortAddress(a: string): string {
+  return `${a.slice(0, 6)}…${a.slice(-4)}`;
 }
 
 export async function currentRound(db: D1Database): Promise<GoalRound | null> {
@@ -54,12 +53,12 @@ export async function pastRounds(db: D1Database, limit = 10): Promise<GoalRound[
   return r.results ?? [];
 }
 
-export async function openRound(db: D1Database, title: string, targetUsd: number, now: Date): Promise<GoalRound> {
+export async function openRound(db: D1Database, title: string, targetUsd: number, openBlock: number, now: Date): Promise<GoalRound> {
   const existing = await currentRound(db);
   if (existing) throw new Error(`round ${existing.id} is still ${existing.status}`);
   const r = await db
-    .prepare("INSERT INTO goal_rounds (title, target_usd, status, opened_at) VALUES (?1, ?2, 'open', ?3) RETURNING *")
-    .bind(title, targetUsd, now.toISOString())
+    .prepare("INSERT INTO goal_rounds (title, target_usd, status, opened_at, open_block) VALUES (?1, ?2, 'open', ?3, ?4) RETURNING *")
+    .bind(title, targetUsd, now.toISOString(), openBlock)
     .first<GoalRound>();
   if (!r) throw new Error('could not open round');
   return r;
@@ -70,25 +69,22 @@ export async function countEntries(db: D1Database, roundId: number): Promise<num
   return r?.n ?? 0;
 }
 
-export type AddEntryResult = { ok: true; entry: GoalEntry; created: boolean } | { ok: false; code: 'closed' | 'browser_limit' | 'duplicate'; message: string };
-
-export async function addEntry(db: D1Database, round: GoalRound, input: Extract<EntryInput, { ok: true }>, browserId: string | null, now: Date): Promise<AddEntryResult> {
-  if (round.status !== 'open') return { ok: false, code: 'closed', message: 'entries are closed for this round' };
-  if (browserId) {
-    const prior = await db.prepare('SELECT * FROM goal_entries WHERE round_id = ?1 AND browser_id = ?2').bind(round.id, browserId).first<GoalEntry>();
-    if (prior && prior.identity !== input.identity) return { ok: false, code: 'browser_limit', message: 'this browser already entered this round' };
-  }
-  const inserted = await db
-    .prepare('INSERT OR IGNORE INTO goal_entries (round_id, identity_kind, identity, display, browser_id, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)')
-    .bind(round.id, input.kind, input.identity, input.display, browserId, now.toISOString())
-    .run();
-  const entry = await db.prepare('SELECT * FROM goal_entries WHERE round_id = ?1 AND identity_kind = ?2 AND identity = ?3').bind(round.id, input.kind, input.identity).first<GoalEntry>();
-  if (!entry) throw new Error('entry not stored');
-  return { ok: true, entry, created: (inserted.meta.changes ?? 0) > 0 };
+/** Replace the round's entry list with the contributor set read from the chain (idempotent). */
+export async function syncContributors(db: D1Database, roundId: number, contributors: ContributorSummary[], now: Date): Promise<number> {
+  const stmts = contributors.map((c) =>
+    db
+      .prepare(
+        `INSERT INTO goal_entries (round_id, identity, display, amount_units, first_tx, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+         ON CONFLICT(round_id, identity) DO UPDATE SET amount_units = excluded.amount_units, first_tx = COALESCE(goal_entries.first_tx, excluded.first_tx)`,
+      )
+      .bind(roundId, c.address, shortAddress(c.address), Number(c.units), c.firstTx, now.toISOString()),
+  );
+  if (stmts.length) await db.batch(stmts);
+  return contributors.length;
 }
 
 export async function listEntries(db: D1Database, roundId: number): Promise<GoalEntry[]> {
-  const r = await db.prepare('SELECT id, round_id, identity_kind, identity, display, created_at FROM goal_entries WHERE round_id = ?1 ORDER BY id').bind(roundId).all<GoalEntry>();
+  const r = await db.prepare('SELECT id, round_id, identity, display, amount_units, first_tx, created_at FROM goal_entries WHERE round_id = ?1 ORDER BY id').bind(roundId).all<GoalEntry>();
   return r.results ?? [];
 }
 
@@ -132,5 +128,5 @@ export async function cancelRound(db: D1Database, roundId: number, note: string)
 
 export async function winnerOf(db: D1Database, round: GoalRound): Promise<GoalEntry | null> {
   if (!round.winner_entry_id) return null;
-  return db.prepare('SELECT id, round_id, identity_kind, identity, display, created_at FROM goal_entries WHERE id = ?1').bind(round.winner_entry_id).first<GoalEntry>();
+  return db.prepare('SELECT id, round_id, identity, display, amount_units, first_tx, created_at FROM goal_entries WHERE id = ?1').bind(round.winner_entry_id).first<GoalEntry>();
 }

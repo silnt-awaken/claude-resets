@@ -24,6 +24,7 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
         : round?.status === 'paid'
           ? interpolate(t.goal.paid, { winner: round.winner ?? '' })
           : null;
+  const open = status.enabled && round?.status === 'open' && !!status.pool.address;
   return (
     <section class="section" aria-labelledby="goal-heading">
       <div class="card card--sun goal-card" data-role="goal-card">
@@ -40,30 +41,26 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
         </div>
         <div class="goal-figures">
           <strong class="goal-raised" data-role="goal-raised">{interpolate(t.goal.raised, { raised: formatNumber(Math.round(raised), locale), target: formatNumber(status.target_usd, locale) })}</strong>
-          {status.enabled && round ? (
-            <span class="mono">
-              {interpolate(t.goal.entries, { n: '' }).replace(/\s{2,}/g, ' ').trim()} <span data-role="goal-entries">{formatNumber(round.entries, locale)}</span>
-            </span>
-          ) : null}
+          {status.enabled && round ? <span class="mono">{interpolate(t.goal.entries, { n: formatNumber(round.contributors, locale) })}</span> : null}
         </div>
         {status.pool.stale ? <p class="status-line">{t.goal.stale}</p> : null}
         {stateLine ? <p class="notice notice--warn goal-state">{stateLine}</p> : null}
-        {status.enabled && round?.status === 'open' ? (
-          <form class="goal-entry" data-role="goal-entry" data-entered={t.goal.entered} method="post" action="/api/v1/goal/entries">
-            <label class="visually-hidden" for="goal-identity">
-              {t.goal.enterPlaceholder}
-            </label>
-            <input id="goal-identity" name="identity" type="text" inputmode="text" autocomplete="off" maxlength={64} placeholder={t.goal.enterPlaceholder} required />
-            <button class="btn btn--accent" type="submit">
-              {t.goal.enter}
+        {open ? (
+          <div class="goal-entry" data-role="goal-contribute">
+            <span class="mono">{t.goal.enter}</span>
+            <code class="goal-address" data-role="pool-address">
+              {status.pool.address}
+            </code>
+            <button class="btn btn--accent" type="button" data-role="copy-pool" data-copy={status.pool.address ?? ''} data-copied="✓">
+              <span data-role="copy-label">{t.goal.contribute}</span>
             </button>
-            <p class="status-line" data-role="goal-entry-status" aria-live="polite"></p>
-          </form>
+            <p class="status-line">{t.goal.enterPlaceholder}</p>
+          </div>
         ) : null}
         <div class="goal-links">
-          {status.enabled && status.pool.address ? (
+          {open ? (
             <a class="btn btn--sun" href={`${status.chain.explorer}/address/${status.pool.address}`} target="_blank" rel="noopener noreferrer">
-              {t.goal.contribute} <ArrowIcon />
+              Blockscout <ArrowIcon />
             </a>
           ) : null}
           <a class="btn" href={localizePath(locale, '/goal')}>
@@ -81,9 +78,9 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
   const g = cfg.goal;
   const explorer = status.chain.explorer;
   const token = status.token;
-  const supplyPct = (n: string) => (token ? `${((Number(BigInt(n) * 10000n / 1_000_000_000_000_000_000_000_000_000n) / 100)).toFixed(2)}%` : '');
+  const supplyPct = (n: string) => (token ? `${(Number((BigInt(n) * 10000n) / 1_000_000_000_000_000_000_000_000_000n) / 100).toFixed(2)}%` : '');
   return (
-    <Layout ctx={ctx} title={`Max 20x for a reader | ${cfg.siteName}`} description="A community-funded goal: readers pool USDC on Robinhood Chain, one free entrant wins a month of Claude Max 20x. Verifiable draw, RESET token with on-chain burns.">
+    <Layout ctx={ctx} title={`Max 20x for a reader | ${cfg.siteName}`} description="A community-funded goal: readers pool USDC on Robinhood Chain and one contributor wins a month of Claude Max 20x by a verifiable block-hash draw. RESET token with on-chain burns.">
       <h1 class="page-title">Max 20x for a reader</h1>
       <p class="page-intro">{t.goal.pitch}</p>
       {locale !== 'en' ? (
@@ -106,16 +103,19 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             ) : null}
           </li>
           <li>
-            <strong>Enter free.</strong> Anyone can enter with a wallet address or an X handle. One entry per person per round. Contributing is welcome but buys nothing extra: a $1 contributor and a $100 contributor have exactly the same odds as someone who contributed nothing.
+            <strong>Contribute to enter.</strong> Send at least {status.min_contribution_usd} USDC to the pool from your own wallet during the round. Your wallet is your entry. Amount does not matter for the draw: a 1 USDC contributor and a 100 USDC contributor have exactly the same chance. One entry per wallet; sending twice does not add a second entry.
           </li>
           <li>
-            <strong>Freeze.</strong> When the pool reaches ${g.targetUsd} USDC, entries close at a recorded block and a future <em>draw block</em> is announced (about a minute ahead at 100 ms blocks).
+            <strong>Freeze.</strong> When the pool reaches ${g.targetUsd} USDC, the round closes at a recorded block. The contributor list is snapshotted from the chain's transfer log for that block range and published, and a future <em>draw block</em> is announced (about a minute ahead at 100 ms blocks).
           </li>
           <li>
-            <strong>Draw.</strong> The winner is entry number <code>uint256(drawBlockHash) mod entries</code>, with entries ordered by their id. Both the hash and the entry list are public, so anyone can recompute the result. Nobody, including us, can influence a future block hash.
+            <strong>Draw.</strong> The winner is contributor number <code>uint256(drawBlockHash) mod contributors</code>, with contributors ordered by their first contribution. The hash and the list are public, so anyone can recompute the result. Nobody, including us, can influence a future block hash.
           </li>
           <li>
-            <strong>Payout.</strong> The winner receives ${g.targetUsd} USDC toward one month of Claude Max 20x (subscriptions cannot be transferred, so the money is paid out, not the account). The transaction hash is published here and on X, and the next round opens.
+            <strong>Payout.</strong> ${g.targetUsd} USDC goes to the winning wallet toward one month of Claude Max 20x (subscriptions cannot be transferred, so the money is paid out, not the account). The transaction hash is published here and on X, then the next round opens.
+          </li>
+          <li>
+            <strong>Rewards.</strong> After each round, RESET from the contributor-rewards allocation is distributed to that round's contributors pro-rata to what they gave. Rewards scale with contribution; odds never do.
           </li>
         </ol>
         <p>{t.support.noEffect} Winning here does not change anything about anyone's Claude account or Anthropic's limits; it pays for a plan.</p>
@@ -149,7 +149,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
               </tr>
               <tr>
                 <td>Contributor rewards</td>
-                <td>25%, distributed after each round to that round's USDC contributors pro-rata to what they gave (rewards, not odds).</td>
+                <td>25%, distributed after each round to that round's USDC contributors pro-rata to what they gave.</td>
               </tr>
               <tr>
                 <td>Burn reserve</td>
@@ -198,13 +198,13 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
       <section class="section prose" id="rules">
         <h2>Rules</h2>
         <ul>
-          <li>No purchase or contribution is necessary to enter or to win, and contributing does not improve odds.</li>
-          <li>One entry per person per round. Duplicate identities and obvious bot entries are removed before the freeze.</li>
-          <li>The prize is ${g.targetUsd} USDC sent to the winner's wallet (or, for X-handle entrants, to a wallet they provide by DM within 14 days), intended for one month of Claude Max 20x. Unclaimed prizes roll into the next round.</li>
-          <li>The site operator and anyone who runs the draw are not eligible.</li>
+          <li>An entry is a wallet that sent at least {status.min_contribution_usd} USDC to the pool during the round. One entry per wallet regardless of amount or number of transfers.</li>
+          <li>Contributions are final and stay in the pool; the pool funds the payout and, when a round is cancelled, rolls into the next one.</li>
+          <li>The prize is ${g.targetUsd} USDC sent to the winning wallet, intended for one month of Claude Max 20x.</li>
+          <li>Wallets controlled by the site operator, and the pool and treasury wallets, are excluded from the draw.</li>
           <li>RESET is a community token with no promise of value, return or utility beyond what is described here. Supply mechanics are enforced by the contract; price is set by the market. Do not spend what you cannot afford to lose.</li>
           <li>This project is independent and not affiliated with or endorsed by Anthropic or Robinhood. Winning pays for a plan; it does not change any account or limit.</li>
-          <li>Local law applies to you; if community goals or tokens are restricted where you live, do not participate.</li>
+          <li>Local law applies to you; if community pools or tokens are restricted where you live, do not participate.</li>
         </ul>
       </section>
 
@@ -215,9 +215,9 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             Pool balance and every contribution: {status.pool.address ? <a href={`${explorer}/address/${status.pool.address}`} target="_blank" rel="noopener noreferrer">the pool wallet on Blockscout</a> : <span>pool address published when the round opens</span>}.
           </li>
           <li>
-            Live status as JSON: <a href="/api/v1/goal">/api/v1/goal</a> (entries count, draw block, draw hash, winner, payout transaction).
+            Live status as JSON: <a href="/api/v1/goal">/api/v1/goal</a>; the contributor list in draw order: <a href="/api/v1/goal/contributors">/api/v1/goal/contributors</a>.
           </li>
-          <li>Draw block hash: look up the announced block on the explorer and compute <code>hash mod entries</code>.</li>
+          <li>Draw block hash: look up the announced block on the explorer and compute <code>hash mod contributors</code>.</li>
           <li>
             Contract source: <a href={cfg.repoUrl ? `${cfg.repoUrl}/blob/main/contracts/ResetToken.sol` : '/goal'} target="_blank" rel="noopener noreferrer">contracts/ResetToken.sol</a> in the public repository; the deployed bytecode is verified on the explorer after deployment.
           </li>
