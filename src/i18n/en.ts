@@ -269,6 +269,11 @@ export const en = {
       connected: 'Connected as {wallet}. Tap to approve the transfer in Phantom.',
       expired: 'That took too long and the transfer expired. Please try again.',
       handoffFailed: 'Phantom did not answer as expected. Please try again.',
+      thanks: 'Thank you!',
+      youreIn: '{amount} USDC has reached the goal wallet. Your wallet is in this round\u2019s draw.',
+      youreInNext: '{amount} USDC has reached the goal wallet. Entries for this round had already closed, so your wallet is in the next one.',
+      operatorWallet: '{amount} USDC has reached the goal wallet. This is an operator wallet, so it counts on the meter and never in the draw.',
+      done: 'Done',
       close: 'Close',
     },
     wallet: {

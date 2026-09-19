@@ -268,6 +268,11 @@ export const ja: Dict = {
       connected: '{wallet} として接続しました。タップして Phantom で送金を承認してください。',
       expired: '時間がかかりすぎたため送金の有効期限が切れました。もう一度お試しください。',
       handoffFailed: 'Phantom から想定どおりの応答がありませんでした。もう一度お試しください。',
+      thanks: 'ありがとうございます！',
+      youreIn: '{amount} USDC がゴールウォレットに届きました。あなたのウォレットは今回の抽選に参加しています。',
+      youreInNext: '{amount} USDC がゴールウォレットに届きました。今回の受付はすでに締め切られていたため、次回の抽選に参加します。',
+      operatorWallet: '{amount} USDC がゴールウォレットに届きました。これは運営者のウォレットなので、メーターには反映されますが抽選には参加しません。',
+      done: '閉じる',
       close: '閉じる',
     },
     wallet: {

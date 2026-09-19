@@ -532,10 +532,13 @@ describe('contribution endpoints', () => {
       c.txs.push({ signature: sig(40), slot: 1005, from: A, units: 7_000_000n });
       const confirmed = await post({ signature: sig(40) });
       expect(confirmed.status).toBe(200);
-      expect(confirmed.body).toMatchObject({ status: 'confirmed', wallet: A, usdc: 7, counted: true, round: round.id, contributors: 1 });
+      expect(confirmed.body).toMatchObject({ status: 'confirmed', wallet: A, usdc: 7, counted: true, excluded: false, round: round.id, contributors: 1, contributions: 1, raised_usd: 7, target_usd: 200 });
       const twice = await post({ signature: sig(40) });
-      expect(twice.body.status).toBe('confirmed');
-      expect(await qualifyingEntries(db(), round.id)).toHaveLength(1);
+      expect(twice.body).toMatchObject({ status: 'confirmed', wallet: A, usdc: 7, counted: true, excluded: false, raised_usd: 7, contributors: 1 }); // same figures when already recorded
+      // An operator wallet is told so: on the meter, never in the draw.
+      c.txs.push({ signature: sig(43), slot: 1006, from: WALLET, units: 3_000_000n });
+      expect((await post({ signature: sig(43) })).body).toMatchObject({ status: 'confirmed', wallet: WALLET, excluded: true, raised_usd: 10, contributions: 2, contributors: 1 });
+      expect(await qualifyingEntries(db(), round.id, MIN_CONTRIBUTION_UNITS, [WALLET])).toHaveLength(1);
       c.txs.push({ signature: sig(41), slot: 1006, from: B, units: 1_000_000n, err: true });
       expect((await post({ signature: sig(41) })).body.code).toBe('failed');
       // The cron scan later sees the same signature and does not double count.
@@ -543,7 +546,7 @@ describe('contribution endpoints', () => {
       c.txs.push({ signature: sig(42), slot: 1007, from: C, units: 1_000_000n });
       const t = await tickGoal(live(), fakeRpc(c), now);
       expect(t.sync.recorded).toBe(1);
-      expect((await goalStatus(live(), now)).round).toMatchObject({ contributions: 2, raised_usd: 8 });
+      expect((await goalStatus(live(), now)).round).toMatchObject({ contributions: 3, raised_usd: 11 });
     } finally {
       globalThis.fetch = realFetch;
     }

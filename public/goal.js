@@ -235,6 +235,8 @@
   var status = $('[data-role="sheet-status"]');
   var receipt = $('[data-role="receipt"]');
   var fallback = $('[data-role="fallback"]');
+  var form = $('[data-role="form"]');
+  var done = $('[data-role="done"]');
   var opener = null;
   var amount = 5;
   var busy = false;
@@ -270,8 +272,7 @@
   });
   function payLabel() {
     if (pendingSign) return t('approve', 'Approve in Phantom');
-    var pay = t('pay', 'Contribute {amount}').replace('{amount}', usd.format(amount));
-    return account ? pay : t('connect', 'Connect Phantom') + ' · ' + pay;
+    return t('pay', 'Contribute {amount}').replace('{amount}', usd.format(amount));
   }
   function setAmount(n) {
     amount = Math.max(0, Math.round(n * 100) / 100);
@@ -287,6 +288,8 @@
   function openSheet() {
     receipt.hidden = true;
     if (fallback) fallback.hidden = true;
+    if (done) done.hidden = true;
+    if (form) form.hidden = false;
     bindEvents();
     setAmount(amount);
     amountInput.value = amount.toFixed(2);
@@ -319,16 +322,63 @@
     setAmount(isFinite(v) ? v : 0);
   });
 
-  function showReceipt(signature) {
-    receipt.hidden = false;
-    receipt.innerHTML = '';
+  function receiptLink(signature) {
     var a = document.createElement('a');
     a.href = cfg.explorer + '/tx/' + signature;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
     a.textContent = t('receipt', 'Receipt') + ' · ' + signature.slice(0, 8) + '…' + signature.slice(-6);
-    receipt.appendChild(a);
+    return a;
   }
+  function showReceipt(signature) {
+    receipt.hidden = false;
+    receipt.innerHTML = '';
+    receipt.appendChild(receiptLink(signature));
+  }
+
+  // ---------- the card: redraw the meter from fresh figures, and keep it fresh while the page is open ----------
+  var num = new Intl.NumberFormat(intl);
+  var target = parseFloat(card.getAttribute('data-target') || '0');
+  function updateCard(f) {
+    if (typeof f.raised_usd !== 'number') return;
+    if (typeof f.target_usd === 'number') target = f.target_usd;
+    var pct = target > 0 ? Math.min(100, Math.round((f.raised_usd / target) * 100)) : 0;
+    var raisedEl = card.querySelector('[data-role="goal-raised"]');
+    if (raisedEl) raisedEl.textContent = t('raised', '{raised} of {target} USDC raised').replace('{raised}', num.format(Math.round(f.raised_usd))).replace('{target}', num.format(target));
+    var meter = card.querySelector('.goal-meter');
+    if (meter) {
+      meter.setAttribute('aria-valuenow', String(Math.round(f.raised_usd)));
+      meter.setAttribute('aria-valuemax', String(target));
+      if (raisedEl) meter.setAttribute('aria-label', raisedEl.textContent);
+      var fill = meter.querySelector('.goal-meter-fill');
+      if (fill) fill.style.width = pct + '%';
+    }
+    var n = card.querySelector('[data-role="goal-entries"]');
+    if (n && typeof f.contributors === 'number') n.textContent = num.format(f.contributors);
+    log('card', f.raised_usd, '/', target, 'contributors', f.contributors);
+  }
+  var lastStatus = card.getAttribute('data-round-status') || 'none';
+  function refreshCard() {
+    if (document.hidden) return;
+    fetch('/api/v1/goal', { headers: { accept: 'application/json' } })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (s) {
+        if (!s || !s.round) return;
+        updateCard(s.round);
+        // A freeze or a draw changes the whole card; let the server render it.
+        if (s.round.status !== lastStatus) {
+          log('round status changed', lastStatus, '→', s.round.status);
+          if (!sheet.open && !busy) location.reload();
+        }
+      })
+      .catch(function () {});
+  }
+  setInterval(refreshCard, 30000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) refreshCard();
+  });
   // Ask the site to verify the signature on chain; 202 means not confirmed yet.
   function waitConfirmed(signature, tries) {
     return post('/api/v1/goal/contributions', { signature: signature }).then(function (r) {
@@ -343,12 +393,24 @@
       return r.body;
     });
   }
-  function reportResult(result) {
+  function reportResult(result, signature) {
     if (!result) say(t('unknown', 'Status unknown. Check the receipt on the explorer.'));
     else if (result.status === 'confirmed') {
-      say((result.counted ? t('confirmed', 'Confirmed. You are in this round.') : t('nextRound', 'Confirmed. You are in the next round.')) + ' ' + t('updatesSoon', ''));
-      var n = document.querySelector('[data-role="goal-entries"]');
-      if (n && typeof result.contributors === 'number') n.textContent = String(result.contributors);
+      updateCard(result);
+      var paid = typeof result.usdc === 'number' ? result.usdc : amount;
+      var key = result.excluded ? 'operatorWallet' : result.counted ? 'youreIn' : 'youreInNext';
+      var line = t(key, '{amount} USDC has reached the goal wallet.').replace('{amount}', paid.toFixed(2));
+      if (done && form) {
+        form.hidden = true;
+        done.hidden = false;
+        $('[data-role="done-line"]').textContent = line;
+        var r = $('[data-role="done-receipt"]');
+        r.innerHTML = '';
+        r.appendChild(receiptLink(signature));
+        var close = done.querySelector('[data-role="sheet-close"]');
+        if (close) close.focus();
+      } else say(line);
+      log('confirmed', signature, key);
     } else say(t('failed', 'The transaction failed.'));
   }
   function reportError(err) {
@@ -419,9 +481,10 @@
         log('submitted', signature);
         say(t('submitted', 'Submitted. Waiting for the network…'));
         showReceipt(signature);
-        return waitConfirmed(signature, 40);
+        return waitConfirmed(signature, 40).then(function (result) {
+          reportResult(result, signature);
+        });
       })
-      .then(reportResult)
       .catch(reportError)
       .then(function () {
         setBusy(false);
@@ -483,9 +546,10 @@
           if (!signature) throw new Error('no signature');
           log('relayed', signature);
           showReceipt(signature);
-          return waitConfirmed(signature, 40);
+          return waitConfirmed(signature, 40).then(function (result) {
+            reportResult(result, signature);
+          });
         })
-        .then(reportResult)
         .catch(function (err) {
           clearHandoff();
           reportError(err);

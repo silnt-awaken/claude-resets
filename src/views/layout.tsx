@@ -306,5 +306,5 @@ const SponsorDialog: FC<{ ctx: PageContext }> = ({ ctx }) => {
 
 /** Localized strings for goal.js (the contribution sheet and its inline no-wallet help). */
 const GoalStrings: FC<{ ctx: PageContext }> = ({ ctx }) => (
-  <script type="application/json" id="goal-i18n" dangerouslySetInnerHTML={{ __html: JSON.stringify({ ...ctx.t.goal.sheet, ...ctx.t.goal.wallet }).replace(/</g, '\u003c') }} />
+  <script type="application/json" id="goal-i18n" dangerouslySetInnerHTML={{ __html: JSON.stringify({ ...ctx.t.goal.sheet, ...ctx.t.goal.wallet, raised: ctx.t.goal.raised, entries: ctx.t.goal.entries }).replace(/</g, '\u003c') }} />
 );

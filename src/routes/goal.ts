@@ -13,6 +13,7 @@ import {
   cancelRound,
   contributionCount,
   currentRound,
+  findContribution,
   freezeRound,
   hasContribution,
   latestRound,
@@ -374,9 +375,19 @@ goal.post('/contributions', async (c) => {
   const signature = typeof (body.value as Record<string, unknown>).signature === 'string' ? ((body.value as Record<string, unknown>).signature as string).trim() : '';
   if (!isSolanaSignature(signature)) return problem(c, 400, 'invalid_signature', 'signature must be a Solana transaction signature', { parameter: 'signature' });
   const now = new Date();
+  // Everything the sheet needs to update the card in place: the meter, the counts, and whether this wallet can win.
+  const confirmed = async (wallet: string, units: bigint, counted: boolean) => {
+    const round = await currentRound(c.env.DB);
+    const figures = round
+      ? { round: round.id, target_usd: round.target_usd, raised_usd: usd(await raisedUnits(c.env.DB, round.id)), contributions: await contributionCount(c.env.DB, round.id), contributors: (await qualifyingEntries(c.env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets)).length }
+      : { round: null, target_usd: cfg.targetUsd, raised_usd: 0, contributions: 0, contributors: 0 };
+    const excluded = wallet === cfg.wallet || cfg.excludedWallets.includes(wallet);
+    return c.json({ status: 'confirmed', signature, wallet, usdc: usd(units), counted, excluded, ...figures });
+  };
   try {
     const round = await currentRound(c.env.DB);
-    if (await hasContribution(c.env.DB, signature)) return c.json({ status: 'confirmed', signature, counted: round?.status === 'open', round: round?.id ?? null, contributors: round ? (await qualifyingEntries(c.env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets)).length : 0 });
+    const known = await findContribution(c.env.DB, signature);
+    if (known) return confirmed(known.wallet, known.units, known.round_id != null && known.round_id === round?.id);
     const tx = await getTransaction(fetch, cfg.rpcUrl, signature);
     if (!tx) return c.json({ status: 'pending', signature }, 202);
     if (tx.meta?.err) return problem(c, 409, 'failed', 'The transaction failed on chain.');
@@ -385,7 +396,7 @@ goal.post('/contributions', async (c) => {
     const counted = round?.status === 'open';
     await recordContribution(c.env.DB, contribution, counted ? round!.id : null, now);
     console.log('goal contribution (submitted)', JSON.stringify({ signature, wallet: contribution.wallet, units: contribution.units.toString(), round: counted ? round!.id : null }));
-    return c.json({ status: 'confirmed', signature, wallet: contribution.wallet, usdc: usd(contribution.units), counted, round: round?.id ?? null, contributors: round ? (await qualifyingEntries(c.env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets)).length : 0 });
+    return confirmed(contribution.wallet, contribution.units, counted);
   } catch (err) {
     console.error('goal contribution check failed', err instanceof Error ? err.message : err);
     return problem(c, 503, 'rpc_unavailable', 'Could not reach Solana right now. Try again in a moment.');

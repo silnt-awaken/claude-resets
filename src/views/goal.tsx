@@ -31,7 +31,7 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
   const raisedLabel = interpolate(t.goal.raised, { raised: formatNumber(Math.round(raised), locale), target: formatNumber(target, locale) });
   return (
     <section class="section" aria-labelledby="goal-heading">
-      <div class="card card--sun goal-card" data-role="goal-card">
+      <div class="card card--sun goal-card" data-role="goal-card" data-round-status={round?.status ?? 'none'} data-target={String(target)}>
         <div class="goal-head">
           <div>
             <span class="mono">{t.goal.sub}</span>
@@ -90,6 +90,7 @@ const GoalSheet: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }
         </button>
       </div>
       <div class="dialog-body">
+        <div data-role="form">
         <span class="mono">{s.amount}</span>
         <div class="goal-presets" role="group" aria-label={s.amount}>
           {[1, 5, 10, 25].map((n) => (
@@ -117,6 +118,16 @@ const GoalSheet: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }
         </button>
         <p class="goal-sheet-status" data-role="sheet-status" role="status" aria-live="polite"></p>
         <p class="goal-fallback" data-role="receipt" hidden></p>
+        </div>
+        <div class="goal-done" data-role="done" hidden>
+          <span class="goal-done-mark" aria-hidden="true">✓</span>
+          <h3 data-role="done-title">{s.thanks}</h3>
+          <p data-role="done-line"></p>
+          <p class="goal-fallback" data-role="done-receipt"></p>
+          <button class="btn btn--accent" type="button" data-role="sheet-close">
+            {s.done}
+          </button>
+        </div>
         <div class="goal-fallback" data-role="fallback" role="status" hidden>
           <p>{s.noWallet}</p>
           <code class="goal-address">{status.pool.wallet}</code>

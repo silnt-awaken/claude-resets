@@ -266,6 +266,11 @@ export const zhCN: Dict = {
       connected: '已以 {wallet} 连接。点按后在 Phantom 中批准转账。',
       expired: '等待时间过长，转账已过期。请重试。',
       handoffFailed: 'Phantom 未按预期响应。请重试。',
+      thanks: '谢谢！',
+      youreIn: '{amount} USDC 已到达目标钱包。您的钱包已参与本轮抽签。',
+      youreInNext: '{amount} USDC 已到达目标钱包。本轮报名已截止，您的钱包将参与下一轮抽签。',
+      operatorWallet: '{amount} USDC 已到达目标钱包。这是运营者钱包，计入进度但不参与抽签。',
+      done: '完成',
       close: '关闭',
     },
     wallet: {

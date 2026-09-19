@@ -268,6 +268,11 @@ export const ko: Dict = {
       connected: '{wallet}(으)로 연결되었습니다. 탭하여 Phantom에서 전송을 승인하세요.',
       expired: '시간이 너무 오래 걸려 전송이 만료되었습니다. 다시 시도해 주세요.',
       handoffFailed: 'Phantom이 예상대로 응답하지 않았습니다. 다시 시도해 주세요.',
+      thanks: '감사합니다!',
+      youreIn: '{amount} USDC가 목표 지갑에 도착했습니다. 이 지갑은 이번 라운드 추첨에 참여합니다.',
+      youreInNext: '{amount} USDC가 목표 지갑에 도착했습니다. 이번 라운드 접수는 이미 마감되어 다음 라운드 추첨에 참여합니다.',
+      operatorWallet: '{amount} USDC가 목표 지갑에 도착했습니다. 운영자 지갑이므로 게이지에는 반영되지만 추첨에는 참여하지 않습니다.',
+      done: '완료',
       close: '닫기',
     },
     wallet: {

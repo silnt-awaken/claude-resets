@@ -83,6 +83,12 @@ export async function hasContribution(db: D1Database, signature: string): Promis
   return !!(await db.prepare('SELECT 1 AS x FROM goal_contributions WHERE signature = ?1').bind(signature).first());
 }
 
+/** The recorded contribution for a signature, if any. */
+export async function findContribution(db: D1Database, signature: string): Promise<{ wallet: string; units: bigint; round_id: number | null } | null> {
+  const r = await db.prepare('SELECT wallet, amount_units, round_id FROM goal_contributions WHERE signature = ?1').bind(signature).first<{ wallet: string; amount_units: number; round_id: number | null }>();
+  return r ? { wallet: r.wallet, units: BigInt(r.amount_units), round_id: r.round_id } : null;
+}
+
 export async function raisedUnits(db: D1Database, roundId: number): Promise<bigint> {
   const r = await db.prepare('SELECT COALESCE(SUM(amount_units), 0) AS units FROM goal_contributions WHERE round_id = ?1').bind(roundId).first<{ units: number }>();
   return BigInt(r?.units ?? 0);
