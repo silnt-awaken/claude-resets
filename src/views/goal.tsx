@@ -261,7 +261,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
           <li>An entry is a wallet whose USDC transfers to the goal wallet during an open round add up to at least {status.min_contribution_usd} USDC. One entry per wallet regardless of amount or number of transfers.</li>
           <li>Contributions are final. They fund the payout of the round they land in; when a round is cancelled, they roll into the next one.</li>
           <li>The prize is ${target} USDC sent to the winning wallet, intended for one month of Claude Max 20x.</li>
-          <li>The operator's own wallets are excluded from the draw; their contributions still count on the meter.</li>
+          <li>The goal wallet itself can never win. Any other wallet that contributes, including the operator's personal one, is an ordinary entry.</li>
           <li>Send from a wallet you control. If you contribute from an exchange account, the exchange's wallet is the entry and a payout to it may not reach you.</li>
           <li>This project is independent and not affiliated with or endorsed by Anthropic. Winning pays for a plan; it does not change any account or limit.</li>
           <li>Local law applies to you; if community pools of this kind are restricted where you live, do not participate.</li>

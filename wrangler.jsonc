@@ -46,9 +46,9 @@
     "GOAL_SOLANA_RPC": "https://solana-rpc.publicnode.com",
     "GOAL_EXPLORER_URL": "https://solscan.io",
     "GOAL_TARGET_USD": "200",
-    // Operator wallets: counted on the meter, never in the draw. The goal wallet itself is always excluded;
-    // the operator's former personal goal wallet stays excluded now that the treasury took its place.
-    "GOAL_EXCLUDED_WALLETS": "6N9a6TJhFzGGtRLPkekmwF3xq2ncuXh7Yz7XipU6grBv",
+    // Wallets that never win. The goal (treasury) wallet itself is always excluded; nothing else is, so
+    // the operator's own contributions from a personal wallet enter the draw like anyone else's.
+    "GOAL_EXCLUDED_WALLETS": "",
     "REACTION_COOLDOWN_HOURS": "24",
     "ALERT_MAX_AGE_HOURS": "72"
   }

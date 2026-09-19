@@ -21,7 +21,7 @@ Readers send **USDC on Solana** to a dedicated treasury wallet the operator cont
 | `GOAL_SOLANA_RPC_PRIVATE` (secret) | Optional keyed endpoint (Helius, QuickNode, Triton… free tiers), tried before the public ones. Set with `npx wrangler secret put GOAL_SOLANA_RPC_PRIVATE`; the key lives in the URL, so never put it in `vars`. |
 | `GOAL_EXPLORER_URL` | Default `https://solscan.io`. |
 | `GOAL_TARGET_USD` | Default 200 (one month of Max 20x). |
-| `GOAL_EXCLUDED_WALLETS` | Extra operator wallets that never win (list the personal wallets too). The goal/treasury wallet itself is always excluded. |
+| `GOAL_EXCLUDED_WALLETS` | Extra wallets that never win (comma-separated; empty in production). The goal/treasury wallet itself is always excluded; the operator's personal wallet is an ordinary entry. |
 
 `npm run readiness` prints the state of these settings.
 
