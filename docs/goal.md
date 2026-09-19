@@ -1,6 +1,6 @@
 # Community goal ("Max 20x for a reader")
 
-Readers send **USDC on Solana** to the operator's wallet. When a round reaches its target, one contributor is drawn automatically by a finalized Solana block hash and the operator pays them one month of Claude Max 20x in USDC. There is no token, no smart contract and no other crypto feature; the site only *reads* the chain.
+Readers send **USDC on Solana** to a dedicated treasury wallet the operator controls (never the operator's personal wallet). When a round reaches its target, one contributor is drawn automatically by a finalized Solana block hash and the operator pays them one month of Claude Max 20x in USDC. There is no token, no smart contract and no other crypto feature; the site only *reads* the chain.
 
 ## What the site does and does not do
 
@@ -14,14 +14,14 @@ Readers send **USDC on Solana** to the operator's wallet. When a round reaches i
 | Var | Meaning |
 | --- | --- |
 | `GOAL_ENABLED` | `"true"` opens the goal. Anything else shows an honest "not open yet". |
-| `GOAL_WALLET` | The operator's Solana wallet (base58). Shown publicly; contributors send here. |
-| `GOAL_USDC_ACCOUNT` | That wallet's USDC token account. Transfers actually land here; the scan watches it. Find it with `getTokenAccountsByOwner(GOAL_WALLET, {mint: USDC})` or on Solscan under the wallet's token accounts. |
+| `GOAL_WALLET` | The treasury wallet (base58). Shown publicly; contributors send here. Keep it separate from any personal wallet. |
+| `GOAL_USDC_ACCOUNT` | That wallet's USDC token account. Transfers actually land here; the scan watches it. Derive it with `getTokenAccountsByOwner(GOAL_WALLET, {mint: USDC})` or on Solscan under the wallet's token accounts. It must exist before the first contribution: the transfer message the site builds does not create it, so send a small USDC amount to a fresh treasury once (Phantom adds the create-account instruction). |
 | `GOAL_USDC_MINT` | Circle's USDC mint `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` (default). |
 | `GOAL_SOLANA_RPC` | Comma-separated JSON-RPC endpoints, tried in order. Default `https://solana-rpc.publicnode.com`, which serves Cloudflare Workers without a key. `api.mainnet-beta.solana.com` does **not**: Workers send a `Cf-Worker` header and that endpoint answers "Your IP or provider is blocked". |
 | `GOAL_SOLANA_RPC_PRIVATE` (secret) | Optional keyed endpoint (Helius, QuickNode, Triton… free tiers), tried before the public ones. Set with `npx wrangler secret put GOAL_SOLANA_RPC_PRIVATE`; the key lives in the URL, so never put it in `vars`. |
 | `GOAL_EXPLORER_URL` | Default `https://solscan.io`. |
 | `GOAL_TARGET_USD` | Default 200 (one month of Max 20x). |
-| `GOAL_EXCLUDED_WALLETS` | Extra operator wallets that never win. The goal wallet itself is always excluded. |
+| `GOAL_EXCLUDED_WALLETS` | Extra operator wallets that never win (list the personal wallets too). The goal/treasury wallet itself is always excluded. |
 
 `npm run readiness` prints the state of these settings.
 

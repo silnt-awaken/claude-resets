@@ -34,19 +34,21 @@
     "VAPID_PUBLIC_KEY": "",
     "VAPID_SUBJECT": "",
     "ALERTS_PAUSED": "false",
-    // Community goal: readers send USDC on Solana to the operator's wallet; the draw is automatic (finalized
-    // block hash). GOAL_USDC_ACCOUNT is that wallet's USDC token account (verified on chain 2026-09-18).
+    // Community goal: readers send USDC on Solana to a dedicated treasury wallet, never the operator's
+    // personal one; the draw is automatic (finalized block hash). GOAL_USDC_ACCOUNT is that wallet's USDC
+    // associated token account (derived 2026-09-18; created on chain by the first USDC transfer).
     "GOAL_ENABLED": "true",
-    "GOAL_WALLET": "6N9a6TJhFzGGtRLPkekmwF3xq2ncuXh7Yz7XipU6grBv",
-    "GOAL_USDC_ACCOUNT": "EuMtJBznvR8Sqt2y3pL1nKWmGhp63PaMqfBFG8kmXNiG",
+    "GOAL_WALLET": "HXeijhmHirGGp2G112QvwFsQCYEQKQTEExwijZXaCkyC",
+    "GOAL_USDC_ACCOUNT": "FdkUsavdzVKodGEDh6QBcGaCZiSV7eM7CTLNLPKWUSZP",
     "GOAL_USDC_MINT": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
     // Endpoints tried in order. api.mainnet-beta.solana.com blocks Cloudflare Workers (it sees the Cf-Worker header),
     // publicnode serves them without a key. A keyed endpoint can be added as the GOAL_SOLANA_RPC_PRIVATE secret.
     "GOAL_SOLANA_RPC": "https://solana-rpc.publicnode.com",
     "GOAL_EXPLORER_URL": "https://solscan.io",
     "GOAL_TARGET_USD": "200",
-    // Operator wallets: counted on the meter, never in the draw. The goal wallet itself is always excluded.
-    "GOAL_EXCLUDED_WALLETS": "",
+    // Operator wallets: counted on the meter, never in the draw. The goal wallet itself is always excluded;
+    // the operator's former personal goal wallet stays excluded now that the treasury took its place.
+    "GOAL_EXCLUDED_WALLETS": "6N9a6TJhFzGGtRLPkekmwF3xq2ncuXh7Yz7XipU6grBv",
     "REACTION_COOLDOWN_HOURS": "24",
     "ALERT_MAX_AGE_HOURS": "72"
   }

@@ -198,7 +198,7 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
       <section class="section prose" id="trust">
         <h2>What you are trusting</h2>
         <p>
-          There is no smart contract holding the money. Contributions land in {cfg.ownerName}'s personal wallet, and the payout is a manual transfer from that wallet. The site can read the chain but cannot move a cent. The draw itself needs no trust: the contributor list, the draw slot, the block hash and the winner index are all published, and the block hash is produced by the Solana network, not by us. If trusting one person with the pool is more than you are comfortable with, please do not contribute.
+          There is no smart contract holding the money. Contributions land in a dedicated treasury wallet controlled by {cfg.ownerName}, and the payout is a manual transfer from that wallet. The site can read the chain but cannot move a cent. The draw itself needs no trust: the contributor list, the draw slot, the block hash and the winner index are all published, and the block hash is produced by the Solana network, not by us. If trusting one person with the pool is more than you are comfortable with, please do not contribute.
         </p>
       </section>
 
