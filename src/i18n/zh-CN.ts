@@ -261,6 +261,11 @@ export const zhCN: Dict = {
       noSol: '该钱包需要少量 SOL 支付网络费用。',
       closed: '本轮抽奖与发放期间暂停参与，下一轮随后立即开始。',
       minAmount: '最低 1 美元。',
+      approve: '在 Phantom 中批准',
+      handoff: '正在打开 Phantom…',
+      connected: '已以 {wallet} 连接。点按后在 Phantom 中批准转账。',
+      expired: '等待时间过长，转账已过期。请重试。',
+      handoffFailed: 'Phantom 未按预期响应。请重试。',
       close: '关闭',
     },
     wallet: {

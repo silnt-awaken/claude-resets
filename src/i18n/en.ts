@@ -264,6 +264,11 @@ export const en = {
       noSol: 'This wallet needs a little SOL for the network fee.',
       closed: 'Entries are closed while the current round is drawn and paid. The next round opens right after.',
       minAmount: 'Minimum is $1.',
+      approve: 'Approve in Phantom',
+      handoff: 'Opening Phantom…',
+      connected: 'Connected as {wallet}. Tap to approve the transfer in Phantom.',
+      expired: 'That took too long and the transfer expired. Please try again.',
+      handoffFailed: 'Phantom did not answer as expected. Please try again.',
       close: 'Close',
     },
     wallet: {

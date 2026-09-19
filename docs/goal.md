@@ -5,7 +5,7 @@ Readers send **USDC on Solana** to a dedicated treasury wallet the operator cont
 ## What the site does and does not do
 
 - Reads: incoming USDC transfers to the goal wallet's token account, the current slot, finalized block hashes. Public RPC, no key.
-- Builds (but never signs) the USDC transfer that Phantom shows a contributor for approval.
+- Builds (but never signs) the USDC transfer that Phantom shows a contributor for approval, and on phones relays the transaction Phantom signed to the network.
 - Never holds a key and cannot move money. The payout is a manual transfer from the operator's wallet.
 - Stores in D1: rounds, contributions (signature, wallet, amount, slot), and the scan cursor. No personal data beyond public wallet addresses.
 
@@ -39,7 +39,9 @@ Other commands: `npm run goal:round -- tick` (run a cron step now), `cancel --no
 
 ## Contribution flow in the browser
 
-`public/goal.js`, Phantom only (extension or the Phantom app's in-app browser):
+`public/goal.js`, Phantom only. Two paths, chosen at the pay tap:
+
+**Injected provider** (the browser extension on desktop, or the Phantom app's own in-app browser):
 
 1. Contribute → sheet → amount → pay.
 2. `window.phantom.solana.connect()` → wallet address.
@@ -47,12 +49,23 @@ Other commands: `npm run goal:round -- tick` (run a cron step now), `cancel --no
 4. `provider.request({ method: 'signAndSendTransaction', params: { message } })` → signature.
 5. `POST /api/v1/goal/contributions { signature }` until it stops answering 202; the server verifies the transaction on chain and records it immediately (the cron would find it within a minute anyway).
 
-Without Phantom the sheet shows the wallet address to copy, an install link, and on phones an "open in the Phantom app" deep link. Any wallet or exchange withdrawal of USDC on Solana counts; the scan sees it.
+**Deeplink handoff** (a phone browser such as Chrome or Safari: they cannot host the extension and Phantom does not inject into them). The page bounces to the Phantom app for each approval and lands back on the same URL, per [Phantom's deeplink docs](https://docs.phantom.com/phantom-deeplinks):
+
+1. Pay tap → an ephemeral x25519 keypair (vendored `public/vendor/nacl-fast.min.js`, tweetnacl 1.0.3, loaded only on this path) is stored with the amount in `localStorage` (`claude-resets-goal-handoff`, 10-minute expiry) and the page navigates to `phantom.app/ul/v1/connect` with `redirect_link` = the current page.
+2. Phantom returns with `phantom_encryption_public_key`, `nonce` and `data`; the page decrypts (`nacl.box.open.after`) to get the wallet address and the session, and shows "Approve in Phantom".
+3. That tap calls `POST /api/v1/goal/tx` as above, wraps the message as an unsigned legacy transaction (one empty signature slot + message), encrypts `{ transaction, session }` and navigates to `phantom.app/ul/v1/signTransaction`. Both navigations happen inside a user gesture, which Android Chrome requires to open another app; the transfer is built right before leaving so the blockhash stays fresh. The deprecated `signAndSendTransaction` deeplink is not used.
+4. Phantom returns the signed transaction (it does not broadcast it). `POST /api/v1/goal/submit { transaction }` relays it: the server checks it is one signer plus a message that names the goal's USDC account, then `sendTransaction`. The page cannot call an RPC itself (`connect-src 'self'`).
+5. Same confirmation loop as step 5 above. A rejection in Phantom comes back as `errorCode`/`errorMessage` and is shown as "not approved"; an expired blockhash comes back from the relay as `expired`.
+
+Nothing in the handoff state can move money: it holds our ephemeral encryption key, the amount and Phantom's session token, never a wallet key.
+
+Without Phantom (desktop with no extension, or a phone where the handoff cannot run) the sheet shows the wallet address to copy, an install link, and on phones an "open in the Phantom app" deep link. Any wallet or exchange withdrawal of USDC on Solana counts; the scan sees it.
 
 ## Public API
 
 - `GET /api/v1/goal`: enabled, network, target, pool (wallet, USDC account), current/latest round (status, raised, contributors, draw slot/block/hash, winner, payout), past rounds, sync state, progress.
 - `GET /api/v1/goal/contributors`: the draw list in draw order with the winner index, so anyone can recompute the result.
+- `POST /api/v1/goal/tx`, `POST /api/v1/goal/submit`, `POST /api/v1/goal/contributions`: the contribution sheet's endpoints (build, relay, verify), rate limited per IP.
 
 ## Verification for readers
 

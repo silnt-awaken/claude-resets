@@ -3,7 +3,7 @@ import { goalConfig } from '../src/config';
 import type { Env } from '../src/env';
 import { base58Decode, base58Encode, bytesToBigInt, isSolanaAddress, isSolanaSignature } from '../src/goal/base58';
 import { MIN_CONTRIBUTION_UNITS, currentRound, latestRound, openRound, pickWinnerIndex, qualifyingEntries } from '../src/goal/rounds';
-import { PRIORITY_FEE_LAMPORTS, SOLANA, buildTransferMessage, deriveAssociatedTokenAccount, isOnCurve, parseContribution, type ParsedTransaction } from '../src/goal/solana';
+import { PRIORITY_FEE_LAMPORTS, SOLANA, buildTransferMessage, deriveAssociatedTokenAccount, isOnCurve, messageHasAccount, parseContribution, parseSignedTransaction, unsignedTransaction, type ParsedTransaction } from '../src/goal/solana';
 import { goalStatus, syncContributions, tickGoal } from '../src/routes/goal';
 import { adminInit, clearDb, env, json, request } from './helpers';
 
@@ -45,6 +45,9 @@ interface FakeChain {
   accounts: Record<string, { owner: string; mint: string; amount: bigint }>;
   lamports: Record<string, number>;
   calls: string[];
+  /** what sendTransaction answers: the signature it reports, or an error message */
+  send?: { signature?: string; error?: string };
+  sent?: string[];
 }
 
 function parsedTx(t: FakeTx): ParsedTransaction {
@@ -131,6 +134,12 @@ function fakeRpc(chain: FakeChain): typeof fetch {
       case 'getFeeForMessage':
         result = { value: 5000 };
         break;
+      case 'sendTransaction': {
+        (chain.sent ??= []).push(req.params[0] as string);
+        if (chain.send?.error) return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, error: { code: -32002, message: chain.send.error } }), { headers: { 'content-type': 'application/json' } });
+        result = chain.send?.signature ?? sig(77);
+        break;
+      }
       default:
         return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, error: { code: -32601, message: `unsupported ${req.method}` } }), { headers: { 'content-type': 'application/json' } });
     }
@@ -294,6 +303,8 @@ describe('rounds', () => {
     expect(html).toContain('https://phantom.com/download');
     expect(html).toContain(`data-goal-wallet="${WALLET}"`);
     expect(html).toContain('src="/goal.js"');
+    expect(html).toContain('Approve in Phantom'); // handoff strings for goal.js
+    expect(html).not.toContain('nacl-fast'); // loaded on demand, only on the phone handoff path
     expect(html).toMatch(/data-role="goal-entries">1<\/span> contributors/);
     expect(html).not.toContain('USDG');
     expect(html).not.toContain('Robinhood');
@@ -455,6 +466,52 @@ describe('contribution endpoints', () => {
       expect((await post({ from: B, amount: 5 })).body.code).toBe('no_usdc');
       expect((await post({ from: C, amount: 5 })).body.code).toBe('no_sol');
       expect((await post({ from: WALLET, amount: 5 })).body.code).toBe('operator_wallet');
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+
+  it('relays a signed transaction from the Phantom deeplink handoff and refuses anything that is not a signed transfer to the pool', async () => {
+    const c = chain();
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = fakeRpc(c);
+    try {
+      await openRound(db(), 'r', 200, new Date());
+      const post = (body: unknown) => json<Record<string, unknown>>('/api/v1/goal/submit', { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } }, LIVE);
+      const ataA = await deriveAssociatedTokenAccount(A, USDC);
+      const message = buildTransferMessage({ payer: A, source: ataA, destination: POOL_USDC, mint: USDC, units: 5_000_000n, decimals: 6, blockhash: hash32(9) });
+      // What the page sends Phantom: one empty signature slot, then the message.
+      const unsigned = unsignedTransaction(message);
+      expect(unsigned[0]).toBe(1);
+      expect(unsigned.slice(1, 65).every((b) => b === 0)).toBe(true);
+      expect(parseSignedTransaction(unsigned)).toBeNull(); // unsigned is not relayable
+      expect(messageHasAccount(message, POOL_USDC)).toBe(true);
+      expect(messageHasAccount(message, B)).toBe(false);
+      // What Phantom hands back: the same bytes with the fee payer's signature filled in.
+      const signed = new Uint8Array(unsigned);
+      signed.set(base58Decode(sig(77)), 1);
+      expect(parseSignedTransaction(signed)).toMatchObject({ signature: sig(77) });
+      const ok = await post({ transaction: base58Encode(signed) });
+      expect(ok.status).toBe(200);
+      expect(ok.body.signature).toBe(sig(77));
+      expect(c.sent).toHaveLength(1);
+      expect(c.sent![0]).toBe(btoa(String.fromCharCode(...signed)));
+
+      expect((await post({ transaction: base58Encode(unsigned) })).body.code).toBe('invalid_transaction');
+      expect((await post({ transaction: 'not base58 0OIl' })).body.code).toBe('invalid_transaction');
+      expect((await post({})).body.code).toBe('invalid_transaction');
+      const elsewhere = buildTransferMessage({ payer: A, source: ataA, destination: `${B.slice(0, 40)}dest`, mint: USDC, units: 5_000_000n, decimals: 6, blockhash: hash32(9) });
+      const signedElsewhere = unsignedTransaction(elsewhere);
+      signedElsewhere.set(base58Decode(sig(78)), 1);
+      expect((await post({ transaction: base58Encode(signedElsewhere) })).body.code).toBe('not_a_contribution');
+      expect(c.sent).toHaveLength(1); // nothing else reached the network
+
+      c.send = { error: 'Transaction simulation failed: Blockhash not found' };
+      expect((await post({ transaction: base58Encode(signed) })).body.code).toBe('expired');
+      c.send = { error: 'Transaction signature verification failure' };
+      expect((await post({ transaction: base58Encode(signed) })).body.code).toBe('failed');
+      c.send = { error: 'Transaction simulation failed: custom program error: 0x1 insufficient funds' };
+      expect((await post({ transaction: base58Encode(signed) })).body.code).toBe('insufficient');
     } finally {
       globalThis.fetch = realFetch;
     }

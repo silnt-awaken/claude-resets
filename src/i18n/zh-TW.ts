@@ -263,6 +263,11 @@ export const zhTW: Dict = {
       noSol: '該錢包需要少量 SOL 支付網路費用。',
       closed: '本輪抽獎與發放期間暫停參與，下一輪隨後立即開始。',
       minAmount: '最低 1 美元。',
+      approve: '在 Phantom 中核准',
+      handoff: '正在開啟 Phantom…',
+      connected: '已以 {wallet} 連線。點按後在 Phantom 中核准轉帳。',
+      expired: '等待時間過長，轉帳已過期。請重試。',
+      handoffFailed: 'Phantom 未如預期回應。請重試。',
       close: '關閉',
     },
     wallet: {

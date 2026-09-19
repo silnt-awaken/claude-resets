@@ -263,6 +263,11 @@ export const ja: Dict = {
       noSol: 'ネットワーク手数料のため、このウォレットに少量の SOL が必要です。',
       closed: '現在のラウンドの抽選と支払いの間は受付を停止しています。次のラウンドはその直後に始まります。',
       minAmount: '最低 1 ドルです。',
+      approve: 'Phantom で承認',
+      handoff: 'Phantom を開いています…',
+      connected: '{wallet} として接続しました。タップして Phantom で送金を承認してください。',
+      expired: '時間がかかりすぎたため送金の有効期限が切れました。もう一度お試しください。',
+      handoffFailed: 'Phantom から想定どおりの応答がありませんでした。もう一度お試しください。',
       close: '閉じる',
     },
     wallet: {

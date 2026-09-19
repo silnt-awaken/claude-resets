@@ -30,6 +30,7 @@ import {
 import {
   PRIORITY_FEE_LAMPORTS,
   SOLANA,
+  base58Decode,
   base58Encode,
   blockHashAtOrAfter,
   buildTransferMessage,
@@ -38,7 +39,10 @@ import {
   getSlot,
   getTransaction,
   lamports,
+  messageHasAccount,
   parseContribution,
+  parseSignedTransaction,
+  sendRawTransaction,
   shortAddress,
   signaturesSince,
   associatedTokenAccount,
@@ -321,6 +325,42 @@ goal.post('/tx', async (c) => {
     return c.json({ message: base58Encode(message), from, source: source.address, destination: cfg.usdcAccount, units: units.toString(), usdc: cents / 100, fee_lamports: baseFee + PRIORITY_FEE_LAMPORTS, blockhash, last_valid_block_height: lastValidBlockHeight });
   } catch (err) {
     console.error('goal tx failed', err instanceof Error ? err.message : err);
+    return problem(c, 503, 'rpc_unavailable', 'Could not reach Solana right now. Try again in a moment.');
+  }
+});
+
+/**
+ * Broadcast a transaction that Phantom signed but did not send: the deeplink `signTransaction` flow on
+ * phones hands the signed bytes back to the page, and the page cannot reach an RPC itself (connect-src is
+ * this site only). Only a one-signer transaction whose message names the goal's USDC account is relayed;
+ * the network rejects anything with a bad signature or an expired blockhash. Returns the signature.
+ */
+goal.post('/submit', async (c) => {
+  const cfg = siteConfig(c.env).goal;
+  const closed = openOr409(c, cfg, await currentRound(c.env.DB));
+  if (closed) return closed;
+  const body = await readJson(c, 4096);
+  if (!body.ok) return problem(c, 400, 'invalid_body', body.error);
+  const raw = (body.value as Record<string, unknown>).transaction;
+  let bytes: Uint8Array;
+  try {
+    bytes = typeof raw === 'string' && raw.length <= 2048 ? base58Decode(raw) : new Uint8Array();
+  } catch {
+    bytes = new Uint8Array();
+  }
+  const signed = bytes.length > 0 && bytes.length <= 1232 ? parseSignedTransaction(bytes) : null;
+  if (!signed) return problem(c, 400, 'invalid_transaction', 'transaction must be a signed, base58 serialized Solana transaction', { parameter: 'transaction' });
+  if (!messageHasAccount(signed.message, cfg.usdcAccount!)) return problem(c, 409, 'not_a_contribution', 'This transaction does not involve the goal wallet.');
+  try {
+    const signature = await sendRawTransaction(fetch, cfg.rpcUrl, bytes);
+    console.log('goal tx relayed', JSON.stringify({ signature, bytes: bytes.length }));
+    return c.json({ signature: signature || signed.signature });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('goal tx relay failed', message);
+    if (/blockhash/i.test(message)) return problem(c, 409, 'expired', 'The transfer expired before it was sent. Please try again.');
+    if (/signature/i.test(message)) return problem(c, 409, 'failed', 'The network rejected the signed transaction.');
+    if (/insufficient/i.test(message)) return problem(c, 409, 'insufficient', 'Not enough USDC or SOL in this wallet.');
     return problem(c, 503, 'rpc_unavailable', 'Could not reach Solana right now. Try again in a moment.');
   }
 });

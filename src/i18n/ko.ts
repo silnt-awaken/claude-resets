@@ -263,6 +263,11 @@ export const ko: Dict = {
       noSol: '네트워크 수수료를 위해 이 지갑에 약간의 SOL이 필요합니다.',
       closed: '현재 라운드의 추첨과 지급이 끝날 때까지 참가가 마감됩니다. 다음 라운드는 바로 이어서 시작됩니다.',
       minAmount: '최소 $1입니다.',
+      approve: 'Phantom에서 승인',
+      handoff: 'Phantom을 여는 중…',
+      connected: '{wallet}(으)로 연결되었습니다. 탭하여 Phantom에서 전송을 승인하세요.',
+      expired: '시간이 너무 오래 걸려 전송이 만료되었습니다. 다시 시도해 주세요.',
+      handoffFailed: 'Phantom이 예상대로 응답하지 않았습니다. 다시 시도해 주세요.',
       close: '닫기',
     },
     wallet: {

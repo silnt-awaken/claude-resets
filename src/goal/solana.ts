@@ -317,6 +317,53 @@ export async function feeForMessage(fetchFn: FetchLike, url: string, message: Ui
   return r.value;
 }
 
+// ---------- signed transactions (the Phantom deeplink handoff on phones) ----------
+
+/**
+ * A legacy transaction with one empty signature slot in front of the message: what the Phantom
+ * `signTransaction` deeplink expects (`transaction.serialize({ requireAllSignatures: false })`).
+ */
+export function unsignedTransaction(message: Uint8Array): Uint8Array {
+  const out = new Uint8Array(1 + 64 + message.length);
+  out[0] = 1;
+  out.set(message, 65);
+  return out;
+}
+
+export interface SignedTransaction {
+  signature: string; // base58 of the first (fee payer) signature
+  message: Uint8Array;
+}
+
+/** Split a serialized legacy transaction into its first signature and message; null when it is not one signer plus a message. */
+export function parseSignedTransaction(bytes: Uint8Array): SignedTransaction | null {
+  if (bytes.length < 1 + 64 + 3 + 1 + 32 + 32 || bytes[0] !== 1) return null;
+  const signature = bytes.slice(1, 65);
+  if (signature.every((b) => b === 0)) return null;
+  return { signature: base58Encode(signature), message: bytes.slice(65) };
+}
+
+/** Does the serialized message reference `address` among its account keys? (Every account key is a full 32-byte entry after the 3-byte header and the key count.) */
+export function messageHasAccount(message: Uint8Array, address: string): boolean {
+  const key = base58Decode(address);
+  if (key.length !== 32 || message.length < 4) return false;
+  const count = message[3]!;
+  if (count >= 0x80) return false; // more than 127 keys is never one of ours
+  for (let i = 0; i < count; i++) {
+    const at = 4 + i * 32;
+    if (at + 32 > message.length) return false;
+    let same = true;
+    for (let j = 0; j < 32; j++) if (message[at + j] !== key[j]) { same = false; break; }
+    if (same) return true;
+  }
+  return false;
+}
+
+/** Broadcast a signed transaction; resolves to its signature as the RPC reports it. */
+export async function sendRawTransaction(fetchFn: FetchLike, url: string, bytes: Uint8Array): Promise<string> {
+  return rpc<string>(fetchFn, url, 'sendTransaction', [toBase64(bytes), { encoding: 'base64', preflightCommitment: 'confirmed', maxRetries: 3 }]);
+}
+
 export { base58Encode, base58Decode };
 
 /** "5.00 USDC" style: base units → decimal string with up to `fraction` digits. */
