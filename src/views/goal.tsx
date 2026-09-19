@@ -100,7 +100,7 @@ const GoalSheet: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }
         </div>
         <label class="goal-amount">
           <span aria-hidden="true">$</span>
-          <input data-role="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="5.00" aria-label={s.custom} />
+          <input data-role="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-label={s.custom} />
         </label>
         <span class="mono">{s.review}</span>
         <div class="goal-review">
@@ -121,7 +121,7 @@ const GoalSheet: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }
           <p>{s.noWallet}</p>
           <code class="goal-address">{status.pool.wallet}</code>
           <div class="goal-cta">
-            <a class="btn" href="https://phantom.com/download" target="_blank" rel="noopener noreferrer">
+            <a class="btn" href="https://phantom.com/download" data-role="install" target="_blank" rel="noopener noreferrer">
               {w.install}
             </a>
             <a class="btn btn--accent" href="https://phantom.app/" data-role="open-in-app" rel="noopener noreferrer" hidden>

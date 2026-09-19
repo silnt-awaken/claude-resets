@@ -245,7 +245,7 @@ export const zhTW: Dict = {
       denomination: '價格以美元顯示；付款使用 Solana 上的 USDC。',
       pay: '出資 {amount}',
       connect: '連接 Phantom',
-      noWallet: '未在此瀏覽器中偵測到 Phantom。請安裝，或用任意錢包或交易所向目標錢包轉入 Solana 上的 USDC：',
+      noWallet: '此瀏覽器分頁中未偵測到 Phantom。手機請在 Phantom 應用程式中開啟本頁；桌面端請安裝擴充功能。也可以用任何錢包或交易所轉入 Solana 上的 USDC：',
       copy: '複製錢包地址',
       copied: '已複製',
       preparing: '正在準備轉帳…',

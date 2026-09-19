@@ -108,6 +108,9 @@
       deep.href = 'https://phantom.app/ul/browse/' + encodeURIComponent(location.href) + '?ref=' + encodeURIComponent(location.origin);
       deep.hidden = !isMobile;
     }
+    // On a phone the install link is noise: Phantom is already installed, it just cannot reach into Chrome.
+    var install = fallback.querySelector('[data-role="install"]');
+    if (install) install.hidden = isMobile;
     fallback.hidden = false;
   }
   sheet.querySelectorAll('[data-role="copy-pool"]').forEach(function (btn) {
@@ -143,6 +146,7 @@
       if (fallback) fallback.hidden = true;
       bindEvents();
       setAmount(amount);
+      amountInput.value = amount.toFixed(2);
       sheet.showModal();
       amountInput.focus();
     });
@@ -157,8 +161,9 @@
   });
   for (var i = 0; i < presets.length; i++) {
     presets[i].addEventListener('click', function (ev) {
-      amountInput.value = '';
-      setAmount(parseFloat(ev.currentTarget.getAttribute('data-amount')));
+      var n = parseFloat(ev.currentTarget.getAttribute('data-amount'));
+      amountInput.value = n.toFixed(2);
+      setAmount(n);
     });
   }
   amountInput.addEventListener('input', function () {

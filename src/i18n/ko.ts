@@ -245,7 +245,7 @@ export const ko: Dict = {
       denomination: '가격은 달러로 표시되며 결제는 Solana의 USDC로 이루어집니다.',
       pay: '{amount} 기부',
       connect: 'Phantom 연결',
-      noWallet: '이 브라우저에서 Phantom을 찾을 수 없습니다. 설치하거나, 아무 지갑이나 거래소에서 Solana의 USDC를 목표 지갑으로 보내세요:',
+      noWallet: '이 브라우저 탭에서 Phantom을 찾을 수 없습니다. 휴대폰에서는 Phantom 앱에서 이 페이지를 열고, 데스크톱에서는 확장 프로그램을 설치하세요. 아무 지갑이나 거래소에서 Solana의 USDC를 보낼 수도 있습니다:',
       copy: '지갑 주소 복사',
       copied: '복사됨',
       preparing: '전송을 준비하는 중…',

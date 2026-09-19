@@ -243,7 +243,7 @@ export const zhCN: Dict = {
       denomination: '价格以美元显示；支付使用 Solana 上的 USDC。',
       pay: '出资 {amount}',
       connect: '连接 Phantom',
-      noWallet: '未在此浏览器中检测到 Phantom。请安装，或用任意钱包或交易所向目标钱包转入 Solana 上的 USDC：',
+      noWallet: '此浏览器标签页中未检测到 Phantom。手机请在 Phantom 应用中打开本页；桌面端请安装扩展。也可以用任意钱包或交易所转入 Solana 上的 USDC：',
       copy: '复制钱包地址',
       copied: '已复制',
       preparing: '正在准备转账…',

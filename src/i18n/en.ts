@@ -246,7 +246,7 @@ export const en = {
       denomination: 'Prices shown as dollars; payments use USDC on Solana.',
       pay: 'Contribute {amount}',
       connect: 'Connect Phantom',
-      noWallet: 'Phantom was not found in this browser. Install it, or send USDC on Solana to the goal wallet from any wallet or exchange:',
+      noWallet: 'Phantom was not found in this browser tab. On a phone, open this page in the Phantom app; on desktop, install the extension. Or send USDC from any wallet or exchange:',
       copy: 'Copy wallet address',
       copied: 'Copied',
       preparing: 'Preparing the transfer…',

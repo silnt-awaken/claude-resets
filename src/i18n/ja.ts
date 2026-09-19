@@ -245,7 +245,7 @@ export const ja: Dict = {
       denomination: '表示はドル。支払いは Solana 上の USDC です。',
       pay: '{amount} を出資',
       connect: 'Phantom を接続',
-      noWallet: 'このブラウザに Phantom が見つかりません。インストールするか、任意のウォレットや取引所から Solana 上の USDC を目標ウォレットへ送金してください：',
+      noWallet: 'このブラウザタブでは Phantom が見つかりません。スマートフォンでは Phantom アプリでこのページを開き、デスクトップでは拡張機能をインストールしてください。任意のウォレットや取引所から Solana 上の USDC を送ることもできます：',
       copy: 'ウォレットアドレスをコピー',
       copied: 'コピーしました',
       preparing: '送金を準備しています…',
