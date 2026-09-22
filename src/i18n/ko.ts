@@ -44,6 +44,13 @@ export const ko: Dict = {
     announced: '발표',
     relayedBy: '전달자',
   },
+  resetOffer: {
+    label: '초기화',
+    expires: '만료일: {date}',
+    expired: '{date}에 만료됨',
+    details: '상세 정보 및 출처',
+    note: '원하는 때에 Claude 계정에서 사용하세요. 사용 가능 여부와 정확한 만료 시간은 계정에서 확인해 주세요. 이 혜택은 이미 적용된 초기화 통계에 포함되지 않습니다.',
+  },
   actions: {
     group: '리셋 알림',
     browser: '브라우저',
@@ -157,7 +164,7 @@ export const ko: Dict = {
   },
   other: {
     heading: '기타 한도 관련 발표',
-    sub: '리셋이 아닙니다. 참고용으로만 표시하며 절대 집계하지 않습니다.',
+    sub: '보관할 수 있는 초기화 혜택 및 기타 한도 변경 사항입니다. 이미 적용된 초기화 합계에는 포함되지 않습니다.',
   },
   kinds: {
     usage_reset: '사용량 리셋',

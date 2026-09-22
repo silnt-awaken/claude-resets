@@ -81,6 +81,17 @@ export function qualifyingResets(events: ResetEvent[]): ResetEvent[] {
   return events.filter(isQualifyingReset);
 }
 
+/** Published reset-credit records, including withdrawals so feeds retain corrections. */
+export function resetOffers(events: ResetEvent[]): ResetEvent[] {
+  return events.filter((e) => e.editorialStatus === 'published' && e.verificationStatus === 'verified' && e.kind === 'credit' && e.resetOffer);
+}
+
+/** Date-only expiry: list through the stated day, without inventing a redemption deadline. */
+export function activeResetOffers(events: ResetEvent[], now: Date): ResetEvent[] {
+  const day = now.toISOString().slice(0, 10);
+  return sortEventsDesc(resetOffers(events).filter((e) => e.eventStatus === 'confirmed' && eventDay(e) <= day && e.resetOffer!.expiresOn >= day));
+}
+
 /** Published announcements of a future reset that has not been confirmed as applied. */
 export function announcedResets(events: ResetEvent[]): ResetEvent[] {
   return events.filter((e) => e.editorialStatus === 'published' && e.kind === 'usage_reset' && e.eventStatus === 'announced');

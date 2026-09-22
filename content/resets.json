@@ -1,5 +1,73 @@
 [
   {
+    "id": "2026-09-22-opus-5-5-reset",
+    "kind": "credit",
+    "editorialStatus": "published",
+    "verificationStatus": "verified",
+    "eventStatus": "confirmed",
+    "title": "Opus 5.5: a reset you can save for later",
+    "summary": "Get extra wiggle room to explore Opus 5.5. Anthropic says subscribers can save this reset and use it when they choose. Find the Resets card in Claude under Settings → Usage.",
+    "originalLanguage": "en",
+    "translations": {
+      "zh-CN": {
+        "title": "Opus 5.5：可留待需要时使用的重置机会",
+        "summary": "获得更多使用空间，探索 Opus 5.5。Anthropic 表示，订阅用户可以保留此次重置机会，自行选择使用时间。在 Claude 的「设置 → 使用情况」中查看「Resets」卡片。"
+      },
+      "zh-TW": {
+        "title": "Opus 5.5：可留待需要時使用的重置機會",
+        "summary": "獲得更多使用空間，探索 Opus 5.5。Anthropic 表示，訂閱用戶可以保留此次重置機會，自行選擇使用時間。在 Claude 的「設定 → 使用情況」中查看「Resets」卡片。"
+      },
+      "ja": {
+        "title": "Opus 5.5：必要なときまで取っておけるリセット",
+        "summary": "Opus 5.5 を試すための余裕が増えました。Anthropic によると、サブスクリプション利用者は今回のリセットを保存し、好きなときに使用できます。Claude の「設定 → 使用状況」で「Resets」カードをご確認ください。"
+      },
+      "ko": {
+        "title": "Opus 5.5: 필요할 때까지 보관할 수 있는 초기화",
+        "summary": "Opus 5.5를 더 여유롭게 사용해 보세요. Anthropic에 따르면 구독자는 이번 초기화 혜택을 보관했다가 원하는 때에 사용할 수 있습니다. Claude의 설정 → 사용량에서 Resets 카드를 확인하세요."
+      }
+    },
+    "translationStatus": "authored",
+    "time": {
+      "precision": "date",
+      "announcedOn": "2026-09-22",
+      "dateTimezone": "unknown",
+      "utcDayResolved": false
+    },
+    "effectiveAt": null,
+    "effectiveNote": "Applied only when the subscriber redeems the reset in Claude. No automatic account reset is asserted.",
+    "resetOffer": {
+      "expiresOn": "2026-10-22"
+    },
+    "allocation": "subscription_usage",
+    "audience": {
+      "scope": "limited",
+      "statement": "subscription users",
+      "plans": "subscribers"
+    },
+    "windows": [
+      "unspecified"
+    ],
+    "sources": [
+      {
+        "url": "https://www.anthropic.com/claude-opus-5-5",
+        "sourceId": "anthropicai",
+        "handle": "AnthropicAI",
+        "displayName": "Anthropic",
+        "kind": "web_page",
+        "role": "original",
+        "excerpt": "We’re also providing subscription users a rate limit reset, which you can now save and use whenever you choose.",
+        "evidenceSummary": "The Opus 5.5 launch announcement confirms a rate-limit reset that subscription users can save and redeem at a time they choose.",
+        "verificationMethod": "Read the official Anthropic launch page in Chrome on 2026-09-22. The reset is stated in the Cost and speed paragraph. Expiry and in-app wording were supplied separately by the tracker maintainer.",
+        "verifiedAt": "2026-09-22"
+      }
+    ],
+    "firstPublishedAt": "2026-09-22T17:35:36.935Z",
+    "revisedAt": "2026-09-22T17:35:36.935Z",
+    "revision": 1,
+    "alertRevision": 1,
+    "notes": "The tracker maintainer supplied the Claude Resets card wording and October 22 expiry on September 22, 2026. The public launch announcement confirms the saved reset but does not specify that expiry, the exact cutoff or timezone, or which usage windows it resets. Check your own Claude account. This redeemable credit is excluded from the count and calendar of already-applied resets."
+  },
+  {
     "id": "2026-09-04-max-weekly",
     "kind": "usage_reset",
     "editorialStatus": "published",

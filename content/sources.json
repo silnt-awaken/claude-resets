@@ -127,9 +127,9 @@
     },
     "affiliationEvidenceUrl": "https://www.anthropic.com/",
     "affiliationEvidenceNote": "anthropic.com links to this X account.",
-    "resetEvidenceUrls": [],
-    "verificationMethod": "anthropic.com footer link checked on 2026-09-17.",
-    "lastReviewedAt": "2026-09-17",
+    "resetEvidenceUrls": ["https://www.anthropic.com/claude-opus-5-5"],
+    "verificationMethod": "anthropic.com footer link checked on 2026-09-17; official Opus 5.5 saved-reset announcement read in Chrome on 2026-09-22.",
+    "lastReviewedAt": "2026-09-22",
     "active": true
   },
   {

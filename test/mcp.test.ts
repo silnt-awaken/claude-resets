@@ -39,6 +39,7 @@ describe('MCP server', () => {
     const api = await json<StatusResponse>('/api/v1/status');
     expect(structured.data.latest_reset?.id).toBe(api.body.data.latest_reset?.id);
     expect(structured.data.stats.total).toBe(api.body.data.stats.total);
+    expect(structured.data.reset_offers).toEqual(api.body.data.reset_offers);
     expect(structured.meta.content_revision).toBe(api.body.meta.content_revision);
 
     const list = await client.callTool({ name: 'list_claude_resets', arguments: { limit: 4 } });

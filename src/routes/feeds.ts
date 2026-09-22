@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { loadContent, qualifyingResets, sortEventsDesc, withdrawnResets } from '../domain/content';
+import { loadContent, qualifyingResets, resetOffers, sortEventsDesc, withdrawnResets } from '../domain/content';
 import type { ResetEvent } from '../domain/types';
 import { siteConfig, type Env } from '../env';
 import { hashString } from '../domain/content';
@@ -19,13 +19,14 @@ function feedDate(e: ResetEvent): string {
 
 function feedEvents(): ResetEvent[] {
   const content = loadContent();
-  const items = [...qualifyingResets(content.events), ...withdrawnResets(content.events)];
+  const items = [...qualifyingResets(content.events), ...withdrawnResets(content.events), ...resetOffers(content.events).filter((e) => e.eventStatus !== 'announced')];
   return sortEventsDesc(items).slice(0, FEED_LIMIT);
 }
 
 function describe(e: ResetEvent): string {
   const src = e.sources.find((s) => s.role === 'original') ?? e.sources[0]!;
   const parts = [e.summary];
+  if (e.resetOffer) parts.push(`Subscriber-redeemed reset credit. Stated expiry: ${e.resetOffer.expiresOn}. Check Claude for account availability and the exact deadline. Not counted as an already-applied reset.`);
   if (e.time.precision === 'date') parts.push(`Announced on ${e.time.announcedOn} (exact time not established).`);
   parts.push(`Audience: ${e.audience.statement}. Windows: ${e.windows.join(', ')}.`);
   if (e.correction) parts.push(`${e.correction.kind === 'retraction' ? 'Retracted' : 'Corrected'} (${e.correction.at}): ${e.correction.reason}`);

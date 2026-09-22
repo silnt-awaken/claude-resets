@@ -39,11 +39,13 @@ if (stats.latest.kind === 'exact') {
 }
 console.log(`STATS     resets=${stats.total} avg=${stats.averageIntervalDays == null ? '—' : formatDays(stats.averageIntervalDays) + 'd'} longest=${stats.longestGapDays == null ? '—' : formatDays(stats.longestGapDays) + 'd'} gaps=${stats.eligibleGaps}/${stats.totalGaps}${stats.partialSample ? ' (partial)' : ''}`);
 if (status.announced) console.log(`UPCOMING  ${status.announced.title} · stated ${status.announced.schedule?.statedAt ?? status.announced.schedule?.statedWindow ?? 'n/a'}`);
+for (const offer of status.offers) console.log(`OFFER     ${offer.title} · expires ${offer.resetOffer!.expiresOn} · subscriber-redeemed, excluded from reset totals`);
 
 const grid = buildCalendar(status.filtered, now, snapshot.coverageStart);
 if (previewId) {
   const cell = grid.weeks.flat().find((c) => c.events.some((r) => r.id === previewId));
-  console.log(`CALENDAR  ${previewId} → ${cell ? `${cell.date} (${cell.state})` : 'not placed (no established UTC day)'}`);
+  const offer = snapshot.events.find((e) => e.id === previewId)?.resetOffer;
+  console.log(`CALENDAR  ${previewId} → ${cell ? `${cell.date} (${cell.state})` : offer ? 'excluded (subscriber-redeemed reset credit)' : 'not placed (no established UTC day)'}`);
 }
 if (grid.unplaced.length) console.log(`CALENDAR  unplaced: ${grid.unplaced.map((e) => e.id).join(', ')}`);
 

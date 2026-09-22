@@ -2,6 +2,14 @@
 
 Every published seed, how it was verified, and what remains unresolved. Content lives in `content/resets.json`; this file explains where it came from.
 
+## September 22, 2026: Opus 5.5 saved reset
+
+Read [Anthropic's official announcement](https://www.anthropic.com/claude-opus-5-5) in Chrome on September 22. Its Cost and speed paragraph confirms a rate-limit reset that subscription users can save and use when they choose. The public page does not establish affected reset windows, an exact announcement time, or an expiry.
+
+The maintainer supplied the Claude Resets card text, “Get extra wiggle room to explore Opus 5.5. Expires Oct 22.” That establishes the displayed October 22 date as maintainer-reported; it was not independently verified in an authenticated Claude account. The detail page preserves this distinction and leaves the cutoff time and timezone unspecified.
+
+The event `2026-09-22-opus-5-5-reset` is a subscription `credit` with `resetOffer.expiresOn`, not a confirmed applied `usage_reset`. It appears prominently on the homepage and in the API/MCP `reset_offers` field through the stated date, subject to filters. It remains in the feeds and detail page afterward; it never increments the applied-reset count or calendar. No claim about the subscriber's actual eligibility, redeemed balance, or reset timer is made.
+
 ## Verification method
 
 Direct X page retrieval is unreliable without a login, so two public mechanisms were used on 2026-09-17:

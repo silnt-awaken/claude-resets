@@ -9,6 +9,7 @@ import { ArrowIcon, BellIcon, CupIcon, DownIcon, RssIcon, SendIcon, UpIcon } fro
 import { Layout, type PageContext } from './layout';
 import { GoalCard } from './goal';
 import type { GoalStatus } from '../routes/goal';
+import { ResetOfferCard } from './reset-offer';
 
 export const CHECK_USAGE_URL = 'https://claude.ai/settings/usage';
 export const USAGE_HELP_URL = 'https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work';
@@ -20,6 +21,7 @@ export interface HomeModel {
   stats: Stats;
   calendar: CalendarGrid;
   announced: ResetEvent[];
+  offers: ResetEvent[];
   others: ResetEvent[];
   withdrawn: ResetEvent[];
   previewSources: SourceAccount[];
@@ -48,6 +50,7 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
           {t.hero.intro} <a href={localizePath(locale, '/sources')}>{t.hero.introSources}</a>.
         </p>
         <Actions ctx={ctx} />
+        {model.offers.map((e) => <ResetOfferCard ctx={ctx} e={e} />)}
         <Upcoming ctx={ctx} events={model.announced} />
         <HeroCard ctx={ctx} model={model} />
       </section>

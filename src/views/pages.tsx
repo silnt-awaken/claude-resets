@@ -4,6 +4,7 @@ import { formatDate, formatUtcDateTime, interpolate, localizePath } from '../i18
 import { AbsoluteTime, Avatar, RelativeTime, ScopeChips, SourceCard, localizedSummary, localizedTitle, planChipLabel } from './components';
 import { ArrowIcon, CupIcon } from './icons';
 import { Layout, type PageContext } from './layout';
+import { ResetOfferCard } from './reset-offer';
 
 export const CLAUDE_STATUS_URL = 'https://status.claude.com/';
 export const USAGE_HELP_URL = 'https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work';
@@ -235,6 +236,8 @@ export const ResetPage: FC<{ ctx: PageContext; e: ResetEvent; related: ResetEven
         ) : null}
       </div>
 
+      {e.resetOffer ? <ResetOfferCard ctx={ctx} e={e} detail /> : null}
+
       <section class="section" aria-labelledby="scope-heading">
         <h2 id="scope-heading">{t.reset.scope}</h2>
         <dl class="kv" style="margin-top:12px">
@@ -315,7 +318,7 @@ export const ResetPage: FC<{ ctx: PageContext; e: ResetEvent; related: ResetEven
                   </dl>
                   <div class="log-links">
                     <a href={s.url} target="_blank" rel="noopener noreferrer">
-                      {t.archive.viewOnX} <ArrowIcon />
+                      {s.kind === 'x_post' ? t.archive.viewOnX : t.hero.viewAnnouncement} <ArrowIcon />
                     </a>
                   </div>
                 </div>

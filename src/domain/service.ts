@@ -1,6 +1,6 @@
 // One service layer for the homepage, the public API, the feeds and the MCP tools.
 
-import { announcedResets, compareEventsAsc, eventDay, eventInstant, qualifyingResets, sortEventsDesc, type ContentSnapshot } from './content';
+import { activeResetOffers, announcedResets, compareEventsAsc, eventDay, eventInstant, qualifyingResets, sortEventsDesc, type ContentSnapshot } from './content';
 import { applyFilters, type Filters } from './filters';
 import { computeStats, type Stats } from './stats';
 import type { ResetEvent } from './types';
@@ -11,6 +11,7 @@ export interface StatusResult {
   latest: ResetEvent | null;
   latestAmbiguous: ResetEvent[] | null;
   announced: ResetEvent | null;
+  offers: ResetEvent[];
   filtered: ResetEvent[];
 }
 
@@ -24,6 +25,7 @@ export function computeStatus(content: ContentSnapshot, filters: Filters, now: D
     latest: stats.latest.kind === 'exact' || stats.latest.kind === 'date' ? stats.latest.event : null,
     latestAmbiguous: stats.latest.kind === 'ambiguous' ? stats.latest.events : null,
     announced,
+    offers: applyFilters(activeResetOffers(content.events, now), filters),
     filtered,
   };
 }

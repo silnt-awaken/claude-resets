@@ -90,6 +90,8 @@ export interface ResetEvent {
   effectiveAt?: string | null;
   effectiveNote?: string;
   schedule?: Schedule;
+  /** A reset credit redeemed by the subscriber; never an already-applied usage reset. */
+  resetOffer?: { expiresOn: string };
   allocation: 'subscription_usage' | 'api' | 'unspecified';
   audience: Audience;
   windows: ResetWindow[];

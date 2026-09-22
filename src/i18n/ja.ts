@@ -44,6 +44,13 @@ export const ja: Dict = {
     announced: '発表',
     relayedBy: '中継者',
   },
+  resetOffer: {
+    label: 'リセット',
+    expires: '有効期限：{date}',
+    expired: '{date} に期限切れ',
+    details: '詳細と出典',
+    note: 'Claude アカウントで好きなときに使用できます。利用可否と正確な期限はアカウントでご確認ください。この特典は、実施済みリセットの統計には含まれません。',
+  },
   actions: {
     group: 'リセット通知',
     browser: 'ブラウザ',
@@ -157,7 +164,7 @@ export const ja: Dict = {
   },
   other: {
     heading: 'その他の制限に関する発表',
-    sub: 'リセットではありません。参考として表示するだけで、カウントには一切含めません。',
+    sub: '保存できるリセット特典とその他の上限変更。実施済みリセットの合計には含めません。',
   },
   kinds: {
     usage_reset: '使用量リセット',

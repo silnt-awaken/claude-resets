@@ -44,6 +44,13 @@ export const zhTW: Dict = {
     announced: '宣布時間',
     relayedBy: '轉發者',
   },
+  resetOffer: {
+    label: '重置機會',
+    expires: '到期日期：{date}',
+    expired: '已於 {date} 到期',
+    details: '詳情與來源',
+    note: '請在 Claude 帳戶中確認是否可用及確切到期時間。此機會不計入已生效的重置歷史。',
+  },
   actions: {
     group: '重置通知',
     browser: '瀏覽器',
@@ -157,7 +164,7 @@ export const zhTW: Dict = {
   },
   other: {
     heading: '其他限制相關公告',
-    sub: '並非重置。僅供參考，一律不計入。',
+    sub: '可保留的重置機會與其他額度更新。不計入已生效的重置總數。',
   },
   kinds: {
     usage_reset: '用量重置',

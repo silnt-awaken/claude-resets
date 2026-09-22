@@ -69,6 +69,7 @@ export const resetEventSchema = z
     time: eventTimeSchema,
     effectiveAt: isoDateTime.nullable().optional(),
     effectiveNote: z.string().max(300).optional(),
+    resetOffer: z.object({ expiresOn: isoDate }).optional(),
     schedule: z
       .object({ statedAt: isoDateTime.nullable(), statedWindow: z.string().max(300).nullable(), note: z.string().max(300).optional() })
       .optional(),
@@ -85,6 +86,11 @@ export const resetEventSchema = z
     notes: z.string().max(2000).optional(),
   })
   .superRefine((e, ctx) => {
+    if (e.resetOffer && (e.kind !== 'credit' || e.allocation !== 'subscription_usage'))
+      ctx.addIssue({ code: 'custom', message: `${e.id}: reset offers must be subscription usage credits, not applied resets` });
+    const announcedDay = e.time.announcedOn ?? e.time.announcedAt?.slice(0, 10);
+    if (e.resetOffer && announcedDay && e.resetOffer.expiresOn < announcedDay)
+      ctx.addIssue({ code: 'custom', message: `${e.id}: reset offer expires before its announcement` });
     if (e.eventStatus === 'announced' && !e.schedule) ctx.addIssue({ code: 'custom', message: `${e.id}: announced events need a schedule (statedAt/statedWindow)` });
     if (e.schedule && !e.schedule.statedAt && !e.schedule.statedWindow) ctx.addIssue({ code: 'custom', message: `${e.id}: schedule must state a time (statedAt) or an approximate window (statedWindow)` });
     if ((e.eventStatus === 'cancelled' || e.eventStatus === 'retracted') && !e.correction) ctx.addIssue({ code: 'custom', message: `${e.id}: cancelled/retracted events need a correction with a reason` });

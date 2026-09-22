@@ -203,9 +203,12 @@ describe('alert creation and delivery', () => {
   });
 
   it('runs from the scheduled handler with the site closed', async () => {
-    __setContentForTests(snapshotFor([event]));
-    await subscribe(1, 'en', '2026-09-17T10:00:00Z');
-    await createAlert(db(), event, 'reset', NOW, NOW);
+    // The scheduled handler uses the real clock; keep its queued alert fresh as dates advance.
+    const now = new Date();
+    const fresh = makeEvent({ id: 'scheduled-fresh', at: now.toISOString(), firstPublishedAt: now.toISOString(), revisedAt: now.toISOString() });
+    __setContentForTests(snapshotFor([fresh]));
+    await subscribe(1, 'en', new Date(now.getTime() - 60_000).toISOString());
+    await createAlert(db(), fresh, 'reset', now, now);
     const { createScheduledController, createExecutionContext, waitOnExecutionContext } = await import('cloudflare:test');
     const worker = (await import('../src/index')).default;
     const ctx = createExecutionContext();

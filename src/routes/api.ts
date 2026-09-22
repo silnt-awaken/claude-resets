@@ -47,6 +47,7 @@ api.get('/v1/status', (c) => {
       latest_ambiguous: status.latestAmbiguous ? status.latestAmbiguous.map((e) => serializeEvent(e, cfg.siteUrl)) : null,
       announced_reset: status.announced ? serializeEvent(status.announced, cfg.siteUrl) : null,
       active_watch: null,
+      reset_offers: status.offers.map((e) => serializeEvent(e, cfg.siteUrl)),
       stats: serializeStats(status.stats),
       filters,
     },

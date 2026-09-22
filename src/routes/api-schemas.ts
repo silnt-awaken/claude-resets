@@ -23,6 +23,7 @@ export const resetSummarySchema = z
     utc_day: z.string().nullable().describe('UTC calendar day the event is placed on, or null when the evidence does not establish it.'),
     effective_at: z.string().nullable(),
     effective_note: z.string().nullable(),
+    reset_offer: z.object({ expires_on: z.string().describe('Stated expiry date only; exact cutoff and timezone are not established.') }).nullable(),
     allocation: z.enum(['subscription_usage', 'api', 'unspecified']),
     audience: z.object({
       scope: z.enum(['broad', 'limited', 'unspecified']),
@@ -80,6 +81,7 @@ export const statusResponseSchema = z.object({
     latest_ambiguous: z.array(resetSummarySchema).nullable().describe('Set instead of latest_reset when the newest announcements share a date and cannot be ordered.'),
     announced_reset: resetSummarySchema.nullable().describe('An explicitly announced future reset awaiting confirmation. A passed stated time does not imply completion.'),
     active_watch: z.null().describe('Always null. This tracker publishes no forecasts.'),
+    reset_offers: z.array(resetSummarySchema).describe('Published subscriber-redeemed reset credits through their stated expiry date. Excluded from applied-reset statistics; check eligibility in Claude.'),
     stats: statsSchema,
     filters: filtersSchema,
   }),
@@ -141,6 +143,7 @@ export function serializeEvent(e: ResetEvent, siteUrl: string): ResetSummary {
     utc_day: eventUtcDay(e),
     effective_at: e.effectiveAt ?? null,
     effective_note: e.effectiveNote ?? null,
+    reset_offer: e.resetOffer ? { expires_on: e.resetOffer.expiresOn } : null,
     allocation: e.allocation,
     audience: { scope: e.audience.scope, statement: e.audience.statement, plans: e.audience.plans, exclusions: e.audience.exclusions ?? null },
     windows: e.windows,

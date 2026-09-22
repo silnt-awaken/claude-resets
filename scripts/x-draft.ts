@@ -11,7 +11,12 @@ const siteUrl = flagString(flags, 'url') ?? readWranglerVars().SITE_URL ?? 'http
 const src = event.sources.find((s) => s.role === 'original') ?? event.sources[0]!;
 
 const windows = event.windows.map((w) => ({ five_hour: '5-hour', weekly: 'weekly', other: 'other', unspecified: 'unspecified' })[w]).join(' + ');
-const lines = [
+const lines = event.resetOffer ? [
+  'A Claude reset you can save for when you actually need it.',
+  `The Opus 5.5 reset is for subscribers. Expires ${event.resetOffer.expiresOn}.`,
+  'Check Claude → Settings → Usage → Resets.',
+  `Details and source: ${siteUrl}/resets/${event.id}`,
+] : [
   `Claude reset: ${event.title}`,
   `Audience: ${event.audience.statement}. Windows: ${windows}.`,
   `Source: ${src.url}`,

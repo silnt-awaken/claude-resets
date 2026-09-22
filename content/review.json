@@ -1,4 +1,4 @@
 {
-  "lastSourceReviewAt": "2026-09-17T19:30:00Z",
-  "note": "Initial source review: all seven directory accounts and every published event source were checked through X's public oEmbed endpoint."
+  "lastSourceReviewAt": "2026-09-22T17:35:36.935Z",
+  "note": "Reviewed Anthropic’s official Opus 5.5 saved-reset announcement. October 22 expiry supplied by the maintainer from Claude’s Resets card. Other source accounts were not re-reviewed in this update."
 }

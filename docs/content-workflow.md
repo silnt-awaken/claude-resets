@@ -26,6 +26,14 @@ Nothing here talks to X programmatically: you read the post, you record the fact
 
 ## Confirming an announced reset
 
+### Subscriber-redeemed reset credits
+
+For a saved reset the subscriber must redeem, use `kind: credit`, `allocation: subscription_usage`, and `resetOffer: { expiresOn: "YYYY-MM-DD" }`. Set `eventStatus: confirmed` only when the offer itself is confirmed, without claiming the subscriber used it. Record evidence for the expiry separately from the public announcement when needed. Leave reset windows unspecified unless a source states them.
+
+These records appear as homepage offers and API/MCP `reset_offers` through their stated expiry date, and remain in RSS/JSON feeds and their detail pages afterward. They do not change the applied-reset history, calendar, or statistics and do not create an applied-reset browser alert. Publish with `--no-alert` to record the ledger silently. The displayed date has no invented cutoff time; visitors must check Claude for the actual deadline.
+
+### Automatically applied resets
+
 Publish the announcement with `--status announced` first (no alert). When the source confirms it happened, edit the event: `eventStatus: confirmed`, remove `schedule`, bump `revision` and `alertRevision`, update `revisedAt`, deploy, then `content:publish` again. The transition to confirmed creates the reset alert, with the cutoff at that publication time, so people who subscribed between the announcement and the confirmation are included.
 
 ## Correcting or retracting

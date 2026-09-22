@@ -45,6 +45,13 @@ export const en = {
     announced: 'Announced',
     relayedBy: 'Relayed by',
   },
+  resetOffer: {
+    label: 'Resets',
+    expires: 'Expires {date}',
+    expired: 'Expired {date}',
+    details: 'Offer details & source',
+    note: 'Check your Claude account for availability and the exact expiry. This offer is separate from the history of resets already applied.',
+  },
   actions: {
     group: 'Reset notifications',
     browser: 'browser',
@@ -158,7 +165,7 @@ export const en = {
   },
   other: {
     heading: 'Other limit announcements',
-    sub: 'Not resets. Shown for context and never counted.',
+    sub: 'Saved reset offers and other limit updates. Excluded from applied-reset totals.',
   },
   kinds: {
     usage_reset: 'Usage reset',

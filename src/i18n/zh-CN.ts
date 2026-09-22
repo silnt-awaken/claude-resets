@@ -43,6 +43,13 @@ export const zhCN: Dict = {
     announced: '宣布时间',
     relayedBy: '转发者',
   },
+  resetOffer: {
+    label: '重置机会',
+    expires: '到期日期：{date}',
+    expired: '已于 {date} 到期',
+    details: '详情与来源',
+    note: '请在 Claude 账户中确认是否可用及确切到期时间。此机会不计入已生效的重置历史。',
+  },
   actions: {
     group: '重置通知',
     browser: '浏览器',
@@ -156,7 +163,7 @@ export const zhCN: Dict = {
   },
   other: {
     heading: '其他限制相关公告',
-    sub: '并非重置。仅供参考，从不计入统计。',
+    sub: '可保留的重置机会与其他额度更新。不计入已生效的重置总数。',
   },
   kinds: {
     usage_reset: '用量重置',

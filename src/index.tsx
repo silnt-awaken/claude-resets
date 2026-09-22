@@ -104,6 +104,7 @@ page('/', async (c, locale) => {
     stats: status.stats,
     calendar: buildCalendar(status.filtered, ctx.now, content.coverageStart),
     announced: status.announced ? [status.announced] : [],
+    offers: status.offers,
     others: sortEventsDesc(otherAnnouncements(content.events)),
     withdrawn: sortEventsDesc(withdrawnResets(content.events)),
     previewSources: content.sources.filter((s) => s.priority === 'primary' || s.priority === 'additional').sort((a, b) => order[a.priority] - order[b.priority]),
@@ -146,7 +147,7 @@ page('/resets/:id', (c, locale) => {
   const ctx = pageContext(c, locale, `/resets/${e.id}`);
   const related = (e.relatedEventIds ?? []).map((rid) => findEvent(publishedEvents(content.events), rid)).filter((x): x is NonNullable<typeof x> => !!x);
   const sourceById = new Map(content.sources.map((s) => [s.id, s]));
-  return cachedHtml(c, `<!doctype html>${(<ResetPage ctx={ctx} e={e} related={related} sourceById={sourceById} />).toString()}`, `reset:${locale}:${e.id}:${content.revision}`, 300);
+  return cachedHtml(c, `<!doctype html>${(<ResetPage ctx={ctx} e={e} related={related} sourceById={sourceById} />).toString()}`, `reset:${locale}:${e.id}:${content.revision}:${ctx.now.toISOString().slice(0, 10)}`, 300);
 });
 page('/api/docs', (c, locale) => {
   const ctx = pageContext(c, locale, '/api/docs');
