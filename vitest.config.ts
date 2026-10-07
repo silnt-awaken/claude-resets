@@ -15,6 +15,9 @@ export default defineConfig(async () => {
           bindings: {
             TEST_MIGRATIONS: migrations,
             SITE_URL: 'http://test.local',
+            // Ad tests opt in explicitly; production publisher settings must not leak into fixtures.
+            ADSENSE_CLIENT: '',
+            ADSENSE_SLOT: '',
             GOAL_ENABLED: 'false',
             GOAL_WALLET: '',
             GOAL_USDC_ACCOUNT: '',

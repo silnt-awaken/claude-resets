@@ -52,8 +52,8 @@
     // Google AdSense. ADSENSE_CLIENT is the publisher id (ca-pub-…, public); empty = no ads, no ads.txt and the
     // strict CSP everywhere. ADSENSE_SLOT is the numeric id of one responsive display unit for the in-page slots;
     // empty = Auto ads only. Ads never render on /goal. See docs/launch-checklist.md.
-    "ADSENSE_CLIENT": "",
-    "ADSENSE_SLOT": "",
+    "ADSENSE_CLIENT": "ca-pub-6198460375001930",
+    "ADSENSE_SLOT": "6430168167",
     "REACTION_COOLDOWN_HOURS": "24",
     "ALERT_MAX_AGE_HOURS": "72"
   }
