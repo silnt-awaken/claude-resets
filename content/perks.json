@@ -1,0 +1,153 @@
+[
+  {
+    "id": "cloud-sessions-credit",
+    "kind": "credit",
+    "title": "Free Claude Code cloud credit",
+    "value": "$100 on Pro · $250 on Max",
+    "summary": "A one-time bonus to try Claude Code cloud sessions, which keep working while your laptop is closed. It sits on top of your plan, outside your normal usage limits, and is spent only in cloud sessions.",
+    "eligibility": "Individual Pro and Max subscribers whose subscription was active on September 23, 2026. Team and Enterprise plans, free trials and past-due accounts are not eligible.",
+    "steps": [
+      "Open the claim page while signed in to claude.ai, or run /claim-credit in Claude Code.",
+      "Connect GitHub (the Claude GitHub App, or /web-setup with a token) and choose a repository.",
+      "Start a cloud session. The credit is applied automatically."
+    ],
+    "cta": { "url": "https://claude.ai/code/claim-credit/104", "action": "claim" },
+    "closesAt": "2026-10-08T06:59:00Z",
+    "expiresAt": "2026-11-05T07:59:00Z",
+    "announcedOn": "2026-09-23",
+    "sources": [
+      {
+        "url": "https://support.claude.com/en/articles/17152539-cloud-sessions-bonus-credit-promotion",
+        "label": "Claude Help Center"
+      },
+      {
+        "url": "https://x.com/ClaudeDevs/status/2102871550974427462",
+        "label": "@ClaudeDevs on X",
+        "excerpt": "Existing subscribers get a one-time credit to try them: $100 on Pro, $250 on Max."
+      }
+    ],
+    "verifiedAt": "2026-10-06",
+    "verificationMethod": "Read the official help article on 2026-10-06: claim by October 7 at 11:59 PM PT (06:59 UTC October 8), credits expire November 4 at 11:59 PM PT (07:59 UTC November 5, after the DST change), eligibility, exclusions and the claim URL. The @ClaudeDevs post text and its 2026-09-23T21:23:41Z time were retrieved through X's public embed data.",
+    "translations": {
+      "zh-CN": {
+        "title": "Claude Code 云端会话免费额度",
+        "value": "Pro 送 $100 · Max 送 $250",
+        "summary": "一次性赠送额度，用于试用 Claude Code 云端会话：即使合上笔记本电脑，任务也会继续运行。该额度独立于套餐的常规用量限制，仅可用于云端会话。",
+        "eligibility": "2026 年 9 月 23 日时订阅处于有效状态的个人 Pro 和 Max 订阅用户。Team 和 Enterprise 套餐、免费试用以及付款逾期的账户不符合条件。",
+        "steps": [
+          "登录 claude.ai 后打开领取页面，或在 Claude Code 中运行 /claim-credit。",
+          "连接 GitHub（通过 Claude GitHub App，或使用令牌运行 /web-setup），并选择一个代码仓库。",
+          "启动云端会话，额度会自动使用。"
+        ]
+      },
+      "zh-TW": {
+        "title": "Claude Code 雲端工作階段免費額度",
+        "value": "Pro 送 $100 · Max 送 $250",
+        "summary": "一次性贈送額度，用於試用 Claude Code 雲端工作階段：即使闔上筆電，工作也會持續進行。此額度獨立於方案的一般用量限制，僅能用於雲端工作階段。",
+        "eligibility": "2026 年 9 月 23 日時訂閱仍有效的個人 Pro 與 Max 訂閱用戶。Team 與 Enterprise 方案、免費試用及付款逾期的帳戶不符合資格。",
+        "steps": [
+          "登入 claude.ai 後開啟領取頁面，或在 Claude Code 中執行 /claim-credit。",
+          "連結 GitHub（透過 Claude GitHub App，或使用權杖執行 /web-setup），並選擇一個儲存庫。",
+          "啟動雲端工作階段，額度會自動套用。"
+        ]
+      },
+      "ja": {
+        "title": "Claude Code クラウドセッションの無料クレジット",
+        "value": "Pro は $100 · Max は $250",
+        "summary": "Claude Code のクラウドセッションを試すための一回限りのボーナスクレジットです。クラウドセッションはノートパソコンを閉じても作業を続けます。通常の利用上限とは別枠で、クラウドセッションでのみ使われます。",
+        "eligibility": "2026 年 9 月 23 日時点でサブスクリプションが有効だった個人の Pro・Max 契約者。Team・Enterprise プラン、無料トライアル、支払い遅延中のアカウントは対象外です。",
+        "steps": [
+          "claude.ai にサインインした状態で受け取りページを開くか、Claude Code で /claim-credit を実行します。",
+          "GitHub を接続し（Claude GitHub App、またはトークンを使って /web-setup を実行）、リポジトリを選びます。",
+          "クラウドセッションを開始すると、クレジットが自動的に適用されます。"
+        ]
+      },
+      "ko": {
+        "title": "Claude Code 클라우드 세션 무료 크레딧",
+        "value": "Pro $100 · Max $250",
+        "summary": "Claude Code 클라우드 세션을 체험할 수 있는 1회성 보너스 크레딧입니다. 클라우드 세션은 노트북을 닫아도 작업을 계속합니다. 일반 사용 한도와 별도로 제공되며 클라우드 세션에서만 사용됩니다.",
+        "eligibility": "2026년 9월 23일 기준 구독이 활성 상태였던 개인 Pro 및 Max 구독자. Team·Enterprise 플랜, 무료 체험, 결제가 연체된 계정은 대상이 아닙니다.",
+        "steps": [
+          "claude.ai에 로그인한 상태로 신청 페이지를 열거나 Claude Code에서 /claim-credit을 실행하세요.",
+          "GitHub를 연결하고(Claude GitHub App 또는 토큰으로 /web-setup 실행) 저장소를 선택하세요.",
+          "클라우드 세션을 시작하면 크레딧이 자동으로 적용됩니다."
+        ]
+      }
+    },
+    "active": true,
+    "priority": 1
+  },
+  {
+    "id": "claude-for-startups",
+    "kind": "program",
+    "title": "Claude for Startups",
+    "value": "1 year of Claude Team + $1,000 API credit",
+    "summary": "Anthropic's program for founders: a free year of Claude Team for up to five Premium seats (if you are new to Team), $1,000 in Claude API credits, up to $45K in partner offers, and office hours with Anthropic's Applied AI team. Startups backed by a VC in Anthropic's partner network can get up to $100K more in API credits through that VC.",
+    "eligibility": "Startups founded in the last 5 years or funded in the last 2 years, bootstrapped or venture-backed. You need a Claude Console account and a company email on your website's domain.",
+    "steps": [
+      "Sign in to the Claude Console (create an account if you need one).",
+      "Apply with your company email and a short description of what you are building.",
+      "Most decisions arrive within minutes; manual reviews take 2–3 business days."
+    ],
+    "cta": { "url": "https://platform.claude.com/offers/startups-application", "action": "apply" },
+    "closesAt": null,
+    "expiresAt": null,
+    "announcedOn": "2026-10-06",
+    "sources": [
+      {
+        "url": "https://claude.com/programs/startups",
+        "label": "claude.com"
+      }
+    ],
+    "verifiedAt": "2026-10-06",
+    "verificationMethod": "Read the official program page on 2026-10-06 (benefits, eligibility, decision times and the application link). The page states no deadline. The expansion was announced on 2026-10-06 and reported by CNBC and TechCrunch the same day.",
+    "translations": {
+      "zh-CN": {
+        "title": "Claude 创业公司计划（Claude for Startups）",
+        "value": "一年 Claude Team + $1,000 API 额度",
+        "summary": "Anthropic 面向创始人的计划：最多 5 个 Premium 席位的一年免费 Claude Team（限首次使用 Team 的团队）、$1,000 Claude API 额度、最高 $45K 的合作伙伴优惠，以及与 Anthropic 应用 AI 团队的答疑时间。获得 Anthropic 合作风投支持的创业公司，还可通过该风投额外获得最高 $100K 的 API 额度。",
+        "eligibility": "成立不超过 5 年或在过去 2 年内获得融资的创业公司，自筹资金或风投支持均可。需要 Claude Console 账户，以及与公司网站域名一致的企业邮箱。",
+        "steps": [
+          "登录 Claude Console（如没有账户请先注册）。",
+          "使用企业邮箱提交申请，并简要介绍你正在构建的产品。",
+          "大多数申请几分钟内即有结果；人工审核通常需要 2–3 个工作日。"
+        ]
+      },
+      "zh-TW": {
+        "title": "Claude 新創計畫（Claude for Startups）",
+        "value": "一年 Claude Team + $1,000 API 額度",
+        "summary": "Anthropic 為創辦人推出的計畫：最多 5 個 Premium 席位的一年免費 Claude Team（限首次使用 Team 的團隊）、$1,000 Claude API 額度、最高 $45K 的合作夥伴優惠，以及與 Anthropic 應用 AI 團隊的諮詢時段。獲得 Anthropic 合作創投支持的新創，還能透過該創投額外取得最高 $100K 的 API 額度。",
+        "eligibility": "成立未滿 5 年或近 2 年內獲得融資的新創公司，自籌資金或創投支持皆可。需要 Claude Console 帳戶，以及與公司網站網域相同的公司信箱。",
+        "steps": [
+          "登入 Claude Console（若沒有帳戶請先註冊）。",
+          "以公司信箱提出申請，並簡短說明你正在打造的產品。",
+          "多數申請幾分鐘內就會有結果；人工審查通常需要 2–3 個工作天。"
+        ]
+      },
+      "ja": {
+        "title": "Claude for Startups",
+        "value": "Claude Team 1 年分 + API クレジット $1,000",
+        "summary": "Anthropic の創業者向けプログラムです。Premium シート最大 5 席分の Claude Team が 1 年間無料（Team を初めて利用する場合）、Claude API クレジット $1,000、最大 $45K のパートナー特典、Anthropic の Applied AI チームによるオフィスアワーが含まれます。Anthropic のパートナー VC から出資を受けているスタートアップは、その VC を通じて最大 $100K の API クレジットを追加で受け取れます。",
+        "eligibility": "設立 5 年以内、または過去 2 年以内に資金調達したスタートアップ（自己資金・VC 出資のどちらも可）。Claude Console アカウントと、会社のウェブサイトと同じドメインのメールアドレスが必要です。",
+        "steps": [
+          "Claude Console にサインインします（アカウントがなければ作成します）。",
+          "会社のメールアドレスで申し込み、開発中のプロダクトを簡単に説明します。",
+          "多くの申請は数分で結果が届きます。手動審査の場合は通常 2〜3 営業日かかります。"
+        ]
+      },
+      "ko": {
+        "title": "Claude for Startups",
+        "value": "Claude Team 1년 + API 크레딧 $1,000",
+        "summary": "Anthropic의 창업자 프로그램입니다. Premium 좌석 최대 5개의 Claude Team 1년 무료(Team을 처음 사용하는 경우), Claude API 크레딧 $1,000, 최대 $45K 상당의 파트너 혜택, Anthropic Applied AI 팀과의 오피스 아워가 포함됩니다. Anthropic 파트너 VC의 투자를 받은 스타트업은 해당 VC를 통해 최대 $100K의 API 크레딧을 추가로 받을 수 있습니다.",
+        "eligibility": "설립 5년 이내이거나 최근 2년 이내에 투자를 받은 스타트업(자기 자본·VC 투자 모두 가능). Claude Console 계정과 회사 웹사이트 도메인과 일치하는 회사 이메일이 필요합니다.",
+        "steps": [
+          "Claude Console에 로그인하세요(계정이 없다면 새로 만드세요).",
+          "회사 이메일로 신청하고 만들고 있는 제품을 간단히 소개하세요.",
+          "대부분의 신청은 몇 분 안에 결과가 나오며, 수동 검토는 보통 영업일 기준 2~3일이 걸립니다."
+        ]
+      }
+    },
+    "active": true,
+    "priority": 2
+  }
+]

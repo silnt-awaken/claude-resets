@@ -2,7 +2,7 @@ import type { FC } from 'hono/jsx';
 import type { CalendarGrid } from '../domain/calendar';
 import { AUDIENCE_FILTERS, WINDOW_FILTERS, filtersToQuery, isDefaultFilters, type Filters } from '../domain/filters';
 import { formatDays, type Stats } from '../domain/stats';
-import type { ResetEvent, SourceAccount } from '../domain/types';
+import type { Perk, ResetEvent, SourceAccount } from '../domain/types';
 import { formatDate, formatNumber, formatRelativeDays, formatUtcDateTime, interpolate, localizePath } from '../i18n';
 import { AbsoluteTime, LogItem, RelativeTime, ScopeChips, SourceCard, localizedSummary, localizedTitle, primarySource } from './components';
 import { ArrowIcon, BellIcon, CupIcon, DownIcon, RssIcon, SendIcon, UpIcon } from './icons';
@@ -10,6 +10,7 @@ import { Layout, type PageContext } from './layout';
 import { GoalCard } from './goal';
 import type { GoalStatus } from '../routes/goal';
 import { ResetOfferCard } from './reset-offer';
+import { PerkFlag, PerksSection } from './perks';
 
 export const CHECK_USAGE_URL = 'https://claude.ai/settings/usage';
 export const USAGE_HELP_URL = 'https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work';
@@ -22,6 +23,8 @@ export interface HomeModel {
   calendar: CalendarGrid;
   announced: ResetEvent[];
   offers: ResetEvent[];
+  /** Official perks still open to claim, soonest deadline first. */
+  perks: Perk[];
   others: ResetEvent[];
   withdrawn: ResetEvent[];
   previewSources: SourceAccount[];
@@ -50,10 +53,13 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
           {t.hero.intro} <a href={localizePath(locale, '/sources')}>{t.hero.introSources}</a>.
         </p>
         <Actions ctx={ctx} />
+        <PerkFlag ctx={ctx} perks={model.perks} />
         {model.offers.map((e) => <ResetOfferCard ctx={ctx} e={e} />)}
         <Upcoming ctx={ctx} events={model.announced} />
         <HeroCard ctx={ctx} model={model} />
       </section>
+
+      <PerksSection ctx={ctx} perks={model.perks} />
 
       <FiltersForm ctx={ctx} filters={model.filters} />
       <StatsTiles ctx={ctx} stats={model.stats} filters={model.filters} />

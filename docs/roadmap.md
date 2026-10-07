@@ -6,6 +6,7 @@ Mirrors `/goal#roadmap` on the site; the source of truth is `src/goal/roadmap.ts
 
 - clauderesets.com live: every publicly announced Claude usage-limit reset, verified against the original post.
 - Sources directory, calendar and countdown, five languages, JSON API, RSS/JSON feeds, MCP server.
+- Perks: official Claude credits and programs (like the Claude for Startups program) with live deadlines, checked against Anthropic’s own pages.
 - Open source under MIT; every event carries its source link and revision history.
 
 ## Community goal · September 2026 · Switching on

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import resets from '../content/resets.json';
 import sources from '../content/sources.json';
 import sponsors from '../content/sponsors.json';
+import perks from '../content/perks.json';
 import research from '../content/research-queue.json';
 import review from '../content/review.json';
 import { announcedResets, eventUtcDay, isQualifyingReset, loadContent, otherAnnouncements, qualifyingResets, withdrawnResets } from '../src/domain/content';
@@ -11,7 +12,7 @@ import { makeEvent, snapshotFor } from './fixtures';
 
 describe('bundled content', () => {
   it('validates and loads', () => {
-    const result = validateContent({ events: resets, sources, sponsors, research, review });
+    const result = validateContent({ events: resets, sources, sponsors, perks, research, review });
     expect(result.ok, result.ok ? '' : result.errors.join('\n')).toBe(true);
     const content = loadContent();
     expect(content.events.length).toBeGreaterThan(0);
@@ -81,7 +82,7 @@ describe('classification fixtures', () => {
 
   it('rejects the same source post recorded under two events', () => {
     const dup = makeEvent({ id: 'dup', at: '2026-06-09T22:00:00Z', sources: [{ ...relayed.sources[0]! }] });
-    const result = validateContent({ events: [relayed, dup], sources: snapshotFor([]).sources, sponsors: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
+    const result = validateContent({ events: [relayed, dup], sources: snapshotFor([]).sources, sponsors: [], perks: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors.join('\n')).toMatch(/already used/);
   });
@@ -89,7 +90,7 @@ describe('classification fixtures', () => {
   it('rejects an announced event without a schedule and a retraction without a reason', () => {
     const bad1 = makeEvent({ eventStatus: 'announced' });
     const bad2 = makeEvent({ eventStatus: 'retracted' });
-    const result = validateContent({ events: [bad1, bad2], sources: snapshotFor([]).sources, sponsors: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
+    const result = validateContent({ events: [bad1, bad2], sources: snapshotFor([]).sources, sponsors: [], perks: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.errors.join('\n')).toMatch(/schedule/);
@@ -100,14 +101,14 @@ describe('classification fixtures', () => {
   it('rejects a confirmed event that carries a retraction, an empty schedule, and duplicate source ids', () => {
     const stillCounted = makeEvent({ eventStatus: 'confirmed', correction: { kind: 'retraction', reason: 'Withdrawn.', at: '2026-09-02T00:00:00Z' } });
     const emptySchedule = makeEvent({ eventStatus: 'announced', schedule: { statedAt: null, statedWindow: null } });
-    const result = validateContent({ events: [stillCounted, emptySchedule], sources: snapshotFor([]).sources, sponsors: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
+    const result = validateContent({ events: [stillCounted, emptySchedule], sources: snapshotFor([]).sources, sponsors: [], perks: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.errors.join('\n')).toMatch(/retraction correction requires eventStatus retracted/);
       expect(result.errors.join('\n')).toMatch(/schedule must state/);
     }
     const sources = [...snapshotFor([]).sources, { ...snapshotFor([]).sources[0]!, handle: 'AnotherHandle' }];
-    const dup = validateContent({ events: [], sources, sponsors: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
+    const dup = validateContent({ events: [], sources, sponsors: [], perks: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
     expect(dup.ok).toBe(false);
     if (!dup.ok) expect(dup.errors.join('\n')).toMatch(/duplicate source id/);
   });
@@ -115,7 +116,7 @@ describe('classification fixtures', () => {
   it('rejects an exact record without a timestamp and a date record without a timezone', () => {
     const bad1 = makeEvent({ time: { precision: 'exact' } });
     const bad2 = makeEvent({ time: { precision: 'date', announcedOn: '2026-06-01' } });
-    const result = validateContent({ events: [bad1, bad2], sources: snapshotFor([]).sources, sponsors: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
+    const result = validateContent({ events: [bad1, bad2], sources: snapshotFor([]).sources, sponsors: [], perks: [], research: [], review: { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' } });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.errors.join('\n')).toMatch(/announcedAt/);

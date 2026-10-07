@@ -3,7 +3,7 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { buildCalendar } from './domain/calendar';
-import { findEvent, loadContent, otherAnnouncements, publishedEvents, sortEventsDesc, withdrawnResets } from './domain/content';
+import { findEvent, loadContent, openPerks, otherAnnouncements, publishedEvents, sortEventsDesc, withdrawnResets } from './domain/content';
 import { filtersToQuery, parseFilters } from './domain/filters';
 import { computeStatus } from './domain/service';
 import { siteConfig, type Env } from './env';
@@ -24,6 +24,7 @@ import { ApiDocsPage, McpDocsPage } from './views/docs';
 import { HomePage, type HomeModel } from './views/home';
 import { makeContext, type PageContext } from './views/layout';
 import { AboutPage, NotFoundPage, PrivacyPage, ResetPage, SourcesPage, SupportPage } from './views/pages';
+import { PerksPage } from './views/perks';
 
 type App = Hono<{ Bindings: Env }>;
 type Ctx = Context<{ Bindings: Env }>;
@@ -105,6 +106,7 @@ page('/', async (c, locale) => {
     calendar: buildCalendar(status.filtered, ctx.now, content.coverageStart),
     announced: status.announced ? [status.announced] : [],
     offers: status.offers,
+    perks: openPerks(content.perks, ctx.now),
     others: sortEventsDesc(otherAnnouncements(content.events)),
     withdrawn: sortEventsDesc(withdrawnResets(content.events)),
     previewSources: content.sources.filter((s) => s.priority === 'primary' || s.priority === 'additional').sort((a, b) => order[a.priority] - order[b.priority]),
@@ -122,6 +124,12 @@ page('/goal', async (c, locale) => {
   const ctx = pageContext(c, locale, '/goal');
   const status = await goalStatus(c.env, ctx.now);
   return cachedHtml(c, `<!doctype html>${(<GoalPage ctx={ctx} status={status} />).toString()}`, `goal:${locale}:${JSON.stringify(status)}`, 30);
+});
+page('/perks', (c, locale) => {
+  const ctx = pageContext(c, locale, '/perks');
+  // Countdowns are rendered server-side, so the ETag moves with the minute like the homepage.
+  const minute = Math.floor(ctx.now.getTime() / 60_000);
+  return cachedHtml(c, `<!doctype html>${(<PerksPage ctx={ctx} />).toString()}`, `perks:${locale}:${ctx.content.revision}:${minute}`, 60);
 });
 page('/sources', (c, locale) => {
   const ctx = pageContext(c, locale, '/sources');

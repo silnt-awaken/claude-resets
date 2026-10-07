@@ -115,6 +115,16 @@ export function formatRelative(ms: number, locale: Locale): string {
   return rtf.format(-Math.floor(d / 365), 'year');
 }
 
+/** Time left until a deadline, like "in 31 hours", localized. Hours until two days out so urgency reads clearly. */
+export function formatUntil(ms: number, locale: Locale): string {
+  const rtf = new Intl.RelativeTimeFormat(intlLocale(locale), { numeric: 'always' });
+  const m = Math.max(1, Math.ceil(ms / 60_000));
+  if (m < 60) return rtf.format(m, 'minute');
+  const h = Math.floor(m / 60);
+  if (h < 48) return rtf.format(h, 'hour');
+  return rtf.format(Math.floor(h / 24), 'day');
+}
+
 /** Relative age for a date-only record, at day granularity (never invents hours or minutes). */
 export function formatRelativeDays(day: string, now: Date, locale: Locale): string {
   const rtf = new Intl.RelativeTimeFormat(intlLocale(locale), { numeric: 'always' });

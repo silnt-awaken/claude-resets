@@ -15,7 +15,7 @@ meta.get('/robots.txt', (c) => {
 meta.get('/sitemap.xml', (c) => {
   const cfg = siteConfig(c.env);
   const content = loadContent();
-  const pages = ['/', '/sources', '/about', '/support', '/privacy'];
+  const pages = ['/', '/perks', '/sources', '/about', '/support', '/privacy'];
   const urls: string[] = [];
   const entry = (path: string, lastmod?: string) => {
     const alternates = LOCALES.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${cfg.siteUrl}${localizePath(l, path)}" />`).join('\n');

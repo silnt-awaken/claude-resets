@@ -36,6 +36,17 @@ These records appear as homepage offers and API/MCP `reset_offers` through their
 
 Publish the announcement with `--status announced` first (no alert). When the source confirms it happened, edit the event: `eventStatus: confirmed`, remove `schedule`, bump `revision` and `alertRevision`, update `revisedAt`, deploy, then `content:publish` again. The transition to confirmed creates the reset alert, with the cutoff at that publication time, so people who subscribed between the announcement and the confirmation are included.
 
+## Perks (official offers and programs)
+
+`content/perks.json` lists official Claude offers worth claiming, such as a promotional credit or the startups program. Perks are not resets: they never enter the history, statistics, feeds or alerts, and they do not go through `content:publish`. Editing the file and deploying is the whole workflow.
+
+1. **Read the official page** (support.claude.com, claude.com, anthropic.com) and, if there is one, the announcing post. Record what the page states, not what secondary coverage says.
+2. **Add an entry**: `id`, `kind` (`credit` or `program`), `title`, `value` (the headline figure), `summary`, `eligibility`, `steps` (1–5), `cta` (`url` on claude.ai, claude.com or anthropic.com only; `action` `claim` or `apply`), `announcedOn`, `sources` (official pages or x.com posts, optional short `excerpt`), `verifiedAt`, `verificationMethod`, `active`, `priority`, and the four translations with the same number of steps.
+3. **Deadlines are UTC instants.** Convert the stated cutoff exactly, minding daylight saving: "October 7 at 11:59 PM PT" is `2026-10-08T06:59:00Z` (PDT, UTC-7); "November 4 at 11:59 PM PT" is `2026-11-05T07:59:00Z` (PST, UTC-8, after the November 1 change). `closesAt` is the claim/apply deadline, `expiresAt` when a claimed credit stops working; use `null` when the source states none, never a guess.
+4. `npm run content:validate`, then deploy.
+
+The homepage shows open perks (soonest deadline first) with a live countdown, and a pill at the top for any perk closing within 72 hours. At its deadline a card flips to closed in the browser and drops off the homepage on the next render; `/perks` keeps it under "Closed offers". Set `active: false` to withdraw a perk everywhere if Anthropic pulls it.
+
 ## Correcting or retracting
 
 1. Edit the event: bump `revision` and `revisedAt`; for a scope change or retraction add `correction: { kind: 'correction' | 'retraction', reason, at }` and set `eventStatus: retracted` or `cancelled` when appropriate. A retracted event stays on its page with its reason and leaves the count.

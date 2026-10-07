@@ -202,6 +202,7 @@ const SiteFooter: FC<{ ctx: PageContext }> = ({ ctx }) => {
         )}
       </p>
       <nav class="footer-links" aria-label="Site">
+        <a href={localizePath(locale, '/perks')}>{t.nav.perks}</a>
         <a href={localizePath(locale, '/sources')}>{t.nav.sources}</a>
         <a href={localizePath(locale, '/about')}>{t.nav.about}</a>
         <a href={localizePath(locale, '/support')}>{t.nav.support}</a>

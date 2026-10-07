@@ -137,6 +137,45 @@ export interface Sponsor {
   priority: number;
 }
 
+/** Localizable text of a perk. Every locale carries the same number of steps. */
+export interface PerkText {
+  title: string;
+  /** The headline value, e.g. "$100 on Pro · $250 on Max". */
+  value: string;
+  summary: string;
+  eligibility: string;
+  steps: string[];
+}
+
+export interface PerkSource {
+  url: string;
+  label: string;
+  /** Short verbatim quote, clearly labelled in the UI. */
+  excerpt?: string;
+}
+
+/**
+ * An official Claude offer worth claiming (a credit, a program). Not a reset: perks never enter the
+ * reset history, statistics or alerts. Listed while open; a perk past its deadline stays on /perks as closed.
+ */
+export interface Perk extends PerkText {
+  id: string;
+  kind: 'credit' | 'program';
+  cta: { url: string; action: 'claim' | 'apply' };
+  /** ISO 8601 UTC instant of the claim/apply deadline as the source states it; null when no deadline is stated. */
+  closesAt: string | null;
+  /** ISO 8601 UTC instant when a claimed credit stops working; null when not applicable or not stated. */
+  expiresAt: string | null;
+  announcedOn: string;
+  sources: PerkSource[];
+  verifiedAt: string;
+  verificationMethod: string;
+  translations: Record<OtherLocale, PerkText>;
+  /** false withdraws the perk from every page (e.g. Anthropic pulled the offer). */
+  active: boolean;
+  priority: number;
+}
+
 export interface ResearchCandidate {
   id: string;
   url: string;

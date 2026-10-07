@@ -12,5 +12,5 @@ if (!result.ok) {
 }
 const published = files.events.filter((e) => e.editorialStatus === 'published');
 const drafts = files.events.filter((e) => e.editorialStatus === 'draft');
-console.log(`✔ Content valid: ${files.events.length} events (${published.length} published, ${drafts.length} draft), ${files.sources.length} sources, ${files.sponsors.length} sponsors, ${files.research.length} research items.`);
+console.log(`✔ Content valid: ${files.events.length} events (${published.length} published, ${drafts.length} draft), ${files.sources.length} sources, ${files.sponsors.length} sponsors, ${files.perks.length} perks, ${files.research.length} research items.`);
 for (const d of drafts) console.log(`  draft: ${d.id} (${d.verificationStatus}, translations: ${d.translationStatus})`);

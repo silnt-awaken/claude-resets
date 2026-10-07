@@ -4,10 +4,11 @@
 import resetsJson from '../../content/resets.json';
 import sourcesJson from '../../content/sources.json';
 import sponsorsJson from '../../content/sponsors.json';
+import perksJson from '../../content/perks.json';
 import researchJson from '../../content/research-queue.json';
 import reviewJson from '../../content/review.json';
 import { validateContent, type RawContent } from './schema';
-import type { ResearchCandidate, ResetEvent, ReviewState, Sponsor, SourceAccount } from './types';
+import type { Perk, ResearchCandidate, ResetEvent, ReviewState, Sponsor, SourceAccount } from './types';
 
 /** UTC date from which announcements were researched (the day @ClaudeDevs joined X). */
 export const COVERAGE_START = '2026-04-16';
@@ -16,6 +17,7 @@ export interface ContentSnapshot {
   events: ResetEvent[];
   sources: SourceAccount[];
   sponsors: Sponsor[];
+  perks: Perk[];
   research: ResearchCandidate[];
   review: ReviewState;
   /** Hash of the whole content set; changes whenever any content file changes. */
@@ -28,11 +30,12 @@ export function buildSnapshot(raw: RawContent): ContentSnapshot {
   if (!result.ok) {
     throw new Error(`Invalid content:\n- ${result.errors.join('\n- ')}`);
   }
-  const { events, sources, sponsors, research, review } = result.data;
+  const { events, sources, sponsors, perks, research, review } = result.data;
   return {
     events,
     sources,
     sponsors,
+    perks,
     research,
     review,
     revision: hashString(JSON.stringify(raw)),
@@ -49,6 +52,7 @@ export function loadContent(): ContentSnapshot {
       events: resetsJson as unknown,
       sources: sourcesJson as unknown,
       sponsors: sponsorsJson as unknown,
+      perks: perksJson as unknown,
       research: researchJson as unknown,
       review: reviewJson as unknown,
     });
@@ -167,6 +171,21 @@ export function activeSponsors(sponsors: Sponsor[], now: Date): Sponsor[] {
     .filter((s) => !s.startsAt || Date.parse(s.startsAt) <= t)
     .filter((s) => !s.endsAt || Date.parse(s.endsAt) > t)
     .sort((a, b) => a.priority - b.priority);
+}
+
+// ---------- perks ----------
+
+/** Perks a reader can still claim or apply for: soonest deadline first, open-ended ones after, then by priority. */
+export function openPerks(perks: Perk[], now: Date): Perk[] {
+  const t = now.getTime();
+  const closes = (p: Perk) => (p.closesAt ? Date.parse(p.closesAt) : Number.POSITIVE_INFINITY);
+  return perks.filter((p) => p.active && closes(p) > t).sort((a, b) => closes(a) - closes(b) || a.priority - b.priority);
+}
+
+/** Perks whose deadline has passed, most recently closed first. Kept on /perks so late visitors learn it is over. */
+export function closedPerks(perks: Perk[], now: Date): Perk[] {
+  const t = now.getTime();
+  return perks.filter((p) => p.active && p.closesAt && Date.parse(p.closesAt) <= t).sort((a, b) => Date.parse(b.closesAt!) - Date.parse(a.closesAt!));
 }
 
 // ---------- hashing ----------

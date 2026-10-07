@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { validateContent } from '../src/domain/schema';
-import type { ResearchCandidate, ResetEvent, ReviewState, Sponsor, SourceAccount } from '../src/domain/types';
+import type { Perk, ResearchCandidate, ResetEvent, ReviewState, Sponsor, SourceAccount } from '../src/domain/types';
 
 export const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..');
 export const CONTENT_DIR = path.join(ROOT, 'content');
@@ -12,6 +12,7 @@ export interface ContentFiles {
   events: ResetEvent[];
   sources: SourceAccount[];
   sponsors: Sponsor[];
+  perks: Perk[];
   research: ResearchCandidate[];
   review: ReviewState;
 }
@@ -29,6 +30,7 @@ export function readContent(): ContentFiles {
     events: readJson(path.join(CONTENT_DIR, 'resets.json')),
     sources: readJson(path.join(CONTENT_DIR, 'sources.json')),
     sponsors: readJson(path.join(CONTENT_DIR, 'sponsors.json')),
+    perks: readJson(path.join(CONTENT_DIR, 'perks.json')),
     research: readJson(path.join(CONTENT_DIR, 'research-queue.json')),
     review: readJson(path.join(CONTENT_DIR, 'review.json')),
   };

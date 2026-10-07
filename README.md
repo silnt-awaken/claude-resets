@@ -5,6 +5,7 @@ An independent tracker for publicly announced Claude usage-limit resets. Not aff
 - Hono + server-rendered JSX on Cloudflare Workers, D1 for reactions / push subscriptions / publication ledger, static assets from `public/`.
 - Editorial content is versioned JSON in `content/`; publishing is a local command that talks to a private endpoint.
 - Five locales (`/`, `/zh-CN`, `/zh-TW`, `/ja`, `/ko`), public JSON API, RSS + JSON feeds, read-only MCP server, Web Push browser alerts.
+- `/perks`: official Claude credits and programs with their deadlines (`content/perks.json`, see `docs/content-workflow.md`).
 
 Live site: <https://clauderesets.com> · Updates: [@clauderesets on X](https://x.com/clauderesets)
 
@@ -66,7 +67,7 @@ See `docs/content-workflow.md` for the full workflow, `docs/operations.md` for a
 ## Layout
 
 ```
-content/        resets.json, sources.json, sponsors.json, research-queue.json, review.json
+content/        resets.json, sources.json, sponsors.json, perks.json, research-queue.json, review.json
 migrations/     D1 schema
 public/         styles.css, app.js, theme.js, sw.js, docs.js, fonts/, icons/, manifest
 scripts/        editorial and maintenance commands (tsx)
@@ -75,7 +76,7 @@ src/i18n/       five dictionaries (typed against en.ts)
 src/goal/       base58, solana (RPC, transfer message, contribution parsing), rounds, roadmap
 src/push/       subscriptions, alert creation, delivery
 src/routes/     api, feeds, mcp, push, reactions, admin, meta
-src/views/      layout, home, pages, docs, components, icons (Hono JSX)
+src/views/      layout, home, pages, perks, docs, components, icons (Hono JSX)
 test/           vitest (Workers pool) suites and fixtures
 docs/           reference audit, source evidence, workflow, operations, acceptance, launch checklist, goal, roadmap
 ```

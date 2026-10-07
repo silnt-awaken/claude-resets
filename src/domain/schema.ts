@@ -2,7 +2,7 @@
 // and on the private publication endpoint.
 
 import { z } from 'zod';
-import { LOCALES, type ResearchCandidate, type ResetEvent, type ReviewState, type Sponsor, type SourceAccount } from './types';
+import { LOCALES, type Perk, type ResearchCandidate, type ResetEvent, type ReviewState, type Sponsor, type SourceAccount } from './types';
 
 const isoDateTime = z.iso.datetime({ message: 'must be an ISO 8601 UTC timestamp ending in Z' });
 const isoDate = z.iso.date({ message: 'must be a YYYY-MM-DD date' });
@@ -136,6 +136,62 @@ export const sponsorSchema = z.object({
   priority: z.number().int(),
 });
 
+/** Hosts a perk may send readers to: Anthropic's own properties only, so a typo can never point at a lookalike. */
+export const OFFICIAL_PERK_HOSTS = ['claude.ai', 'claude.com', 'anthropic.com'] as const;
+const PERK_SOURCE_HOSTS = [...OFFICIAL_PERK_HOSTS, 'x.com'] as const;
+
+function hostIn(url: string, hosts: readonly string[]): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return hosts.some((h) => host === h || host.endsWith(`.${h}`));
+  } catch {
+    return false;
+  }
+}
+
+const perkTextSchema = z.object({
+  title: z.string().min(1).max(120),
+  value: z.string().min(1).max(80),
+  summary: z.string().min(1).max(600),
+  eligibility: z.string().min(1).max(400),
+  steps: z.array(z.string().min(1).max(240)).min(1).max(5),
+});
+
+export const perkSchema = perkTextSchema
+  .extend({
+    id: z.string().regex(/^[a-z0-9][a-z0-9-]{2,60}$/, 'id must be a lowercase slug'),
+    kind: z.enum(['credit', 'program']),
+    cta: z.object({
+      url: httpsUrl.refine((u) => hostIn(u, OFFICIAL_PERK_HOSTS), { message: `must be on ${OFFICIAL_PERK_HOSTS.join(', ')}` }),
+      action: z.enum(['claim', 'apply']),
+    }),
+    closesAt: isoDateTime.nullable(),
+    expiresAt: isoDateTime.nullable(),
+    announcedOn: isoDate,
+    sources: z
+      .array(
+        z.object({
+          url: httpsUrl.refine((u) => hostIn(u, PERK_SOURCE_HOSTS), { message: `must be on ${PERK_SOURCE_HOSTS.join(', ')}` }),
+          label: z.string().min(1).max(80),
+          excerpt: z.string().max(300).optional(),
+        }),
+      )
+      .min(1),
+    verifiedAt: isoDate,
+    verificationMethod: z.string().min(1).max(500),
+    translations: z.object({ 'zh-CN': perkTextSchema, 'zh-TW': perkTextSchema, ja: perkTextSchema, ko: perkTextSchema }),
+    active: z.boolean(),
+    priority: z.number().int(),
+  })
+  .superRefine((p, ctx) => {
+    if (p.closesAt && p.expiresAt && Date.parse(p.expiresAt) < Date.parse(p.closesAt))
+      ctx.addIssue({ code: 'custom', message: `${p.id}: expiresAt precedes closesAt` });
+    if (p.closesAt && p.closesAt.slice(0, 10) < p.announcedOn) ctx.addIssue({ code: 'custom', message: `${p.id}: closesAt precedes announcedOn` });
+    for (const l of otherLocales) {
+      if (p.translations[l].steps.length !== p.steps.length) ctx.addIssue({ code: 'custom', message: `${p.id}: ${l} has ${p.translations[l].steps.length} steps, English has ${p.steps.length}` });
+    }
+  });
+
 export const researchCandidateSchema = z.object({
   id: z.string().min(1),
   url: httpsUrl,
@@ -150,6 +206,7 @@ export interface RawContent {
   events: unknown;
   sources: unknown;
   sponsors: unknown;
+  perks: unknown;
   research: unknown;
   review: unknown;
 }
@@ -158,6 +215,7 @@ export interface ValidatedContent {
   events: ResetEvent[];
   sources: SourceAccount[];
   sponsors: Sponsor[];
+  perks: Perk[];
   research: ResearchCandidate[];
   review: ReviewState;
 }
@@ -176,15 +234,17 @@ export function validateContent(raw: RawContent): ValidationResult {
   const events = z.array(resetEventSchema).safeParse(raw.events);
   const sources = z.array(sourceAccountSchema).safeParse(raw.sources);
   const sponsors = z.array(sponsorSchema).safeParse(raw.sponsors);
+  const perks = z.array(perkSchema).safeParse(raw.perks);
   const research = z.array(researchCandidateSchema).safeParse(raw.research);
   const review = reviewStateSchema.safeParse(raw.review);
 
   if (!events.success) errors.push(...issuesToStrings('resets.json', events.error));
   if (!sources.success) errors.push(...issuesToStrings('sources.json', sources.error));
   if (!sponsors.success) errors.push(...issuesToStrings('sponsors.json', sponsors.error));
+  if (!perks.success) errors.push(...issuesToStrings('perks.json', perks.error));
   if (!research.success) errors.push(...issuesToStrings('research-queue.json', research.error));
   if (!review.success) errors.push(...issuesToStrings('review.json', review.error));
-  if (!events.success || !sources.success || !sponsors.success || !research.success || !review.success) {
+  if (!events.success || !sources.success || !sponsors.success || !perks.success || !research.success || !review.success) {
     return { ok: false, errors, warnings };
   }
 
@@ -210,6 +270,11 @@ export function validateContent(raw: RawContent): ValidationResult {
     if (seenSlugs.has(s.slug)) errors.push(`sponsors.json: duplicate slug ${s.slug}`);
     seenSlugs.add(s.slug);
   }
+  const seenPerks = new Set<string>();
+  for (const p of perks.data) {
+    if (seenPerks.has(p.id)) errors.push(`perks.json: duplicate id ${p.id}`);
+    seenPerks.add(p.id);
+  }
   const seenHandles = new Set<string>();
   const seenSourceIds = new Set<string>();
   for (const s of sources.data) {
@@ -228,6 +293,7 @@ export function validateContent(raw: RawContent): ValidationResult {
       events: events.data as ResetEvent[],
       sources: sources.data as SourceAccount[],
       sponsors: sponsors.data as Sponsor[],
+      perks: perks.data as Perk[],
       research: research.data as ResearchCandidate[],
       review: review.data as ReviewState,
     },

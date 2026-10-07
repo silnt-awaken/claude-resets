@@ -129,6 +129,50 @@
     });
   })();
 
+  // ---------- perk deadlines ----------
+  // Keeps "Ends in 31 hours" current and flips a card to closed (no claim button) at its deadline.
+  (function perkCountdowns() {
+    var chips = $$('[data-role="perk-countdown"][data-deadline]');
+    if (!chips.length) return;
+    var ps = {};
+    try {
+      var el = $('#perk-i18n');
+      if (el) ps = JSON.parse(el.textContent || '{}');
+    } catch (e) {
+      ps = {};
+    }
+    function until(ms) {
+      if (!rtf) return '';
+      var m = Math.max(1, Math.ceil(ms / 60000));
+      if (m < 60) return rtf.format(m, 'minute');
+      var h = Math.floor(m / 60);
+      if (h < 48) return rtf.format(h, 'hour');
+      return rtf.format(Math.floor(h / 24), 'day');
+    }
+    function tick() {
+      var now = Date.now();
+      chips.forEach(function (chip) {
+        var deadline = Date.parse(chip.getAttribute('data-deadline'));
+        if (!isFinite(deadline)) return;
+        if (deadline <= now) {
+          if (ps.closed && chip.textContent !== ps.closed) {
+            chip.textContent = ps.closed;
+            if (chip.classList.contains('chip')) chip.className = 'chip chip--muted';
+            var card = chip.closest ? chip.closest('[data-role="perk"]') : null;
+            if (card) card.setAttribute('data-closed', 'true');
+            log('perk closed', chip.getAttribute('data-deadline'));
+          }
+          return;
+        }
+        var rel = until(deadline - now);
+        var text = ps.endsIn && rel ? fmt(ps.endsIn, { rel: rel }) : '';
+        if (text && chip.textContent !== text) chip.textContent = text;
+      });
+    }
+    tick();
+    setInterval(tick, 30000);
+  })();
+
   // ---------- archive ----------
   (function () {
     var toggle = $('[data-role="log-toggle"]');

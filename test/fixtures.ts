@@ -101,11 +101,12 @@ export function makeEvent(overrides: EventOverrides = {}): ResetEvent {
   };
 }
 
-export function snapshotFor(events: ResetEvent[], extra: Partial<Pick<ContentSnapshot, 'sources' | 'sponsors' | 'research' | 'review'>> = {}): ContentSnapshot {
+export function snapshotFor(events: ResetEvent[], extra: Partial<Pick<ContentSnapshot, 'sources' | 'sponsors' | 'perks' | 'research' | 'review'>> = {}): ContentSnapshot {
   return buildSnapshot({
     events,
     sources: extra.sources ?? fixtureSources,
     sponsors: extra.sponsors ?? [],
+    perks: extra.perks ?? [],
     research: extra.research ?? [],
     review: extra.review ?? { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: 'fixture' },
   });
