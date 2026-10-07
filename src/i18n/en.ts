@@ -77,6 +77,9 @@ export const en = {
     note: 'Anthropic decides eligibility in your account; this site only links to the official offer.',
     kinds: { credit: 'Free credit', program: 'Program' },
   },
+  ads: {
+    label: 'Advertisement',
+  },
   actions: {
     group: 'Reset notifications',
     browser: 'browser',
@@ -427,6 +430,13 @@ export const en = {
   privacy: {
     pageTitle: 'Privacy',
     intro: 'This page describes what this site actually stores. There are no analytics scripts, ad trackers, X embeds, or cookie banners.',
+    introAds: 'This page describes what this site stores and which third parties are involved. There are no analytics scripts or X embeds. Ads are served by Google AdSense.',
+    advertising: {
+      heading: 'Advertising',
+      body: 'Ads on this site are served by Google AdSense. Google and its partners may use cookies or similar technologies to show ads based on your visits to this and other websites. Visitors in the EEA, the UK and Switzerland are asked for consent first through Google’s consent message. Ads never appear on the community goal page, and they never influence which announcements are published.',
+      partners: 'How Google uses information from sites that use its services',
+      settings: 'Google ad settings (turn off personalized ads)',
+    },
     items: [
       {
         heading: 'Browser alerts',

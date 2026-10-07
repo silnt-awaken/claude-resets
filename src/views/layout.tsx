@@ -16,10 +16,15 @@ export interface PageContext {
   /** Query string to preserve across language switches (filters). */
   query: string;
   now: Date;
+  /** True when this page carries Google ads (AdSense configured and the page allows ads). */
+  ads: boolean;
+  /** Per-response CSP nonce, set only on pages with ads; every script tag must carry it. */
+  nonce: string | null;
 }
 
-export function makeContext(args: { locale: Locale; cfg: SiteConfig; content: ContentSnapshot; path: string; query?: string; now?: Date }): PageContext {
-  return { locale: args.locale, t: dict(args.locale), cfg: args.cfg, content: args.content, path: args.path, query: args.query ?? '', now: args.now ?? new Date() };
+export function makeContext(args: { locale: Locale; cfg: SiteConfig; content: ContentSnapshot; path: string; query?: string; now?: Date; ads?: boolean; nonce?: string | null }): PageContext {
+  const ads = !!args.ads && args.cfg.ads.enabled && !!args.nonce;
+  return { locale: args.locale, t: dict(args.locale), cfg: args.cfg, content: args.content, path: args.path, query: args.query ?? '', now: args.now ?? new Date(), ads, nonce: ads ? args.nonce! : null };
 }
 
 export function absoluteUrl(ctx: PageContext, locale: Locale, path = ctx.path, query = ctx.query): string {
@@ -83,8 +88,10 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
         <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="preload" as="font" type="font/woff2" href="/fonts/Baloo2.woff2" crossorigin="anonymous" />
-        <script src="/theme.js"></script>
+        {cfg.ads.enabled ? <meta name="google-adsense-account" content={cfg.ads.client!} /> : null}
+        <script src="/theme.js" nonce={ctx.nonce ?? undefined}></script>
         <link rel="stylesheet" href="/styles.css" />
+        {ctx.ads ? <script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cfg.ads.client}`} crossorigin="anonymous" nonce={ctx.nonce!}></script> : null}
       </head>
       <body
         data-locale={locale}
@@ -106,8 +113,8 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
         </div>
         {showSponsors ? <SponsorDialog ctx={ctx} /> : null}
         {cfg.goal.live ? <GoalStrings ctx={ctx} /> : null}
-        <script src="/app.js" defer></script>
-        {cfg.goal.live ? <script src="/goal.js" defer></script> : null}
+        <script src="/app.js" defer nonce={ctx.nonce ?? undefined}></script>
+        {cfg.goal.live ? <script src="/goal.js" defer nonce={ctx.nonce ?? undefined}></script> : null}
       </body>
     </html>
   );

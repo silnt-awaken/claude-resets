@@ -76,6 +76,9 @@ export const zhTW: Dict = {
     note: '是否符合資格由 Anthropic 在你的帳戶中判定；本站只連結到官方優惠頁面。',
     kinds: { credit: '免費額度', program: '計畫' },
   },
+  ads: {
+    label: '廣告',
+  },
   actions: {
     group: '重置通知',
     browser: '瀏覽器',
@@ -426,6 +429,13 @@ export const zhTW: Dict = {
   privacy: {
     pageTitle: '隱私',
     intro: '本頁說明本站實際儲存的內容。這裡沒有分析腳本、廣告追蹤器、X 嵌入內容或 cookie 橫幅。',
+    introAds: '本頁說明本站儲存哪些資料，以及涉及哪些第三方。本站沒有分析腳本或 X 嵌入內容。廣告由 Google AdSense 提供。',
+    advertising: {
+      heading: '廣告',
+      body: '本站廣告由 Google AdSense 提供。Google 及其合作夥伴可能使用 Cookie 或類似技術，依據你造訪本站及其他網站的情況顯示廣告。來自歐洲經濟區、英國和瑞士的訪客會先透過 Google 的同意訊息作出選擇。社群目標頁面不顯示廣告，廣告也絕不影響哪些公告會被發布。',
+      partners: 'Google 如何使用合作網站的資訊',
+      settings: 'Google 廣告設定（關閉個人化廣告）',
+    },
     items: [
       {
         heading: '瀏覽器通知',

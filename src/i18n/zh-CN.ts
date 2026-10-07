@@ -75,6 +75,9 @@ export const zhCN: Dict = {
     note: '是否符合资格由 Anthropic 在你的账户中判定；本站仅链接到官方优惠页面。',
     kinds: { credit: '免费额度', program: '计划' },
   },
+  ads: {
+    label: '广告',
+  },
   actions: {
     group: '重置通知',
     browser: '浏览器',
@@ -422,6 +425,13 @@ export const zhCN: Dict = {
   privacy: {
     pageTitle: '隐私',
     intro: '本页说明本站实际存储的内容。这里没有分析脚本、广告追踪器、X 嵌入内容或 Cookie 横幅。',
+    introAds: '本页说明本站存储哪些数据以及涉及哪些第三方。本站没有分析脚本或 X 嵌入内容。广告由 Google AdSense 提供。',
+    advertising: {
+      heading: '广告',
+      body: '本站广告由 Google AdSense 提供。Google 及其合作伙伴可能使用 Cookie 或类似技术，根据你访问本站及其他网站的情况展示广告。来自欧洲经济区、英国和瑞士的访客会先通过 Google 的同意提示作出选择。社区目标页面不展示广告，广告也绝不影响哪些公告会被发布。',
+      partners: 'Google 如何使用合作网站的信息',
+      settings: 'Google 广告设置（关闭个性化广告）',
+    },
     items: [
       {
         heading: '浏览器提醒',

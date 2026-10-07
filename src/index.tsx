@@ -45,6 +45,26 @@ const CSP = [
   "object-src 'none'",
 ].join('; ');
 
+/**
+ * Pages that carry Google ads. AdSense supports only a strict nonce-based policy (its script domains change
+ * over time): https://support.google.com/adsense/answer/16283098. 'unsafe-inline' and https: are fallbacks
+ * that browsers ignore once a nonce and 'strict-dynamic' are present; nothing else here restricts the ad code.
+ */
+export function adsCsp(nonce: string): string {
+  return [
+    "object-src 'none'",
+    `script-src 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:`,
+    "base-uri 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+  ].join('; ');
+}
+
+function newNonce(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return btoa(String.fromCharCode(...bytes));
+}
+
 app.use('*', async (c, next) => {
   await next();
   const h = c.res.headers;
@@ -70,8 +90,24 @@ app.route('/', meta);
 // ---------- pages ----------
 const PREFIXED_LOCALES: Locale[] = ['zh-CN', 'zh-TW', 'ja', 'ko'];
 
-function pageContext(c: Ctx, locale: Locale, path: string, query = ''): PageContext {
-  return makeContext({ locale, cfg: siteConfig(c.env), content: loadContent(), path, query, now: new Date() });
+/** Build a page context. Ads (and with them a fresh CSP nonce) are on unless the page opts out. */
+function pageContext(c: Ctx, locale: Locale, path: string, query = '', opts: { ads?: boolean } = {}): PageContext {
+  const cfg = siteConfig(c.env);
+  const ads = (opts.ads ?? true) && cfg.ads.enabled;
+  return makeContext({ locale, cfg, content: loadContent(), path, query, now: new Date(), ads, nonce: ads ? newNonce() : null });
+}
+
+/**
+ * Cached HTML for a page. The ETag seed also covers the ad configuration, so switching ads on or off never
+ * serves a stale page. A 200 on an ad page carries the nonce policy matching its body; a 304 carries no
+ * policy, so the browser keeps the cached body and the policy it arrived with together.
+ */
+function htmlPage(c: Ctx, ctx: PageContext, html: string, etagSeed: string, maxAge: number, status = 200): Response {
+  const ads = ctx.cfg.ads;
+  const seed = `${etagSeed}:${ctx.ads ? `ads:${ads.client}:${ads.slot ?? ''}` : 'noads'}`;
+  const res = cachedHtml(c, `<!doctype html>${html}`, seed, maxAge, status);
+  if (ctx.nonce && res.status !== 304) res.headers.set('content-security-policy', adsCsp(ctx.nonce));
+  return res;
 }
 
 /** Register a page at its English path and under each locale prefix (explicit routes, no regex ambiguity). */
@@ -117,35 +153,36 @@ page('/', async (c, locale) => {
   const html = (<HomePage ctx={ctx} model={model} />).toString();
   const minute = Math.floor(ctx.now.getTime() / 60_000);
   const goalSeed = model.goal.round ? `${model.goal.round.status}:${model.goal.round.raised_usd}:${model.goal.round.contributions}` : 'none';
-  return cachedHtml(c, `<!doctype html>${html}`, `home:${locale}:${content.revision}:${query}:${minute}:${model.begCount}:${goalSeed}`, model.goal.enabled ? 20 : 60);
+  return htmlPage(c, ctx, html, `home:${locale}:${content.revision}:${query}:${minute}:${model.begCount}:${goalSeed}`, model.goal.enabled ? 20 : 60);
 });
 
 page('/goal', async (c, locale) => {
-  const ctx = pageContext(c, locale, '/goal');
+  // No ads where readers send money.
+  const ctx = pageContext(c, locale, '/goal', '', { ads: false });
   const status = await goalStatus(c.env, ctx.now);
-  return cachedHtml(c, `<!doctype html>${(<GoalPage ctx={ctx} status={status} />).toString()}`, `goal:${locale}:${JSON.stringify(status)}`, 30);
+  return htmlPage(c, ctx, (<GoalPage ctx={ctx} status={status} />).toString(), `goal:${locale}:${JSON.stringify(status)}`, 30);
 });
 page('/perks', (c, locale) => {
   const ctx = pageContext(c, locale, '/perks');
   // Countdowns are rendered server-side, so the ETag moves with the minute like the homepage.
   const minute = Math.floor(ctx.now.getTime() / 60_000);
-  return cachedHtml(c, `<!doctype html>${(<PerksPage ctx={ctx} />).toString()}`, `perks:${locale}:${ctx.content.revision}:${minute}`, 60);
+  return htmlPage(c, ctx, (<PerksPage ctx={ctx} />).toString(), `perks:${locale}:${ctx.content.revision}:${minute}`, 60);
 });
 page('/sources', (c, locale) => {
   const ctx = pageContext(c, locale, '/sources');
-  return cachedHtml(c, `<!doctype html>${(<SourcesPage ctx={ctx} />).toString()}`, `sources:${locale}:${ctx.content.revision}`, 300);
+  return htmlPage(c, ctx, (<SourcesPage ctx={ctx} />).toString(), `sources:${locale}:${ctx.content.revision}`, 300);
 });
 page('/support', (c, locale) => {
   const ctx = pageContext(c, locale, '/support');
-  return cachedHtml(c, `<!doctype html>${(<SupportPage ctx={ctx} />).toString()}`, `support:${locale}:${ctx.content.revision}:${ctx.cfg.supportUrl}`, 300);
+  return htmlPage(c, ctx, (<SupportPage ctx={ctx} />).toString(), `support:${locale}:${ctx.content.revision}:${ctx.cfg.supportUrl}`, 300);
 });
 page('/about', (c, locale) => {
   const ctx = pageContext(c, locale, '/about');
-  return cachedHtml(c, `<!doctype html>${(<AboutPage ctx={ctx} />).toString()}`, `about:${locale}:${ctx.content.revision}`, 300);
+  return htmlPage(c, ctx, (<AboutPage ctx={ctx} />).toString(), `about:${locale}:${ctx.content.revision}`, 300);
 });
 page('/privacy', (c, locale) => {
   const ctx = pageContext(c, locale, '/privacy');
-  return cachedHtml(c, `<!doctype html>${(<PrivacyPage ctx={ctx} />).toString()}`, `privacy:${locale}:${ctx.content.revision}`, 300);
+  return htmlPage(c, ctx, (<PrivacyPage ctx={ctx} />).toString(), `privacy:${locale}:${ctx.content.revision}`, 300);
 });
 page('/resets/:id', (c, locale) => {
   const id = c.req.param('id');
@@ -155,20 +192,20 @@ page('/resets/:id', (c, locale) => {
   const ctx = pageContext(c, locale, `/resets/${e.id}`);
   const related = (e.relatedEventIds ?? []).map((rid) => findEvent(publishedEvents(content.events), rid)).filter((x): x is NonNullable<typeof x> => !!x);
   const sourceById = new Map(content.sources.map((s) => [s.id, s]));
-  return cachedHtml(c, `<!doctype html>${(<ResetPage ctx={ctx} e={e} related={related} sourceById={sourceById} />).toString()}`, `reset:${locale}:${e.id}:${content.revision}:${ctx.now.toISOString().slice(0, 10)}`, 300);
+  return htmlPage(c, ctx, (<ResetPage ctx={ctx} e={e} related={related} sourceById={sourceById} />).toString(), `reset:${locale}:${e.id}:${content.revision}:${ctx.now.toISOString().slice(0, 10)}`, 300);
 });
 page('/api/docs', (c, locale) => {
   const ctx = pageContext(c, locale, '/api/docs');
-  return cachedHtml(c, `<!doctype html>${(<ApiDocsPage ctx={ctx} />).toString()}`, `apidocs:${locale}:${ctx.cfg.siteUrl}`, 300);
+  return htmlPage(c, ctx, (<ApiDocsPage ctx={ctx} />).toString(), `apidocs:${locale}:${ctx.cfg.siteUrl}`, 300);
 });
 page('/mcp/docs', (c, locale) => {
   const ctx = pageContext(c, locale, '/mcp/docs');
-  return cachedHtml(c, `<!doctype html>${(<McpDocsPage ctx={ctx} />).toString()}`, `mcpdocs:${locale}:${ctx.cfg.siteUrl}`, 300);
+  return htmlPage(c, ctx, (<McpDocsPage ctx={ctx} />).toString(), `mcpdocs:${locale}:${ctx.cfg.siteUrl}`, 300);
 });
 
 function notFound(c: Ctx, locale: Locale): Response {
-  const ctx = pageContext(c, locale, stripLocale(c.req.path).path);
-  return cachedHtml(c, `<!doctype html>${(<NotFoundPage ctx={ctx} />).toString()}`, 'nf', 0, 404);
+  const ctx = pageContext(c, locale, stripLocale(c.req.path).path, '', { ads: false });
+  return htmlPage(c, ctx, (<NotFoundPage ctx={ctx} />).toString(), 'nf', 0, 404);
 }
 
 app.notFound((c) => {

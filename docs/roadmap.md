@@ -25,4 +25,4 @@ Mirrors `/goal#roadmap` on the site; the source of truth is `src/goal/roadmap.ts
 
 - Community-proposed goals beyond Max 20x (API credits, Team seats) chosen by contributors.
 - Sponsor slots to cover hosting, so the tracker stays free.
-- The tracker stays independent and ad-free; no forecasts, no account access, ever.
+- The tracker stays independent: ads and sponsors pay for hosting but never decide what is published. No forecasts, no account access, ever.

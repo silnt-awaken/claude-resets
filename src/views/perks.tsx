@@ -2,6 +2,7 @@ import type { FC } from 'hono/jsx';
 import { closedPerks, openPerks } from '../domain/content';
 import type { Locale, Perk, PerkText } from '../domain/types';
 import { formatDate, formatUntil, formatUtcDateTime, interpolate, localizePath } from '../i18n';
+import { AdSlot } from './ads';
 import { ArrowIcon, GiftIcon } from './icons';
 import { Layout, type PageContext } from './layout';
 
@@ -194,6 +195,7 @@ export const PerksPage: FC<{ ctx: PageContext }> = ({ ctx }) => {
         )}
         <p class="status-line perk-note">{t.perks.note}</p>
       </section>
+      <AdSlot ctx={ctx} placement="perks-end" />
       {closed.length > 0 ? (
         <section class="section" aria-labelledby="perks-closed-heading">
           <div class="section-head">

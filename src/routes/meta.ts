@@ -31,6 +31,16 @@ meta.get('/sitemap.xml', (c) => {
   return new Response(xml, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } });
 });
 
+/** ads.txt for Google AdSense (authorized seller line); 404 while ads are off. */
+meta.get('/ads.txt', (c) => {
+  const ads = siteConfig(c.env).ads;
+  if (!ads.enabled) return new Response('Not found\n', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+  const publisher = ads.client!.replace(/^ca-/, '');
+  return new Response(`google.com, ${publisher}, DIRECT, f08c47fec0942fa0\n`, {
+    headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' },
+  });
+});
+
 /** Safe sponsor redirect: only known, active slugs; destination comes from stored configuration. */
 meta.get('/sponsor/:slug', (c) => {
   const slug = c.req.param('slug');

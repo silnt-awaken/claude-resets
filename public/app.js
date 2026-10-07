@@ -173,6 +173,23 @@
     setInterval(tick, 30000);
   })();
 
+  // ---------- ads ----------
+  // Fill each in-page AdSense unit once. The loader (adsbygoogle.js, async) drains this queue when it arrives,
+  // so the order of the two scripts does not matter. No inline script: the page CSP allows only nonced files.
+  (function ads() {
+    var units = $$('ins.adsbygoogle:not([data-adsbygoogle-status])');
+    if (!units.length) return;
+    window.adsbygoogle = window.adsbygoogle || [];
+    units.forEach(function (unit) {
+      try {
+        window.adsbygoogle.push({});
+      } catch (e) {
+        log('ad unit push failed', unit.getAttribute('data-ad-slot'), e);
+      }
+    });
+    log('ad units queued', units.length);
+  })();
+
   // ---------- archive ----------
   (function () {
     var toggle = $('[data-role="log-toggle"]');

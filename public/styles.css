@@ -1596,6 +1596,29 @@ th {
   margin-top: 12px;
 }
 
+/* ---------- ads ---------- */
+
+/* The label appears only once Google fills the unit; an unfilled unit collapses. The slot itself must stay
+   displayed before filling, or AdSense measures no width and never fills it. */
+.ad-slot {
+  margin-top: 36px;
+}
+.ad-label {
+  display: none;
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ad-slot:has(ins[data-ad-status='filled']) .ad-label {
+  display: block;
+}
+.ad-slot:has(ins[data-ad-status='unfilled']) {
+  display: none;
+}
+
 /* ---------- community goal ---------- */
 
 .goal-card {

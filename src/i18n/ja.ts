@@ -76,6 +76,9 @@ export const ja: Dict = {
     note: '対象かどうかは Anthropic がアカウントで判断します。このサイトは公式の特典ページにリンクしているだけです。',
     kinds: { credit: '無料クレジット', program: 'プログラム' },
   },
+  ads: {
+    label: '広告',
+  },
   actions: {
     group: 'リセット通知',
     browser: 'ブラウザ',
@@ -426,6 +429,13 @@ export const ja: Dict = {
   privacy: {
     pageTitle: 'プライバシー',
     intro: 'このページでは、このサイトが実際に保存するものを説明します。解析スクリプト、広告トラッカー、X の埋め込み、Cookie バナーはありません。',
+    introAds: 'このページでは、このサイトが保存するデータと、関係する第三者について説明します。解析スクリプトや X の埋め込みはありません。広告は Google AdSense によって配信されます。',
+    advertising: {
+      heading: '広告',
+      body: 'このサイトの広告は Google AdSense によって配信されます。Google とそのパートナーは、Cookie などの技術を使い、このサイトや他のサイトへのアクセスに基づいて広告を表示することがあります。EEA・英国・スイスからの訪問者には、Google の同意メッセージで先に同意を確認します。コミュニティ目標のページには広告を表示せず、広告がどの発表を掲載するかに影響することもありません。',
+      partners: 'Google によるパートナーサイトの情報の利用方法',
+      settings: 'Google の広告設定（パーソナライズ広告をオフにする）',
+    },
     items: [
       {
         heading: 'ブラウザ通知',

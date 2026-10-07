@@ -33,6 +33,10 @@ export interface ConfigVars {
   GOAL_TARGET_USD?: string;
   /** Comma-separated wallets excluded from the draw (the operator's). Their money still counts on the meter. */
   GOAL_EXCLUDED_WALLETS?: string;
+  // Google AdSense: the publisher id turns on site verification, ads.txt and the ad loader; the slot id adds
+  // in-page units. Both are public (they appear in the page source). Empty = no ads and the strict CSP.
+  ADSENSE_CLIENT?: string;
+  ADSENSE_SLOT?: string;
   // secrets (values are never rendered)
   CONTENT_PUBLISH_TOKEN?: string;
   VAPID_PRIVATE_KEY?: string;
@@ -56,9 +60,29 @@ export interface SiteConfig {
   browserAlerts: { enabled: boolean; publicKey: string | null; reason: string | null };
   alertsPaused: boolean;
   goal: GoalConfig;
+  ads: AdsConfig;
   reactionCooldownHours: number;
   alertMaxAgeHours: number;
   publishConfigured: boolean;
+}
+
+export interface AdsConfig {
+  /** True only with a well-formed ADSENSE_CLIENT (ca-pub-…). */
+  enabled: boolean;
+  client: string | null;
+  /** Numeric data-ad-slot of a responsive display unit; null means Auto ads only (no in-page units). */
+  slot: string | null;
+  /** Why ads are off, or what is wrong with the slot (maintainers only). */
+  reason: string | null;
+}
+
+export function adsConfig(env: ConfigVars): AdsConfig {
+  const client = env.ADSENSE_CLIENT?.trim() ?? '';
+  const slot = env.ADSENSE_SLOT?.trim() ?? '';
+  if (!client) return { enabled: false, client: null, slot: null, reason: 'ADSENSE_CLIENT is empty' };
+  if (!/^ca-pub-\d{10,20}$/.test(client)) return { enabled: false, client: null, slot: null, reason: 'ADSENSE_CLIENT must look like ca-pub-1234567890123456' };
+  const validSlot = /^\d{6,20}$/.test(slot) ? slot : null;
+  return { enabled: true, client, slot: validSlot, reason: slot && !validSlot ? 'ADSENSE_SLOT must be the numeric data-ad-slot id' : null };
 }
 
 export interface GoalConfig {
@@ -173,6 +197,7 @@ export function siteConfig(env: ConfigVars): SiteConfig {
     browserAlerts: { enabled: pushReason === null, publicKey: pushReason === null ? publicKey : null, reason: pushReason },
     alertsPaused: bool(env.ALERTS_PAUSED),
     goal: goalConfig(env),
+    ads: adsConfig(env),
     reactionCooldownHours: positiveNumber(env.REACTION_COOLDOWN_HOURS, 24),
     alertMaxAgeHours: positiveNumber(env.ALERT_MAX_AGE_HOURS, 72),
     publishConfigured: !!env.CONTENT_PUBLISH_TOKEN && env.CONTENT_PUBLISH_TOKEN.length >= 16,
@@ -209,6 +234,13 @@ export function readiness(env: ConfigVars, hasDb: boolean): { ok: boolean; items
   add('ALERTS_PAUSED', cfg.alertsPaused ? 'off' : 'ok', cfg.alertsPaused ? 'Delivery paused.' : 'Delivery active.');
   add('GOAL_SOLANA_RPC_PRIVATE', httpsUrlOrNull(env.GOAL_SOLANA_RPC_PRIVATE) ? 'ok' : 'off', httpsUrlOrNull(env.GOAL_SOLANA_RPC_PRIVATE) ? 'present; tried before the public endpoints' : 'absent; only the public GOAL_SOLANA_RPC endpoints are used', true);
   add('GOAL', cfg.goal.live ? 'ok' : 'off', cfg.goal.live ? `Live: USDC on Solana to ${cfg.goal.wallet} (token account ${cfg.goal.usdcAccount}), target $${cfg.goal.targetUsd}.` : `Community goal shown as "not open yet": ${cfg.goal.reason}.`);
+  add(
+    'ADSENSE',
+    cfg.ads.enabled ? (cfg.ads.reason ? 'invalid' : 'ok') : env.ADSENSE_CLIENT?.trim() ? 'invalid' : 'off',
+    cfg.ads.enabled
+      ? `${cfg.ads.client}; ${cfg.ads.slot ? `in-page units use slot ${cfg.ads.slot}` : cfg.ads.reason ?? 'no ADSENSE_SLOT, so Auto ads only'}; /ads.txt served.`
+      : `No ads: ${cfg.ads.reason}.`,
+  );
   add('DB', hasDb ? 'ok' : 'missing', hasDb ? 'D1 bound.' : 'D1 binding missing.');
 
   const ok = items.every((i) => i.status === 'ok' || i.status === 'off');

@@ -5,6 +5,7 @@ import { AbsoluteTime, Avatar, RelativeTime, ScopeChips, SourceCard, localizedSu
 import { ArrowIcon, CupIcon } from './icons';
 import { Layout, type PageContext } from './layout';
 import { ResetOfferCard } from './reset-offer';
+import { AdSlot } from './ads';
 
 export const CLAUDE_STATUS_URL = 'https://status.claude.com/';
 export const USAGE_HELP_URL = 'https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work';
@@ -165,13 +166,36 @@ export const AboutPage: FC<{ ctx: PageContext }> = ({ ctx }) => {
   );
 };
 
+export const GOOGLE_PARTNER_SITES_URL = 'https://policies.google.com/technologies/partner-sites';
+export const GOOGLE_AD_SETTINGS_URL = 'https://myadcenter.google.com/';
+
 export const PrivacyPage: FC<{ ctx: PageContext }> = ({ ctx }) => {
   const { t, cfg } = ctx;
+  const intro = cfg.ads.enabled ? t.privacy.introAds : t.privacy.intro;
   return (
-    <Layout ctx={ctx} title={`${t.privacy.pageTitle} | ${cfg.siteName}`} description={t.privacy.intro}>
+    <Layout ctx={ctx} title={`${t.privacy.pageTitle} | ${cfg.siteName}`} description={intro}>
       <h1 class="page-title">{t.privacy.pageTitle}</h1>
-      <p class="page-intro">{t.privacy.intro}</p>
+      <p class="page-intro">{intro}</p>
       <div class="section prose">
+        {cfg.ads.enabled ? (
+          // Required by the AdSense program policies: disclose Google's advertising cookies and how to opt out.
+          <>
+            <h2 id="advertising">{t.privacy.advertising.heading}</h2>
+            <p>{t.privacy.advertising.body}</p>
+            <ul>
+              <li>
+                <a href={GOOGLE_PARTNER_SITES_URL} target="_blank" rel="noopener noreferrer">
+                  {t.privacy.advertising.partners}
+                </a>
+              </li>
+              <li>
+                <a href={GOOGLE_AD_SETTINGS_URL} target="_blank" rel="noopener noreferrer">
+                  {t.privacy.advertising.settings}
+                </a>
+              </li>
+            </ul>
+          </>
+        ) : null}
         {t.privacy.items.map((s) => (
           <>
             <h2>{s.heading}</h2>
@@ -347,6 +371,7 @@ export const ResetPage: FC<{ ctx: PageContext; e: ResetEvent; related: ResetEven
           <p>{e.notes}</p>
         </section>
       ) : null}
+      <AdSlot ctx={ctx} placement="reset-end" />
     </Layout>
   );
 };

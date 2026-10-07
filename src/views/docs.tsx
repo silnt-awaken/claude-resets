@@ -104,7 +104,7 @@ export const ApiDocsPage: FC<{ ctx: PageContext }> = ({ ctx }) => {
           Cache responses for at least a minute, identify your client with a User-Agent, and link back to the site. The data is a manually curated record of public announcements; it is not affiliated with or endorsed by Anthropic and does not describe any individual account.
         </p>
       </section>
-      <script src="/docs.js" defer></script>
+      <script src="/docs.js" defer nonce={ctx.nonce ?? undefined}></script>
     </Layout>
   );
 };

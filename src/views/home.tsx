@@ -11,6 +11,7 @@ import { GoalCard } from './goal';
 import type { GoalStatus } from '../routes/goal';
 import { ResetOfferCard } from './reset-offer';
 import { PerkFlag, PerksSection } from './perks';
+import { AdSlot } from './ads';
 
 export const CHECK_USAGE_URL = 'https://claude.ai/settings/usage';
 export const USAGE_HELP_URL = 'https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work';
@@ -64,6 +65,7 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
       <FiltersForm ctx={ctx} filters={model.filters} />
       <StatsTiles ctx={ctx} stats={model.stats} filters={model.filters} />
       <GoalCard ctx={ctx} status={model.goal} />
+      <AdSlot ctx={ctx} placement="home-mid" />
 
       <section class="section" aria-labelledby="graph-heading">
         <div class="section-head">
@@ -122,6 +124,8 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
           </ul>
         </section>
       ) : null}
+
+      <AdSlot ctx={ctx} placement="home-end" />
 
       <section class="section" aria-labelledby="sources-heading">
         <div class="section-head">

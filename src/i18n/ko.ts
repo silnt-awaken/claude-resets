@@ -76,6 +76,9 @@ export const ko: Dict = {
     note: '대상 여부는 Anthropic이 계정에서 판단합니다. 이 사이트는 공식 혜택 페이지로 연결만 합니다.',
     kinds: { credit: '무료 크레딧', program: '프로그램' },
   },
+  ads: {
+    label: '광고',
+  },
   actions: {
     group: '리셋 알림',
     browser: '브라우저',
@@ -426,6 +429,13 @@ export const ko: Dict = {
   privacy: {
     pageTitle: '개인정보',
     intro: '이 페이지는 이 사이트가 실제로 저장하는 정보를 설명합니다. 분석 스크립트, 광고 트래커, X 임베드, 쿠키 배너는 없습니다.',
+    introAds: '이 페이지는 이 사이트가 저장하는 정보와 관련된 제3자를 설명합니다. 분석 스크립트나 X 임베드는 없습니다. 광고는 Google AdSense가 제공합니다.',
+    advertising: {
+      heading: '광고',
+      body: '이 사이트의 광고는 Google AdSense가 제공합니다. Google과 파트너는 쿠키 또는 유사한 기술을 사용해 이 사이트와 다른 웹사이트 방문 기록을 바탕으로 광고를 표시할 수 있습니다. EEA, 영국, 스위스 방문자에게는 Google 동의 메시지로 먼저 동의를 받습니다. 커뮤니티 목표 페이지에는 광고가 표시되지 않으며, 광고는 어떤 공지를 게시할지에 영향을 주지 않습니다.',
+      partners: 'Google이 파트너 사이트의 정보를 사용하는 방법',
+      settings: 'Google 광고 설정(맞춤 광고 끄기)',
+    },
     items: [
       {
         heading: '브라우저 알림',
