@@ -20,15 +20,16 @@ What the owner still has to supply or do. Everything else is implemented and ver
 
 ## Advertising (Google AdSense)
 
-Setup completed on October 6, 2026; **ad serving is still pending Google's site approval and the account's existing identity-verification hold**. A deployed ad loader is not evidence that ads are being served.
+Setup completed on October 6, 2026; **identity verification is complete and ad serving is still pending Google's site approval**. A deployed ad loader is not evidence that ads are being served.
 
 - [x] Expanded the existing Google publisher account from AdMob to AdSense and added `clauderesets.com`. Publisher: `ca-pub-6198460375001930` (public).
 - [x] Set `ADSENSE_CLIENT` in `wrangler.jsonc` and deployed. Confirmed the live publisher meta tag, ad loader and `/ads.txt`: `google.com, pub-6198460375001930, DIRECT, f08c47fec0942fa0`.
 - [x] Google verified site ownership. Submitted **Request review**; the site reports **Getting ready** and **Review requested**.
 - [x] Published Google's European regulations consent message for `clauderesets.com`, with Consent, Do not consent and Manage options. The refusal option is enabled for all message regions. The message links to `https://clauderesets.com/privacy` and supports Google's English, Chinese (zh-CN) and Japanese translations. It is delivered through the AdSense tag; live delivery to a European visitor remains unverified.
 - [x] Created **Claude Resets responsive display**, slot `6430168167`, and deployed it as `ADSENSE_SLOT`. Confirmed two live homepage placements, one reset-page placement, one `/perks` placement and no ad loader or placements on `/goal`. Auto ads remain off; this setup uses the site's explicit placements.
-- [ ] Owner completes Google's identity-verification flow directly with Google. Google requested continuation on the owner's phone. Do not store identity documents, tax identifiers or verification codes in this repository.
+- [x] Owner completed Google's identity-verification flow directly with Google. Independently confirmed **Identity Verification: Completed** in AdSense on October 6, 2026. Do not store identity documents, tax identifiers or verification codes in this repository.
 - [ ] Google approves the site; then verify a real filled display unit and consent delivery. Approval and ad serving have not yet been confirmed.
+- [ ] Before receiving earnings, add a payout method directly in Google. The payments page currently says **Add a payment method to receive your earnings**.
 
 Validation: `npm run check` passed all 135 tests, typechecks, content validation and the Worker build. Test bindings explicitly keep ads off by default so the production publisher/slot settings do not change unrelated test fixtures. Final Worker deployment: `4d4785ee-b817-4840-97a7-e6eb90b00974`.
 
