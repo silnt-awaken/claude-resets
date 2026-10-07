@@ -40,7 +40,8 @@ Ad pages send AdSense's supported strict CSP (a fresh nonce per response, `'stri
 
 ## Optional
 
-- [ ] **Browser alerts**: `npx tsx scripts/vapid-keys.ts`, put `VAPID_PUBLIC_KEY` and `VAPID_SUBJECT` (`mailto:` you) in `vars`, set `BROWSER_ALERTS_ENABLED` to `"true"`, `npx wrangler secret put VAPID_PRIVATE_KEY`, redeploy. Then do the live check in `docs/acceptance.md` (subscribe in a supported browser, close the tab, publish a test event on a preview deployment, confirm the notification opens the event page). Until then the pill says alerts are not available yet.
+- [x] **Browser alerts production setup (October 6, 2026)**: enabled `BROWSER_ALERTS_ENABLED`, configured the public P-256 VAPID key and `mailto:silnt.awaken@gmail.com` contact, and installed `VAPID_PRIVATE_KEY` as a Cloudflare secret. The private key is backed up only in the ignored `.production-secrets.env`; never commit or rotate it casually, since existing subscriptions depend on this key pair. Worker version `5d347cfe-cc9e-4cc7-90ad-3decc9b07e95` serves the enabled browser control; the delivery cron runs every minute. All 135 tests, typechecks, content validation and the Worker build passed. Visitors must opt in and allow notifications in their own browser.
+- [ ] **Live browser delivery acceptance**: verify a real subscription and an owner-only setup notification. Never publish a fake reset or broadcast a setup test to visitors. The historical local checks remain in `docs/acceptance.md`.
 - [ ] **`TELEGRAM_CHANNEL_URL`**: your public channel link. Posting to the channel stays manual.
 - [ ] **`PROJECT_X_URL`** / **`OWNER_X_URL`**: header icon and footer credit link.
 - [ ] **`SUPPORT_CONTACT_EMAIL`**: enables the sponsorship enquiry `mailto:`. Sponsors are added by hand to `content/sponsors.json` (slug, name, tagline, logo under `public/`, https URL, dates).

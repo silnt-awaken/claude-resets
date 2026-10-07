@@ -30,9 +30,9 @@
     "SUPPORT_URL": "https://buymeacoffee.com/silntawaken",
     "SUPPORT_CONTACT_EMAIL": "silnt.awaken@gmail.com",
     "TELEGRAM_CHANNEL_URL": "https://t.me/clauderesets",
-    "BROWSER_ALERTS_ENABLED": "false",
-    "VAPID_PUBLIC_KEY": "",
-    "VAPID_SUBJECT": "",
+    "BROWSER_ALERTS_ENABLED": "true",
+    "VAPID_PUBLIC_KEY": "BJ7Fp2czJe3-XDz0nWcwh1OXanuJuYaDy5xdPYgLp1kroxOCLAVO-fh9i0C3akbozRt1g72_PTIXp9NzRrHaq9Y",
+    "VAPID_SUBJECT": "mailto:silnt.awaken@gmail.com",
     "ALERTS_PAUSED": "false",
     // Community goal: readers send USDC on Solana to a dedicated treasury wallet, never the operator's
     // personal one; the draw is automatic (finalized block hash). GOAL_USDC_ACCOUNT is that wallet's USDC
