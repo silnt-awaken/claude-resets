@@ -25,7 +25,7 @@ export const ApiDocsPage: FC<{ ctx: PageContext }> = ({ ctx }) => {
         <h2>What the data means</h2>
         <ul>
           <li>
-            <strong>One event, many posts.</strong> An official post, a team member's relay and reposts describing the same reset are merged into one record with several <code>sources</code>. Only records with <code>kind = usage_reset</code> and <code>event_status = confirmed</code> are counted.
+            <strong>One event, many posts.</strong> An official post, a team member's relay and reposts describing the same reset are merged into one record with several <code>sources</code>. Applied-reset API statistics count only records with <code>kind = usage_reset</code> and <code>event_status = confirmed</code>. The homepage board includes both banked and applied resets; banked resets are also returned in <code>reset_offers</code>.
           </li>
           <li>
             <strong>Time precision.</strong> <code>time_precision = exact</code> records carry <code>announced_at</code> (decoded from the X post id). Date-only records carry <code>announced_on</code> and no timestamp; nothing is invented. <code>utc_day</code> is null when the evidence does not establish a UTC day.

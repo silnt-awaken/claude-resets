@@ -33,7 +33,7 @@ function makePerk(over: Partial<Perk> = {}): Perk {
 describe('perks content', () => {
   it('bundles valid, translated perks', () => {
     for (const p of perksJson) expect(perkSchema.safeParse(p).success, p.id).toBe(true);
-    expect(loadContent().perks.map((p) => p.id)).toEqual(['cloud-sessions-credit', 'claude-for-startups']);
+    expect(loadContent().perks.map((p) => p.id)).toEqual(['cloud-sessions-credit', 'monthly-api-credits', 'claude-for-startups']);
   });
 
   it('stores the cloud credit deadline as the official 11:59 PM Pacific cutoffs in UTC', () => {

@@ -9,3 +9,6 @@ dist/
 exports/
 node_modules/
 screenshots/*.png
+screenshots/*.jpg
+# Local screenshots, test reports, and deployment verification artifacts.
+outputs/

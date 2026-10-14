@@ -19,6 +19,7 @@
   ],
   "triggers": { "crons": ["* * * * *"] },
   "observability": { "enabled": true },
+  "version_metadata": { "binding": "WORKER_VERSION" },
   // Public, non-secret settings. Secrets go in .dev.vars locally and `wrangler secret put` in production.
   "vars": {
     "SITE_NAME": "Claude Resets",
@@ -30,6 +31,8 @@
     "SUPPORT_URL": "https://buymeacoffee.com/silntawaken",
     "SUPPORT_CONTACT_EMAIL": "silnt.awaken@gmail.com",
     "TELEGRAM_CHANNEL_URL": "https://t.me/clauderesets",
+    "TELEGRAM_ENABLED": "true",
+    "TELEGRAM_CHAT_ID": "@clauderesets",
     "BROWSER_ALERTS_ENABLED": "true",
     "VAPID_PUBLIC_KEY": "BJ7Fp2czJe3-XDz0nWcwh1OXanuJuYaDy5xdPYgLp1kroxOCLAVO-fh9i0C3akbozRt1g72_PTIXp9NzRrHaq9Y",
     "VAPID_SUBJECT": "mailto:silnt.awaken@gmail.com",

@@ -1,8 +1,7 @@
 import type { FC } from 'hono/jsx';
 import { ROADMAP, type PhaseStatus } from '../goal/roadmap';
-import { SOLANA } from '../goal/solana';
 import type { GoalStatus } from '../routes/goal';
-import { formatNumber, interpolate, localizePath } from '../i18n';
+import { formatNumber, interpolate, intlLocale, localizePath } from '../i18n';
 import { ArrowIcon, CloseIcon } from './icons';
 import { Layout, type PageContext } from './layout';
 
@@ -28,7 +27,8 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
           ? interpolate(t.goal.paid, { winner: round.winner ?? '' })
           : null;
   const open = status.enabled && round?.status === 'open' && !!status.pool.wallet;
-  const raisedLabel = interpolate(t.goal.raised, { raised: formatNumber(Math.round(raised), locale), target: formatNumber(target, locale) });
+  const money = (amount: number) => new Intl.NumberFormat(intlLocale(locale), { style: 'currency', currency: 'USD', maximumFractionDigits: amount % 1 ? 2 : 0 }).format(amount);
+  const raisedLabel = interpolate(t.goal.raised, { raised: money(raised), target: money(target) });
   return (
     <section class="section" aria-labelledby="goal-heading">
       <div class="card card--sun goal-card" data-role="goal-card" data-round-status={round?.status ?? 'none'} data-target={String(target)}>
@@ -37,22 +37,41 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             <span class="mono">{t.goal.sub}</span>
             <h2 id="goal-heading">{t.goal.heading}</h2>
           </div>
-          <span class="chip chip--accent">USDC · {SOLANA.name}</span>
+          <span class="goal-target">{money(target)}<small>{t.goal.targetLabel}</small></span>
         </div>
-        <p class="goal-pitch">{t.goal.pitch}</p>
-        <div class="goal-meter" role="progressbar" aria-valuemin={0} aria-valuemax={target} aria-valuenow={Math.round(raised)} aria-label={raisedLabel}>
+        <p class="goal-pitch">{interpolate(t.goal.pitch, { target: money(target) })}</p>
+        <ol class="goal-steps">
+          {t.goal.steps.map((step, i) => <li><span class="goal-step-number" aria-hidden="true">{i + 1}</span><div><strong>{interpolate(step.title, { target: money(target) })}</strong><p>{step.body}</p></div></li>)}
+        </ol>
+        <div class="goal-meter" role="progressbar" aria-valuemin={0} aria-valuemax={target} aria-valuenow={raised} aria-label={raisedLabel}>
           <span class="goal-meter-fill" style={`width:${pct}%`}></span>
         </div>
         <div class="goal-figures">
           <strong class="goal-raised" data-role="goal-raised">{raisedLabel}</strong>
           {status.enabled && round ? (
             <span class="mono">
-              <span data-role="goal-entries">{formatNumber(round.contributors, locale)}</span> {interpolate(t.goal.entries, { n: '' }).trim()}
+              {t.goal.contributorsHeading} <span data-role="goal-entries">{formatNumber(round.contributors, locale)}</span>
             </span>
           ) : null}
         </div>
         {status.enabled && status.sync.stale ? <p class="status-line">{t.goal.stale}</p> : null}
         {stateLine ? <p class="notice notice--warn goal-state">{stateLine}</p> : null}
+        <div class="goal-contributors">
+          <h3>{t.goal.contributorsHeading}</h3>
+          <p class="status-line">{t.goal.contributorsNote}</p>
+          <ul class="contributor-list" data-role="goal-contributors">
+            {status.contributor_list.map((entry, i) => <li>
+              <span class="contributor-number" aria-hidden="true">{i + 1}</span>
+              <a href={`${explorer}/account/${entry.wallet}`} title={entry.wallet} target="_blank" rel="noopener noreferrer"><span>{t.goal.walletLabel}</span> <code>{entry.wallet.slice(0, 6)}…{entry.wallet.slice(-4)}</code> <ArrowIcon /></a>
+              <strong>{money(entry.usdc)}</strong>
+            </li>)}
+          </ul>
+          <p class="status-line" data-role="goal-contributors-empty" hidden={status.contributor_list.length > 0}>{status.enabled && !status.contributors_available ? t.goal.contributorsUnavailable : t.goal.noContributors}</p>
+        </div>
+        <div class="goal-payment-help">
+          <strong>{t.goal.paymentHeading}</strong>
+          <p>{t.goal.paymentNote}</p>
+        </div>
         {open ? (
           <div class="goal-cta" data-role="goal-contribute">
             <button class="btn btn--accent" type="button" data-role="goal-open" aria-haspopup="dialog">
@@ -90,6 +109,7 @@ const GoalSheet: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }
         </button>
       </div>
       <div class="dialog-body">
+        <p class="goal-sheet-intro">{ctx.t.goal.paymentNote}</p>
         <div data-role="form">
         <span class="mono">{s.amount}</span>
         <div class="goal-presets" role="group" aria-label={s.amount}>
@@ -158,9 +178,8 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
   const round = status.round;
   const target = round?.target_usd ?? status.target_usd;
   return (
-    <Layout ctx={ctx} title={`Max 20x for a reader | ${cfg.siteName}`} description="A community goal: readers pool USDC on Solana and one contributor wins a month of Claude Max 20x, drawn automatically by a finalized Solana block hash.">
-      <h1 class="page-title">Max 20x for a reader</h1>
-      <p class="page-intro">{t.goal.pitch}</p>
+    <Layout ctx={ctx} title={`${t.goal.heading} | ${cfg.siteName}`} description="Readers contribute toward a $200 goal. One contributor receives the money to put toward a month of Claude Max.">
+      <h1 class="page-title">{t.goal.heading}</h1>
       {locale !== 'en' ? (
         <p class="notice" style="margin-top:12px">
           {t.docs.englishOnly} <a href={localizePath(locale, '/')}>{t.docs.backTo}</a>
@@ -170,46 +189,38 @@ export const GoalPage: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
       <GoalCard ctx={ctx} status={status} />
 
       <section class="section prose" id="how">
-        <h2>How a round works</h2>
+        <h2>What happens to your contribution?</h2>
         <ol>
           <li>
-            <strong>Goal wallet.</strong> Contributions are USDC transfers on Solana to a wallet owned by {cfg.ownerName}, who runs this site.
+            <strong>Everyone adds to one fund.</strong> Your contribution goes to a separate wallet managed by {cfg.ownerName}, who runs this site. The progress bar shows confirmed contributions for this round.
             {status.pool.wallet ? (
               <>
-                {' '}Wallet: <a href={`${explorer}/account/${status.pool.wallet}`} target="_blank" rel="noopener noreferrer"><code>{status.pool.wallet}</code></a>
-                {status.pool.usdc_account ? (
-                  <>
-                    {' '}(its USDC account: <a href={`${explorer}/account/${status.pool.usdc_account}`} target="_blank" rel="noopener noreferrer"><code>{status.pool.usdc_account}</code></a>).
-                  </>
-                ) : (
-                  '.'
-                )}
+                {' '}<a href={`${explorer}/account/${status.pool.wallet}`} target="_blank" rel="noopener noreferrer">See the public fund and its transfers.</a>
               </>
             ) : (
               ' The address is published here when the goal opens.'
             )}{' '}
-            The meter is the sum of the transfers the site has read from the chain for the current round; it is not a number anyone typed.
           </li>
           <li>
-            <strong>Contribute to enter.</strong> Send at least {status.min_contribution_usd} USDC during an open round from a wallet you control, with the Phantom button above or from any wallet or exchange that withdraws USDC on Solana. Your wallet is your entry. Amount does not matter for the draw: a 1 USDC contributor and a 100 USDC contributor have exactly the same chance. One entry per wallet; sending twice does not add a second entry.
+            <strong>Your wallet gets one entry.</strong> Contribute at least ${status.min_contribution_usd} in USDC while the round is open. Giving $1 or $100 gives you the same chance. Sending twice from the same wallet still counts as one entry. The contributor list above shows who is in.
           </li>
           <li>
-            <strong>Freeze.</strong> When the round reaches ${target} USDC, the site records the current slot and announces a <em>draw slot</em> {SOLANA.drawLeadSlots} slots later (about a minute). Entries are fixed at that moment; anything that arrives afterwards counts for the next round.
+            <strong>The round closes at ${target}.</strong> Once the goal is reached, the list of entries is locked. Contributions confirmed afterwards go into the next round.
           </li>
           <li>
-            <strong>Draw.</strong> The first finalized block at or after the draw slot decides. Winner index = <code>blockhash mod contributors</code>, with the 32-byte block hash read as one big integer and contributors ordered by their first contribution. The hash and the list are public, so anyone can recompute the result; nobody, including us, can influence a future block hash. This runs automatically from the site's cron.
+            <strong>One contributor is picked at random.</strong> A future public result from the Solana network determines the winner automatically. We publish the result and the entry list so anyone can check the pick. The technical details are below.
           </li>
           <li>
-            <strong>Payout.</strong> {cfg.ownerName} sends ${target} USDC from the goal wallet to the winning wallet by hand (subscriptions cannot be transferred, so the money is paid out, not the account) and records the transaction signature here. The next round opens automatically.
+            <strong>The winner receives ${target} in USDC.</strong> {cfg.ownerName} sends it to the winning wallet and publishes the receipt. The winner buys their own Claude plan; we do not transfer an account or activate a subscription for them. A new round opens automatically.
           </li>
         </ol>
         <p>{t.support.noEffect} Winning here does not change anything about anyone's Claude account or Anthropic's limits; it pays for a plan.</p>
       </section>
 
       <section class="section prose" id="trust">
-        <h2>What you are trusting</h2>
+        <h2>Who holds the money?</h2>
         <p>
-          There is no smart contract holding the money. Contributions land in a dedicated treasury wallet controlled by {cfg.ownerName}, and the payout is a manual transfer from that wallet. The site can read the chain but cannot move a cent. The draw itself needs no trust: the contributor list, the draw slot, the block hash and the winner index are all published, and the block hash is produced by the Solana network, not by us. If trusting one person with the pool is more than you are comfortable with, please do not contribute.
+          {cfg.ownerName} holds the fund in a separate wallet and sends the winner their money manually. It is not held by Anthropic or by an automatic payment contract. The public wallet lets you see contributions and payouts. Only contribute if you are comfortable trusting {cfg.ownerName} to make the payout.
         </p>
       </section>
 

@@ -38,6 +38,30 @@
     if (window.console && window.localStorage && window.localStorage.getItem('claude-resets-debug') === '1') console.log.apply(console, ['[claude-resets]'].concat(Array.prototype.slice.call(arguments)));
   }
 
+  // ---------- short notices ----------
+  $$('[data-role="site-notice"]').forEach(function (notice) {
+    var id = notice.getAttribute('data-notice-id');
+    var key = 'claude-resets-notice-' + id;
+    var until = Date.parse(notice.getAttribute('data-display-until'));
+    var dismiss = $('[data-role="notice-dismiss"]', notice);
+    function expire() {
+      if (Date.now() >= until) notice.hidden = true;
+    }
+    try { if (window.localStorage.getItem(key) === 'dismissed') notice.hidden = true; } catch (e) { /* storage is optional */ }
+    expire();
+    if (dismiss) {
+      dismiss.hidden = false;
+      dismiss.addEventListener('click', function () {
+        notice.hidden = true;
+        try { window.localStorage.setItem(key, 'dismissed'); } catch (e) { /* storage is optional */ }
+        var next = $('[data-role="hero"] a');
+        if (next) next.focus();
+      });
+    }
+    window.setInterval(expire, 60_000);
+    document.addEventListener('visibilitychange', expire);
+  });
+
   // ---------- theme ----------
   var themeApi = window.__claudeResetsTheme;
   $$('[data-role="theme-toggle"]').forEach(function (btn) {
@@ -359,6 +383,7 @@
     var countEl = $('[data-role="beg-count"]');
     var status = $('[data-role="beg-status"]');
     if (!btn || !countEl) return;
+    var eventId = btn.getAttribute('data-event-id');
     var nf = new Intl.NumberFormat(intl);
     var current = null;
     function setCount(n) {
@@ -366,20 +391,30 @@
       current = n;
       countEl.textContent = nf.format(n);
       countEl.setAttribute('aria-label', fmt(s('beg.count', '{count} reactions'), { count: n }));
+      $$('[data-beg-event-id]').forEach(function (el) {
+        if (el.getAttribute('data-beg-event-id') === eventId) el.textContent = '🙏 ' + fmt(s('beg.total', '{count} begs'), { count: nf.format(n) });
+      });
     }
     function say(text) {
       if (status) status.textContent = text;
     }
-    fetch('/api/v1/reactions', { credentials: 'same-origin' })
+    function refreshBeg() {
+      if (document.hidden) return;
+      fetch('/api/v1/reactions', { credentials: 'same-origin', cache: 'no-store' })
       .then(function (r) {
         return r.ok ? r.json() : null;
       })
       .then(function (j) {
+        if (j && j.eventId !== eventId) { location.reload(); return; }
         if (j && typeof j.count === 'number') setCount(j.count);
       })
       .catch(function () {
         /* keep the server-rendered count */
       });
+    }
+    refreshBeg();
+    setInterval(refreshBeg, 60000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) refreshBeg(); });
     btn.addEventListener('click', function () {
       var before = current;
       btn.disabled = true;
@@ -394,14 +429,16 @@
           burst.remove();
         }, 900);
       }
-      fetch('/api/v1/reactions/beg', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: '{}' })
+      fetch('/api/v1/reactions/beg', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventId: eventId }) })
         .then(function (r) {
           return r.json().then(function (j) {
             return { status: r.status, body: j };
           });
         })
         .then(function (res) {
-          if (res.status === 200 && res.body && typeof res.body.count === 'number') {
+          if (res.status === 409 && res.body && res.body.code === 'reset_changed') {
+            location.reload();
+          } else if (res.status === 200 && res.body && typeof res.body.count === 'number') {
             setCount(res.body.count);
             say(s('beg.counted', 'Counted!'));
           } else if (res.status === 429) {

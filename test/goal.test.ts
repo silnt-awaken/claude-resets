@@ -305,7 +305,7 @@ describe('rounds', () => {
     expect(html).toContain('src="/goal.js"');
     expect(html).toContain('Approve in Phantom'); // handoff strings for goal.js
     expect(html).not.toContain('nacl-fast'); // loaded on demand, only on the phone handoff path
-    expect(html).toMatch(/data-role="goal-entries">1<\/span> contributors/);
+    expect(html).toMatch(/Contributors <span data-role="goal-entries">1<\/span>/);
     expect(html).not.toContain('USDG');
     expect(html).not.toContain('Robinhood');
     expect((await request('/', {}, LIVE)).headers.get('content-security-policy')).toContain("connect-src 'self';");
@@ -360,7 +360,7 @@ describe('rounds', () => {
     expect(page).toContain(hash32(1));
     expect(page).toContain(`/block/${drawSlot + 2}`);
     expect(page).toContain('id="roadmap"');
-    expect(page).toContain('What you are trusting');
+    expect(page).toContain('Who holds the money?');
     expect(page).not.toContain('tokenomics');
 
     // Operator pays by hand and records the signature; the next tick opens round 2 with B's waiting contribution.
@@ -378,7 +378,7 @@ describe('rounds', () => {
     expect(s2.round).toMatchObject({ id: r2.id, status: 'open', raised_usd: 2, contributors: 1 });
     expect(s2.past_rounds[0]).toMatchObject({ id: drawn.id, status: 'paid', raised_usd: 205.4, winner_wallet: C, payout_tx: sig(99) });
     const home = await (await request('/', {}, LIVE)).text();
-    expect(home).toContain('2 of 200 USDC raised');
+    expect(home).toContain('$2 raised of $200');
   });
 
   it('keeps the cursor on the last processed signature when the RPC fails mid-scan, and reports stale', async () => {
@@ -437,6 +437,30 @@ describe('rounds', () => {
 });
 
 describe('contribution endpoints', () => {
+  it('shows real contributors on the homepage and goal page, aggregating wallets and excluding ineligible entries', async () => {
+    const round = await openRound(db(), 'reader goal', 200, new Date());
+    for (const [i, wallet, units] of [[60, A, 1_000_000], [61, A, 1_500_000], [62, B, 500_000], [63, WALLET, 5_000_000]] as const) {
+      await db().prepare('INSERT INTO goal_contributions (signature, round_id, wallet, amount_units, slot, block_time, created_at) VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6)').bind(sig(i), round.id, wallet, units, i, new Date().toISOString()).run();
+    }
+    const status = await goalStatus(live());
+    expect(status.contributor_list).toEqual([{ wallet: A, usdc: 2.5 }]);
+    expect(status.round?.contributors).toBe(1);
+    for (const path of ['/', '/goal']) {
+      const html = await (await request(path, {}, LIVE)).text();
+      const list = html.split('data-role="goal-contributors"')[1]!.split('</ul>')[0]!;
+      expect(list).toContain(`/account/${A}`);
+      expect(list).toContain('$2.50');
+      expect(list).not.toContain(`/account/${B}`);
+      expect(list).not.toContain(`/account/${WALLET}`);
+      expect(html).toContain('Help a reader get Claude Max');
+      expect(html).toContain('Card payments are not available here.');
+      expect(html).toContain('One entry per wallet. Giving more does not improve your chance.');
+      expect(html.replace(/<script[\s\S]*?<\/script>/g, '')).not.toContain('{target}');
+    }
+    const home = await (await request('/', {}, LIVE)).text();
+    expect(home.indexOf('id="log-heading"')).toBeLessThan(home.indexOf('id="goal-heading"'));
+  });
+
   it('builds a transfer for a wallet that holds USDC and SOL, and refuses otherwise', async () => {
     const c = chain();
     const ataA = await deriveAssociatedTokenAccount(A, USDC);

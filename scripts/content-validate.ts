@@ -1,8 +1,10 @@
 // npm run content:validate — validate all content files and cross-file rules.
 
 import { readContent, validateFiles } from './lib';
+import { release } from '../src/domain/release';
 
 const files = readContent();
+console.log(`✔ Release notes valid: ${release.id}`);
 const result = validateFiles(files);
 for (const w of result.warnings) console.warn(`⚠ ${w}`);
 if (!result.ok) {
@@ -12,5 +14,5 @@ if (!result.ok) {
 }
 const published = files.events.filter((e) => e.editorialStatus === 'published');
 const drafts = files.events.filter((e) => e.editorialStatus === 'draft');
-console.log(`✔ Content valid: ${files.events.length} events (${published.length} published, ${drafts.length} draft), ${files.sources.length} sources, ${files.sponsors.length} sponsors, ${files.perks.length} perks, ${files.research.length} research items.`);
+console.log(`✔ Content valid: ${files.events.length} events (${published.length} published, ${drafts.length} draft), ${files.sources.length} sources, ${files.sponsors.length} sponsors, ${files.perks.length} perks, ${files.notices.length} notices, ${files.research.length} research items.`);
 for (const d of drafts) console.log(`  draft: ${d.id} (${d.verificationStatus}, translations: ${d.translationStatus})`);

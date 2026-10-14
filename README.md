@@ -6,6 +6,8 @@ An independent tracker for publicly announced Claude usage-limit resets. Not aff
 - Editorial content is versioned JSON in `content/`; publishing is a local command that talks to a private endpoint.
 - Five locales (`/`, `/zh-CN`, `/zh-TW`, `/ja`, `/ko`), public JSON API, RSS + JSON feeds, read-only MCP server, Web Push browser alerts.
 - `/perks`: official Claude credits and programs with their deadlines (`content/perks.json`, see `docs/content-workflow.md`).
+- Short notices use `content/notices.json`: one dismissible disclosure on the homepage, fully translated and labelled as a community report or official announcement. `displayUntil` controls editorial removal, not the promotion deadline. Notices never enter reset history, counts, feeds or push alerts.
+- Telegram release summaries run after verified live deployments; the owner can mirror an @clauderesets post with the bot's private `/share <URL>` command. See [docs/telegram.md](docs/telegram.md).
 
 Live site: <https://clauderesets.com> · Updates: [@clauderesets on X](https://x.com/clauderesets)
 

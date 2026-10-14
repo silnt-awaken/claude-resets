@@ -38,11 +38,15 @@ export function fakeSubscription(n: number, host = 'fcm.googleapis.com') {
 export async function clearDb(): Promise<void> {
   const db = (env as unknown as Env).DB;
   await db.batch([
+    db.prepare('DELETE FROM telegram_incoming'),
+    db.prepare('DELETE FROM telegram_outbox'),
     db.prepare('DELETE FROM push_jobs'),
     db.prepare('DELETE FROM alerts'),
     db.prepare('DELETE FROM publications'),
     db.prepare('DELETE FROM push_subscriptions'),
     db.prepare('DELETE FROM reaction_cooldowns'),
+    db.prepare("DELETE FROM reaction_rounds WHERE counter_key <> 'beg'"),
+    db.prepare("DELETE FROM reactions WHERE key <> 'beg'"),
     db.prepare("UPDATE reactions SET count = 0 WHERE key = 'beg'"),
   ]);
 }

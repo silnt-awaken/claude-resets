@@ -10,7 +10,9 @@ Public settings live in `wrangler.jsonc` under `vars` and are safe to commit. Se
 | `OWNER_X_URL`, `PROJECT_X_URL` | public, optional | Owner link in the footer credit; project X icon in the header. Must be https or they are ignored. |
 | `SUPPORT_URL` | public, required for the coffee feature | Every "Tip for coffee" placement. The provider name is shown only when the host is recognised (Buy Me a Coffee, Ko-fi, GitHub Sponsors, Patreon, PayPal, Liberapay, Open Collective). Unset: honest "not available yet" state. |
 | `SUPPORT_CONTACT_EMAIL` | public, optional | `mailto:` in the sponsorship dialog and `/support`. |
-| `TELEGRAM_CHANNEL_URL` | public, optional | Telegram pill target. Unset: pill explains it is not set up. No bot posting is implemented; channel posting is manual. |
+| `TELEGRAM_CHANNEL_URL` | public, optional | Telegram pill target. Unset: pill explains it is not set up. |
+| `TELEGRAM_ENABLED`, `TELEGRAM_CHAT_ID` | public | Enable release and owner-submitted X post announcements in the chosen community. See `docs/telegram.md`. |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_OWNER_USER_ID` | secret | Bot delivery, authenticated Telegram webhook, and owner-only private commands. Never logged. |
 | `BROWSER_ALERTS_ENABLED`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT` | public | Web Push capability; all three plus the secret must be set for the pill to work. |
 | `VAPID_PRIVATE_KEY` | secret | JWK `d` value from `npx tsx scripts/vapid-keys.ts`. |
 | `CONTENT_PUBLISH_TOKEN` | secret | Bearer token for `/admin/*`. At least 16 characters; the endpoint is disabled otherwise. |
@@ -25,7 +27,7 @@ Public capability states on the site come from these settings at request time, n
 
 ## Alerts
 
-Channels: **browser push** (implemented, real Web Push with VAPID via `@block65/webcrypto-web-push`, which uses Web Crypto and runs in the Worker), **Telegram** (link to your channel only; no bot), **feeds** (RSS/JSON; readers poll). Email was left out on purpose: the site stores no personal data.
+Channels: **browser push** (implemented, real Web Push with VAPID via `@block65/webcrypto-web-push`, which uses Web Crypto and runs in the Worker), **Telegram** (verified release summaries and owner-submitted @clauderesets post links; see `telegram.md`), **feeds** (RSS/JSON; readers poll). Reset push alerts keep their existing publication flow.
 
 Pipeline:
 

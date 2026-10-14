@@ -5,10 +5,11 @@ import resetsJson from '../../content/resets.json';
 import sourcesJson from '../../content/sources.json';
 import sponsorsJson from '../../content/sponsors.json';
 import perksJson from '../../content/perks.json';
+import noticesJson from '../../content/notices.json';
 import researchJson from '../../content/research-queue.json';
 import reviewJson from '../../content/review.json';
 import { validateContent, type RawContent } from './schema';
-import type { Perk, ResearchCandidate, ResetEvent, ReviewState, Sponsor, SourceAccount } from './types';
+import type { Perk, ResearchCandidate, ResetEvent, ReviewState, SiteNotice, Sponsor, SourceAccount } from './types';
 
 /** UTC date from which announcements were researched (the day @ClaudeDevs joined X). */
 export const COVERAGE_START = '2026-04-16';
@@ -18,6 +19,7 @@ export interface ContentSnapshot {
   sources: SourceAccount[];
   sponsors: Sponsor[];
   perks: Perk[];
+  notices: SiteNotice[];
   research: ResearchCandidate[];
   review: ReviewState;
   /** Hash of the whole content set; changes whenever any content file changes. */
@@ -30,12 +32,13 @@ export function buildSnapshot(raw: RawContent): ContentSnapshot {
   if (!result.ok) {
     throw new Error(`Invalid content:\n- ${result.errors.join('\n- ')}`);
   }
-  const { events, sources, sponsors, perks, research, review } = result.data;
+  const { events, sources, sponsors, perks, notices, research, review } = result.data;
   return {
     events,
     sources,
     sponsors,
     perks,
+    notices,
     research,
     review,
     revision: hashString(JSON.stringify(raw)),
@@ -53,6 +56,7 @@ export function loadContent(): ContentSnapshot {
       sources: sourcesJson as unknown,
       sponsors: sponsorsJson as unknown,
       perks: perksJson as unknown,
+      notices: noticesJson as unknown,
       research: researchJson as unknown,
       review: reviewJson as unknown,
     });
@@ -66,6 +70,13 @@ export function __setContentForTests(snapshot: ContentSnapshot | null): void {
 }
 
 // ---------- selectors ----------
+
+/** At most one timely notice, with the newest taking priority. */
+export function currentNotice(notices: SiteNotice[], now: Date): SiteNotice | null {
+  const at = now.getTime();
+  return notices.filter((n) => n.active && Date.parse(n.startsAt) <= at && at < Date.parse(n.displayUntil))
+    .sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt))[0] ?? null;
+}
 
 export function publishedEvents(events: ResetEvent[]): ResetEvent[] {
   return events.filter((e) => e.editorialStatus === 'published');
@@ -88,6 +99,12 @@ export function qualifyingResets(events: ResetEvent[]): ResetEvent[] {
 /** Published reset-credit records, including withdrawals so feeds retain corrections. */
 export function resetOffers(events: ResetEvent[]): ResetEvent[] {
   return events.filter((e) => e.editorialStatus === 'published' && e.verificationStatus === 'verified' && e.kind === 'credit' && e.resetOffer);
+}
+
+/** One reset board: applied resets and confirmed banked resets, including expired history. */
+export function resetBoard(events: ResetEvent[], now: Date): ResetEvent[] {
+  const day = now.toISOString().slice(0, 10);
+  return sortEventsDesc([...qualifyingResets(events), ...resetOffers(events).filter((e) => e.eventStatus === 'confirmed' && eventDay(e) <= day)]);
 }
 
 /** Date-only expiry: list through the stated day, without inventing a redemption deadline. */

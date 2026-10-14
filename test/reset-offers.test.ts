@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { __setContentForTests, activeResetOffers, loadContent, qualifyingResets } from '../src/domain/content';
+import { __setContentForTests, activeResetOffers, loadContent, qualifyingResets, resetBoard } from '../src/domain/content';
 import { resetEventSchema } from '../src/domain/schema';
 import { computeStatus } from '../src/domain/service';
 import { DEFAULT_FILTERS } from '../src/domain/filters';
@@ -12,7 +12,7 @@ afterEach(() => __setContentForTests(null));
 describe('subscriber-redeemed reset offers', () => {
   const offer = makeEvent({ id: 'saved-reset', kind: 'credit', on: '2026-09-22', resetOffer: { expiresOn: '2026-10-22' }, audience: { scope: 'limited', statement: 'subscription users', plans: 'subscribers' }, windows: ['unspecified'] });
 
-  it('keeps the saved reset out of applied-reset history, totals and latest-reset timing', () => {
+  it('includes the banked reset on the board while keeping applied-reset timing accurate', () => {
     const content = loadContent();
     const status = computeStatus(content, DEFAULT_FILTERS, new Date('2026-09-23T12:00:00Z'));
     expect(status.offers.map((e) => e.id)).toEqual(['2026-09-22-opus-5-5-reset']);
@@ -20,6 +20,9 @@ describe('subscriber-redeemed reset offers', () => {
     expect(status.latest?.id).toBe('2026-09-04-max-weekly');
     expect(qualifyingResets(content.events).some((e) => e.resetOffer)).toBe(false);
     expect(status.offers[0]!.windows).toEqual(['unspecified']);
+    const board = resetBoard(content.events, new Date('2026-09-23T12:00:00Z'));
+    expect(board).toHaveLength(13);
+    expect(board[0]!.id).toBe('2026-09-22-opus-5-5-reset');
   });
 
   it('lists the offer through its stated expiry date but never before announcement or after withdrawal', () => {
@@ -46,23 +49,35 @@ describe('subscriber-redeemed reset offers', () => {
     expect(resetEventSchema.safeParse({ ...offer, resetOffer: { expiresOn: '2026-02-30' } }).success).toBe(false);
   });
 
-  it('publishes the card, source link, and separate API offer without changing the reset count', async () => {
+  it('puts banked and applied resets in the same board with labels, expiry and source links', async () => {
     const evergreen = { ...offer, resetOffer: { expiresOn: '2099-10-22' } };
-    __setContentForTests(snapshotFor([evergreen]));
+    __setContentForTests(snapshotFor([evergreen, makeEvent({ id: 'applied', at: '2026-09-04T12:00:00Z' })]));
     const html = await (await request('/')).text();
-    expect(html).toContain('data-role="reset-offer"');
+    expect(html).not.toContain('data-role="reset-offer"');
+    expect(html).toContain('Banked reset');
+    expect(html).toContain('Applied reset');
+    const board = html.split('data-role="log"')[1]!.split('</ol>')[0]!;
+    expect(board.indexOf('id="event-saved-reset"')).toBeLessThan(board.indexOf('id="event-applied"'));
+    expect(board).toContain('Expires Oct 22, 2099');
+    expect(html).toContain('<span class="stat-value">2</span>');
     expect(html).toContain('Expires Oct 22, 2099');
     expect(html).toContain('https://claude.ai/settings/usage');
     const status = await json<StatusResponse>('/api/v1/status');
     expect(status.body.data.reset_offers[0]!.reset_offer?.expires_on).toBe('2099-10-22');
-    expect(status.body.data.stats.total).toBe(0);
-    expect(status.body.data.latest_reset).toBeNull();
+    expect(status.body.data.stats.total).toBe(1);
+    expect(status.body.data.latest_reset?.id).toBe('applied');
+    const filtered = await (await request('/?window=weekly')).text();
+    expect(filtered).not.toContain('event-saved-reset');
   });
 
   it('keeps expired offers in the feed and detail page, with no redeem link or active homepage card', async () => {
     const expired = makeEvent({ id: 'expired-credit', kind: 'credit', on: '2000-01-01', resetOffer: { expiresOn: '2000-02-01' } });
     __setContentForTests(snapshotFor([expired]));
     expect(await (await request('/')).text()).not.toContain('data-role="reset-offer"');
+    const home = await (await request('/')).text();
+    expect(home).toContain('id="event-expired-credit"');
+    expect(home).toContain('Banked reset');
+    expect(home).toContain('Expired Feb 1, 2000');
     const page = await (await request('/resets/expired-credit')).text();
     expect(page).toContain('Expired Feb 1, 2000');
     expect(page).not.toContain('href="https://claude.ai/settings/usage"');

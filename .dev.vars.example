@@ -5,3 +5,8 @@ CONTENT_PUBLISH_TOKEN=change-me-to-a-long-random-string
 VAPID_PRIVATE_KEY=
 # Secret used to sign anonymous reaction identifiers.
 REACTION_SECRET=change-me-too
+# Optional local Telegram development; keep disabled unless testing with your own bot.
+TELEGRAM_ENABLED=false
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_WEBHOOK_SECRET=
+TELEGRAM_OWNER_USER_ID=

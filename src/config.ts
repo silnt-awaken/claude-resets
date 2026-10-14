@@ -14,6 +14,11 @@ export interface ConfigVars {
   SUPPORT_URL?: string;
   SUPPORT_CONTACT_EMAIL?: string;
   TELEGRAM_CHANNEL_URL?: string;
+  TELEGRAM_ENABLED?: string;
+  TELEGRAM_CHAT_ID?: string;
+  TELEGRAM_OWNER_USER_ID?: string;
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_WEBHOOK_SECRET?: string;
   BROWSER_ALERTS_ENABLED?: string;
   VAPID_PUBLIC_KEY?: string;
   VAPID_SUBJECT?: string;

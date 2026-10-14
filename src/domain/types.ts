@@ -63,6 +63,20 @@ export interface Translation {
   summary: string;
 }
 
+/** Short editorial notices. Display expiry is not a claim about an offer's deadline. */
+export interface SiteNotice extends Translation {
+  id: string;
+  active: boolean;
+  startsAt: string;
+  displayUntil: string;
+  sourceType?: 'community' | 'official';
+  actionLabel?: 'account' | 'projects';
+  sourceUrl: string;
+  actionUrl: string;
+  guideUrl?: string;
+  translations: Record<OtherLocale, Translation>;
+}
+
 export interface Schedule {
   statedAt: string | null; // ISO if the source gave an exact future time
   statedWindow: string | null; // free-text approximate timing as stated

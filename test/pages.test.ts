@@ -42,7 +42,7 @@ describe('pages', () => {
     expect(html).toContain('data-role="cg"');
     expect(html).toContain('data-role="log"');
     expect(html).toContain('data-role="log-extra"');
-    expect(html).toContain('Show all 12 resets');
+    expect(html).toContain('Show all 13 resets');
     expect(html).toContain('Tip for coffee');
     expect(html).toContain('not affiliated with or endorsed by Anthropic');
     expect(html).toContain('https://claude.ai/settings/usage');
@@ -92,7 +92,7 @@ describe('pages', () => {
       ]),
     );
     const html = await (await request('/')).text();
-    expect(html).toContain('the exact time is not established');
+    expect(html).toContain('date only');
     expect(html).toContain('Announced, not yet confirmed');
     expect(html).toContain('Confirmation is still pending');
     expect(html).toContain('have a date but no established UTC day');

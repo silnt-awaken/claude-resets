@@ -1,7 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { clearDb, json, request } from './helpers';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { __setContentForTests } from '../src/domain/content';
+import type { Env } from '../src/env';
+import { __resetRateLimits } from '../src/util/ratelimit';
+import { makeEvent, snapshotFor } from './fixtures';
+import { clearDb, env, json, request } from './helpers';
 
-beforeEach(clearDb);
+beforeEach(async () => { __setContentForTests(null); __resetRateLimits(); await clearDb(); });
+afterEach(() => __setContentForTests(null));
 
 function cookieFrom(res: Response): string {
   const set = res.headers.get('set-cookie') ?? '';
@@ -9,6 +14,42 @@ function cookieFrom(res: Response): string {
 }
 
 describe('beg reaction', () => {
+  it('preserves the legacy live counter on the current banked reset', async () => {
+    await (env as unknown as Env).DB.prepare("UPDATE reactions SET count = 18 WHERE key = 'beg'").run();
+    const state = await json<{ eventId: string; count: number; totals: Record<string, number> }>('/api/v1/reactions');
+    expect(state.body).toMatchObject({ eventId: '2026-09-22-opus-5-5-reset', count: 18, totals: { '2026-09-22-opus-5-5-reset': 18 } });
+  });
+
+  it('starts a new reset at zero, preserves 18 on the previous card, resets the cooldown, and refuses stale-page reactions', async () => {
+    const before = makeEvent({ id: 'previous-reset', at: '2026-09-01T12:00:00Z' });
+    const after = makeEvent({ id: 'new-banked-reset', kind: 'credit', on: '2026-09-22', resetOffer: { expiresOn: '2099-10-22' }, windows: ['unspecified'] });
+    __setContentForTests(snapshotFor([before]));
+    const first = await request('/api/v1/reactions/beg', { method: 'POST' });
+    const cookie = cookieFrom(first);
+    await (env as unknown as Env).DB.prepare("UPDATE reactions SET count = 18 WHERE key = 'beg:previous-reset'").run();
+    __setContentForTests(snapshotFor([before, after]));
+    const state = await json<{ eventId: string; count: number; totals: Record<string, number> }>('/api/v1/reactions');
+    expect(state.body).toMatchObject({ eventId: after.id, count: 0, totals: { [before.id]: 18, [after.id]: 0 } });
+    const stale = await request('/api/v1/reactions/beg', { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ eventId: before.id }) });
+    expect(stale.status).toBe(409);
+    const next = await request('/api/v1/reactions/beg', { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ eventId: after.id }) });
+    expect(next.status).toBe(200);
+    expect(await next.json()).toMatchObject({ eventId: after.id, count: 1 });
+    const history = (await json<{ totals: Record<string, number> }>('/api/v1/reactions')).body.totals;
+    expect(history[before.id]).toBe(18);
+    const page = await (await request('/')).text();
+    const previousCard = page.split(`id="event-${before.id}"`)[1]!.split('</li>')[0]!;
+    expect(previousCard).toContain('18 begs');
+    expect(await (await request(`/resets/${before.id}`)).text()).toContain('18 begs');
+    const filtered = await (await request('/?window=weekly')).text();
+    expect(filtered).not.toContain('data-role="beg"');
+    expect(filtered).toContain('18 begs');
+    __setContentForTests(snapshotFor([before, { ...after, revision: 2 }]));
+    expect((await json<{ count: number }>('/api/v1/reactions')).body.count).toBe(1);
+    __setContentForTests(snapshotFor([makeEvent({ id: 'older-history', at: '2026-08-01T12:00:00Z' }), before, after]));
+    expect((await json<{ count: number }>('/api/v1/reactions')).body.count).toBe(1);
+  });
+
   it('starts at zero, accepts one reaction per identity, and persists across refresh', async () => {
     expect((await json<{ count: number }>('/api/v1/reactions')).body.count).toBe(0);
     const first = await request('/api/v1/reactions/beg', { method: 'POST' });

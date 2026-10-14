@@ -2,7 +2,7 @@
 // and on the private publication endpoint.
 
 import { z } from 'zod';
-import { LOCALES, type Perk, type ResearchCandidate, type ResetEvent, type ReviewState, type Sponsor, type SourceAccount } from './types';
+import { LOCALES, type Perk, type ResearchCandidate, type ResetEvent, type ReviewState, type SiteNotice, type Sponsor, type SourceAccount } from './types';
 
 const isoDateTime = z.iso.datetime({ message: 'must be an ISO 8601 UTC timestamp ending in Z' });
 const isoDate = z.iso.date({ message: 'must be a YYYY-MM-DD date' });
@@ -202,11 +202,26 @@ export const researchCandidateSchema = z.object({
 
 export const reviewStateSchema = z.object({ lastSourceReviewAt: isoDateTime, note: z.string().max(500) });
 
+const noticeTextSchema = z.object({ title: z.string().min(1).max(120), summary: z.string().min(1).max(700) });
+export const siteNoticeSchema = noticeTextSchema.extend({
+  id: z.string().regex(/^[a-z0-9][a-z0-9-]{2,60}$/),
+  active: z.boolean(),
+  startsAt: isoDateTime,
+  displayUntil: isoDateTime,
+  sourceType: z.enum(['community', 'official']).optional(),
+  actionLabel: z.enum(['account', 'projects']).optional(),
+  sourceUrl: httpsUrl,
+  actionUrl: httpsUrl.refine((u) => hostIn(u, OFFICIAL_PERK_HOSTS), { message: 'notice actions must link to an official Claude property' }),
+  guideUrl: httpsUrl.refine((u) => hostIn(u, OFFICIAL_PERK_HOSTS), { message: 'notice guides must link to an official Claude property' }).optional(),
+  translations: z.object({ 'zh-CN': noticeTextSchema, 'zh-TW': noticeTextSchema, ja: noticeTextSchema, ko: noticeTextSchema }),
+}).refine((n) => Date.parse(n.displayUntil) > Date.parse(n.startsAt), { message: 'displayUntil must follow startsAt' });
+
 export interface RawContent {
   events: unknown;
   sources: unknown;
   sponsors: unknown;
   perks: unknown;
+  notices?: unknown;
   research: unknown;
   review: unknown;
 }
@@ -216,6 +231,7 @@ export interface ValidatedContent {
   sources: SourceAccount[];
   sponsors: Sponsor[];
   perks: Perk[];
+  notices: SiteNotice[];
   research: ResearchCandidate[];
   review: ReviewState;
 }
@@ -235,6 +251,7 @@ export function validateContent(raw: RawContent): ValidationResult {
   const sources = z.array(sourceAccountSchema).safeParse(raw.sources);
   const sponsors = z.array(sponsorSchema).safeParse(raw.sponsors);
   const perks = z.array(perkSchema).safeParse(raw.perks);
+  const notices = z.array(siteNoticeSchema).safeParse(raw.notices ?? []);
   const research = z.array(researchCandidateSchema).safeParse(raw.research);
   const review = reviewStateSchema.safeParse(raw.review);
 
@@ -242,9 +259,10 @@ export function validateContent(raw: RawContent): ValidationResult {
   if (!sources.success) errors.push(...issuesToStrings('sources.json', sources.error));
   if (!sponsors.success) errors.push(...issuesToStrings('sponsors.json', sponsors.error));
   if (!perks.success) errors.push(...issuesToStrings('perks.json', perks.error));
+  if (!notices.success) errors.push(...issuesToStrings('notices.json', notices.error));
   if (!research.success) errors.push(...issuesToStrings('research-queue.json', research.error));
   if (!review.success) errors.push(...issuesToStrings('review.json', review.error));
-  if (!events.success || !sources.success || !sponsors.success || !perks.success || !research.success || !review.success) {
+  if (!events.success || !sources.success || !sponsors.success || !perks.success || !notices.success || !research.success || !review.success) {
     return { ok: false, errors, warnings };
   }
 
@@ -271,6 +289,11 @@ export function validateContent(raw: RawContent): ValidationResult {
     seenSlugs.add(s.slug);
   }
   const seenPerks = new Set<string>();
+  const seenNotices = new Set<string>();
+  for (const n of notices.data) {
+    if (seenNotices.has(n.id)) errors.push(`notices.json: duplicate id ${n.id}`);
+    seenNotices.add(n.id);
+  }
   for (const p of perks.data) {
     if (seenPerks.has(p.id)) errors.push(`perks.json: duplicate id ${p.id}`);
     seenPerks.add(p.id);
@@ -294,6 +317,7 @@ export function validateContent(raw: RawContent): ValidationResult {
       sources: sources.data as SourceAccount[],
       sponsors: sponsors.data as Sponsor[],
       perks: perks.data as Perk[],
+      notices: notices.data as SiteNotice[],
       research: research.data as ResearchCandidate[],
       review: review.data as ReviewState,
     },

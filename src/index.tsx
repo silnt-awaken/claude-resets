@@ -3,13 +3,13 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { buildCalendar } from './domain/calendar';
-import { findEvent, loadContent, openPerks, otherAnnouncements, publishedEvents, sortEventsDesc, withdrawnResets } from './domain/content';
-import { filtersToQuery, parseFilters } from './domain/filters';
+import { findEvent, loadContent, openPerks, otherAnnouncements, publishedEvents, resetBoard, sortEventsDesc, withdrawnResets } from './domain/content';
+import { applyFilters, filtersToQuery, parseFilters } from './domain/filters';
 import { computeStatus } from './domain/service';
 import { siteConfig, type Env } from './env';
 import { isLocale, stripLocale, type Locale } from './i18n';
 import { drainPushJobs } from './push/delivery';
-import { readCount } from './reactions';
+import { currentReactionEventId, readReactionState } from './reactions';
 import { admin } from './routes/admin';
 import { api } from './routes/api';
 import { feeds } from './routes/feeds';
@@ -25,6 +25,8 @@ import { HomePage, type HomeModel } from './views/home';
 import { makeContext, type PageContext } from './views/layout';
 import { AboutPage, NotFoundPage, PrivacyPage, ResetPage, SourcesPage, SupportPage } from './views/pages';
 import { PerksPage } from './views/perks';
+import { telegramWebhook } from './routes/telegram';
+import { drainTelegram } from './telegram/delivery';
 
 type App = Hono<{ Bindings: Env }>;
 type Ctx = Context<{ Bindings: Env }>;
@@ -84,6 +86,7 @@ app.route('/admin/goal', goalAdmin);
 app.route('/api', api);
 app.route('/mcp', mcp);
 app.route('/admin', admin);
+app.route('/telegram', telegramWebhook);
 app.route('/', feeds);
 app.route('/', meta);
 
@@ -118,13 +121,13 @@ function page(path: string, handler: (c: Ctx, locale: Locale) => Promise<Respons
   }
 }
 
-async function safeBegCount(c: Ctx): Promise<number | null> {
+async function safeBegState(c: Ctx, eventId: string | null): Promise<{ eventId: string | null; count: number | null; totals: Record<string, number> }> {
   try {
-    if (!c.env.DB) return null;
-    return await readCount(c.env.DB);
+    if (!c.env.DB) return { eventId, count: null, totals: {} };
+    return await readReactionState(c.env.DB, eventId);
   } catch (err) {
     console.error('beg count unavailable', err);
-    return null;
+    return { eventId, count: null, totals: {} };
   }
 }
 
@@ -134,26 +137,29 @@ page('/', async (c, locale) => {
   const ctx = pageContext(c, locale, '/', query);
   const content = ctx.content;
   const status = computeStatus(content, filters, ctx.now);
+  const board = applyFilters(resetBoard(content.events, ctx.now), filters);
+  const begs = await safeBegState(c, currentReactionEventId(content, ctx.now));
   const order = { primary: 0, additional: 1, context: 2, optional: 3 } as const;
   const model: HomeModel = {
     filters,
-    filtered: status.filtered,
+    filtered: board,
     stats: status.stats,
-    calendar: buildCalendar(status.filtered, ctx.now, content.coverageStart),
+    calendar: buildCalendar(board, ctx.now, content.coverageStart),
     announced: status.announced ? [status.announced] : [],
-    offers: status.offers,
     perks: openPerks(content.perks, ctx.now),
-    others: sortEventsDesc(otherAnnouncements(content.events)),
+    others: sortEventsDesc(otherAnnouncements(content.events).filter((e) => !e.resetOffer)),
     withdrawn: sortEventsDesc(withdrawnResets(content.events)),
     previewSources: content.sources.filter((s) => s.priority === 'primary' || s.priority === 'additional').sort((a, b) => order[a.priority] - order[b.priority]),
     sourceById: new Map(content.sources.map((s) => [s.id, s])),
-    begCount: await safeBegCount(c),
+    begCount: begs.count,
+    begEventId: begs.eventId,
+    begTotals: begs.totals,
     goal: await goalStatus(c.env, ctx.now),
   };
   const html = (<HomePage ctx={ctx} model={model} />).toString();
   const minute = Math.floor(ctx.now.getTime() / 60_000);
   const goalSeed = model.goal.round ? `${model.goal.round.status}:${model.goal.round.raised_usd}:${model.goal.round.contributions}` : 'none';
-  return htmlPage(c, ctx, html, `home:${locale}:${content.revision}:${query}:${minute}:${model.begCount}:${goalSeed}`, model.goal.enabled ? 20 : 60);
+  return htmlPage(c, ctx, html, `home:${locale}:${content.revision}:${query}:${minute}:${JSON.stringify(model.begTotals)}:${goalSeed}`, model.goal.enabled ? 20 : 60);
 });
 
 page('/goal', async (c, locale) => {
@@ -184,7 +190,7 @@ page('/privacy', (c, locale) => {
   const ctx = pageContext(c, locale, '/privacy');
   return htmlPage(c, ctx, (<PrivacyPage ctx={ctx} />).toString(), `privacy:${locale}:${ctx.content.revision}`, 300);
 });
-page('/resets/:id', (c, locale) => {
+page('/resets/:id', async (c, locale) => {
   const id = c.req.param('id');
   const content = loadContent();
   const e = id ? findEvent(publishedEvents(content.events), id) : undefined;
@@ -192,7 +198,9 @@ page('/resets/:id', (c, locale) => {
   const ctx = pageContext(c, locale, `/resets/${e.id}`);
   const related = (e.relatedEventIds ?? []).map((rid) => findEvent(publishedEvents(content.events), rid)).filter((x): x is NonNullable<typeof x> => !!x);
   const sourceById = new Map(content.sources.map((s) => [s.id, s]));
-  return htmlPage(c, ctx, (<ResetPage ctx={ctx} e={e} related={related} sourceById={sourceById} />).toString(), `reset:${locale}:${e.id}:${content.revision}:${ctx.now.toISOString().slice(0, 10)}`, 300);
+  const begs = await safeBegState(c, currentReactionEventId(content, ctx.now));
+  const begCount = begs.totals[e.id];
+  return htmlPage(c, ctx, (<ResetPage ctx={ctx} e={e} related={related} sourceById={sourceById} begCount={begCount} />).toString(), `reset:${locale}:${e.id}:${content.revision}:${ctx.now.toISOString().slice(0, 10)}:${begCount}`, 60);
 });
 page('/api/docs', (c, locale) => {
   const ctx = pageContext(c, locale, '/api/docs');
@@ -229,6 +237,7 @@ export { app };
 export default {
   fetch: app.fetch,
   async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(drainTelegram(env).then((r) => console.log('telegram drain', JSON.stringify(r))).catch(() => console.error('telegram drain failed')));
     ctx.waitUntil(
       drainPushJobs(env, { limit: 50 })
         .then((r) => console.log('push drain', JSON.stringify(r)))

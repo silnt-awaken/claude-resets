@@ -1,7 +1,7 @@
 import type { FC } from 'hono/jsx';
 import type { EventSource, ResetEvent, SourceAccount } from '../domain/types';
 import { eventInstant } from '../domain/content';
-import { formatDate, formatRelative, formatRelativeDays, formatUtcDateTime, interpolate, localizePath, type Dict, type Locale } from '../i18n';
+import { formatDate, formatNumber, formatRelative, formatRelativeDays, formatUtcDateTime, interpolate, localizePath, type Dict, type Locale } from '../i18n';
 import type { PageContext } from './layout';
 import { ArrowIcon } from './icons';
 
@@ -90,13 +90,13 @@ export const RelativeTime: FC<{ e: ResetEvent; locale: Locale; now: Date; t: Dic
   return <span class={cls ?? 'time-pill'}>{interpolate(t.time.approx, { rel: formatRelativeDays(e.time.announcedOn ?? '', now, locale) })}</span>;
 };
 
-export const ScopeChips: FC<{ e: ResetEvent; t: Dict }> = ({ e, t }) => (
+export const ScopeChips: FC<{ e: ResetEvent; t: Dict; hideUnknownWindow?: boolean }> = ({ e, t, hideUnknownWindow }) => (
   <>
     <span class={`chip ${e.audience.scope === 'broad' ? 'chip--sun' : e.audience.scope === 'limited' ? 'chip--peach' : 'chip--muted'}`}>
       {e.audience.scope === 'broad' ? t.chips.broad : e.audience.scope === 'limited' ? t.chips.limited : t.chips.unspecifiedAudience}
     </span>
     <span class="chip">{planChipLabel(e, t)}</span>
-    {e.windows.map((w) => (
+    {e.windows.filter((w) => !hideUnknownWindow || w !== 'unspecified').map((w) => (
       <span class={`chip ${w === 'unspecified' ? 'chip--muted' : 'chip--sky'}`}>{t.chips[w]}</span>
     ))}
   </>
@@ -104,7 +104,7 @@ export const ScopeChips: FC<{ e: ResetEvent; t: Dict }> = ({ e, t }) => (
 
 export const StatusChips: FC<{ e: ResetEvent; t: Dict }> = ({ e, t }) => (
   <>
-    {e.kind !== 'usage_reset' ? <span class="chip chip--rose">{t.kinds[e.kind]}</span> : null}
+    {e.resetOffer ? <span class="chip chip--sun">{t.resetOffer.label}</span> : e.kind === 'usage_reset' && e.eventStatus === 'confirmed' ? <span class="chip chip--mint">{t.resetOffer.applied}</span> : e.kind !== 'usage_reset' ? <span class="chip chip--rose">{t.kinds[e.kind]}</span> : null}
     {e.eventStatus === 'announced' ? <span class="chip chip--sky">{t.statuses.announced}</span> : null}
     {e.eventStatus === 'retracted' ? <span class="chip chip--accent">{t.statuses.retracted}</span> : null}
     {e.eventStatus === 'cancelled' ? <span class="chip chip--accent">{t.statuses.cancelled}</span> : null}
@@ -112,7 +112,11 @@ export const StatusChips: FC<{ e: ResetEvent; t: Dict }> = ({ e, t }) => (
   </>
 );
 
-export const LogItem: FC<{ ctx: PageContext; e: ResetEvent; sourceById: Map<string, SourceAccount>; hidden?: boolean }> = ({ ctx, e, sourceById, hidden }) => {
+export const BegTotal: FC<{ ctx: PageContext; eventId: string; count?: number }> = ({ ctx, eventId, count }) => typeof count === 'number' ? (
+  <span class="chip chip--peach" data-role="beg-total" data-beg-event-id={eventId} title={ctx.t.beg.totalHint}>🙏 {interpolate(ctx.t.beg.total, { count: formatNumber(count, ctx.locale) })}</span>
+) : null;
+
+export const LogItem: FC<{ ctx: PageContext; e: ResetEvent; sourceById: Map<string, SourceAccount>; hidden?: boolean; begCount?: number }> = ({ ctx, e, sourceById, hidden, begCount }) => {
   const { t, locale, now } = ctx;
   const src = primarySource(e);
   const account = sourceById.get(src.sourceId);
@@ -148,13 +152,16 @@ export const LogItem: FC<{ ctx: PageContext; e: ResetEvent; sourceById: Map<stri
           </blockquote>
         ) : null}
         <div class="log-chips">
-          <ScopeChips e={e} t={t} />
           <StatusChips e={e} t={t} />
+          <BegTotal ctx={ctx} eventId={e.id} count={begCount} />
+          <ScopeChips e={e} t={t} />
+          {e.resetOffer ? <span class="chip">{interpolate(now.toISOString().slice(0, 10) > e.resetOffer.expiresOn ? t.resetOffer.expired : t.resetOffer.expires, { date: formatDate(e.resetOffer.expiresOn, locale) })}</span> : null}
         </div>
         <div class="log-links">
           <a href={src.url} target="_blank" rel="noopener noreferrer">
-            {t.archive.viewOnX} <ArrowIcon />
+            {src.kind === 'web_page' ? t.hero.viewAnnouncement : t.archive.viewOnX} <ArrowIcon />
           </a>
+          {e.resetOffer && e.eventStatus === 'confirmed' && now.toISOString().slice(0, 10) <= e.resetOffer.expiresOn ? <a href="https://claude.ai/settings/usage" target="_blank" rel="noopener noreferrer">{t.hero.checkUsage} <ArrowIcon /></a> : null}
           {relays.map((r) => (
             <a href={r.url} target="_blank" rel="noopener noreferrer">
               {t.archive.relay}: @{r.handle}

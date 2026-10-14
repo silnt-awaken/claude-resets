@@ -1,29 +1,28 @@
 import type { FC } from 'hono/jsx';
 import type { CalendarGrid } from '../domain/calendar';
 import { AUDIENCE_FILTERS, WINDOW_FILTERS, filtersToQuery, isDefaultFilters, type Filters } from '../domain/filters';
-import { formatDays, type Stats } from '../domain/stats';
+import { computeStats, formatDays, type Stats } from '../domain/stats';
 import type { Perk, ResetEvent, SourceAccount } from '../domain/types';
 import { formatDate, formatNumber, formatRelativeDays, formatUtcDateTime, interpolate, localizePath } from '../i18n';
-import { AbsoluteTime, LogItem, RelativeTime, ScopeChips, SourceCard, localizedSummary, localizedTitle, primarySource } from './components';
+import { AbsoluteTime, BegTotal, LogItem, RelativeTime, ScopeChips, StatusChips, SourceCard, localizedSummary, localizedTitle, primarySource } from './components';
 import { ArrowIcon, BellIcon, CupIcon, DownIcon, RssIcon, SendIcon, UpIcon } from './icons';
 import { Layout, type PageContext } from './layout';
 import { GoalCard } from './goal';
 import type { GoalStatus } from '../routes/goal';
-import { ResetOfferCard } from './reset-offer';
 import { PerkFlag, PerksSection } from './perks';
 import { AdSlot } from './ads';
+import { NoticeStrip } from './notices';
 
 export const CHECK_USAGE_URL = 'https://claude.ai/settings/usage';
 export const USAGE_HELP_URL = 'https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work';
 
 export interface HomeModel {
   filters: Filters;
-  /** Qualifying resets that match the filters, newest first. */
+  /** Applied and banked resets that match the filters, newest first. */
   filtered: ResetEvent[];
   stats: Stats;
   calendar: CalendarGrid;
   announced: ResetEvent[];
-  offers: ResetEvent[];
   /** Official perks still open to claim, soonest deadline first. */
   perks: Perk[];
   others: ResetEvent[];
@@ -31,6 +30,8 @@ export interface HomeModel {
   previewSources: SourceAccount[];
   sourceById: Map<string, SourceAccount>;
   begCount: number | null;
+  begEventId: string | null;
+  begTotals: Record<string, number>;
   goal: GoalStatus;
 }
 
@@ -54,17 +55,14 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
           {t.hero.intro} <a href={localizePath(locale, '/sources')}>{t.hero.introSources}</a>.
         </p>
         <Actions ctx={ctx} />
+        <NoticeStrip ctx={ctx} />
         <PerkFlag ctx={ctx} perks={model.perks} />
-        {model.offers.map((e) => <ResetOfferCard ctx={ctx} e={e} />)}
         <Upcoming ctx={ctx} events={model.announced} />
         <HeroCard ctx={ctx} model={model} />
       </section>
 
-      <PerksSection ctx={ctx} perks={model.perks} />
-
       <FiltersForm ctx={ctx} filters={model.filters} />
-      <StatsTiles ctx={ctx} stats={model.stats} filters={model.filters} />
-      <GoalCard ctx={ctx} status={model.goal} />
+      <StatsTiles ctx={ctx} stats={model.stats} total={model.filtered.length} filters={model.filters} />
       <AdSlot ctx={ctx} placement="home-mid" />
 
       <section class="section" aria-labelledby="graph-heading">
@@ -87,6 +85,9 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
 
       <Archive ctx={ctx} model={model} />
 
+      <GoalCard ctx={ctx} status={model.goal} />
+      <PerksSection ctx={ctx} perks={model.perks} />
+
       {model.withdrawn.length > 0 ? (
         <section class="section" aria-labelledby="withdrawn-heading">
           <div class="section-head">
@@ -95,7 +96,7 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
           </div>
           <ol class="log">
             {model.withdrawn.map((e) => (
-              <LogItem ctx={ctx} e={e} sourceById={model.sourceById} />
+              <LogItem ctx={ctx} e={e} sourceById={model.sourceById} begCount={model.begTotals[e.id]} />
             ))}
           </ol>
         </section>
@@ -240,24 +241,27 @@ const Upcoming: FC<{ ctx: PageContext; events: ResetEvent[] }> = ({ ctx, events 
 
 const HeroCard: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, model }) => {
   const { t, locale, cfg, now } = ctx;
-  const { stats, filters } = model;
-  const latest = stats.latest;
+  const { filters } = model;
+  const latest = computeStats(model.filtered, now).latest;
+  const selectedEvent = latest.kind === 'exact' || latest.kind === 'date' ? latest.event : null;
+  const active = !!selectedEvent && selectedEvent.id === model.begEventId;
   const cooldown = String(cfg.reactionCooldownHours);
-  const beg = (
+  const beg = active ? (
     <div class="beg-wrap">
-      <button class="beg" type="button" data-role="beg" aria-describedby="beg-help" title={t.beg.title}>
+      <button class="beg" type="button" data-role="beg" data-event-id={model.begEventId!} aria-describedby="beg-help" title={t.beg.title}>
         <span aria-hidden="true">🙏</span>
         <span>{t.beg.label}</span>
         <span class="beg-count" data-role="beg-count" aria-label={model.begCount == null ? t.beg.unavailable : interpolate(t.beg.count, { count: model.begCount })}>
           {model.begCount == null ? '—' : formatNumber(model.begCount, locale)}
         </span>
       </button>
-      <span class="beg-help" id="beg-help">
-        {interpolate(t.beg.help, { hours: cooldown })}
-      </span>
+      <details class="beg-explanation">
+        <summary>{t.beg.title}</summary>
+        <p class="beg-help" id="beg-help">{interpolate(t.beg.help, { hours: cooldown })}</p>
+      </details>
       <span class="visually-hidden" data-role="beg-status" role="status" aria-live="polite"></span>
     </div>
-  );
+  ) : selectedEvent ? <BegTotal ctx={ctx} eventId={selectedEvent.id} count={model.begTotals[selectedEvent.id]} /> : null;
 
   if (latest.kind === 'none') {
     return (
@@ -298,38 +302,41 @@ const HeroCard: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, model }) =>
   const relays = e.sources.filter((s) => s.role === 'relay');
   return (
     <div class="hero-card" data-role="hero" data-event-id={e.id}>
-      <span class="hero-label mono">{t.hero.latestLabel}</span>
-      <div>
-        {latest.kind === 'exact' ? (
-          <RelativeTime e={e} locale={locale} now={now} t={t} class="hero-figure" />
-        ) : (
-          <span class="hero-figure hero-figure--small">{interpolate(t.time.approx, { rel: formatRelativeDays(latest.day, now, locale) })}</span>
-        )}
+      <div class="hero-topline">
+        <span class="hero-label mono">{t.hero.latestLabel}</span>
+        <StatusChips e={e} t={t} />
       </div>
-      <div class="hero-row">
-        <p class="hero-sub">
-          {latest.kind === 'exact' ? <AbsoluteTime e={e} locale={locale} t={t} /> : interpolate(t.hero.dateOnly, { date: formatDate(latest.day, locale) })}
-        </p>
-        {beg}
-      </div>
-      <h2 style="margin-top:14px;font-size:20px">
+      <h2 class="hero-title">
         <a href={localizePath(locale, `/resets/${e.id}`)}>{localizedTitle(e, locale)}</a>
       </h2>
+      <div class="hero-timing" title={t.hero.ageNote}>
+        {latest.kind === 'exact' ? (
+          <RelativeTime e={e} locale={locale} now={now} t={t} class="hero-age" />
+        ) : (
+          <span class="hero-age">{interpolate(t.time.approx, { rel: formatRelativeDays(latest.day, now, locale) })}</span>
+        )}
+        <p class="hero-sub">
+          <AbsoluteTime e={e} locale={locale} t={t} />
+        </p>
+      </div>
+      <p class="hero-summary">{e.resetOffer ? t.resetOffer.note : localizedSummary(e, locale)}</p>
       <div class="hero-meta">
-        <ScopeChips e={e} t={t} />
+        <ScopeChips e={e} t={t} hideUnknownWindow />
+        {e.resetOffer ? <span class="chip">{interpolate(now.toISOString().slice(0, 10) > e.resetOffer.expiresOn ? t.resetOffer.expired : t.resetOffer.expires, { date: formatDate(e.resetOffer.expiresOn, locale) })}</span> : null}
       </div>
       <p class="hero-note">
         {t.hero.source}: @{src.handle} · {src.displayName}
-        {relays.length ? ` · ${t.hero.relayedBy} ${relays.map((r) => `@${r.handle}`).join(', ')}` : ''}. {t.hero.ageNote}
+        {relays.length ? ` · ${t.hero.relayedBy} ${relays.map((r) => `@${r.handle}`).join(', ')}` : ''}
       </p>
       <div class="hero-links">
-        <a class="btn btn--sun" href={src.url} target="_blank" rel="noopener noreferrer">
-          {t.hero.viewAnnouncement} <ArrowIcon />
-        </a>
-        <a class="btn" href={CHECK_USAGE_URL} target="_blank" rel="noopener noreferrer">
+        <a class="btn btn--sun" href={CHECK_USAGE_URL} target="_blank" rel="noopener noreferrer">
           {t.hero.checkUsage} <ArrowIcon />
         </a>
+        <a class="btn" href={src.url} target="_blank" rel="noopener noreferrer">
+          {t.hero.viewAnnouncement} <ArrowIcon />
+        </a>
       </div>
+      <div class="hero-footer">{beg}</div>
     </div>
   );
 };
@@ -371,7 +378,7 @@ const FiltersForm: FC<{ ctx: PageContext; filters: Filters }> = ({ ctx, filters 
   );
 };
 
-const StatsTiles: FC<{ ctx: PageContext; stats: Stats; filters: Filters }> = ({ ctx, stats, filters }) => {
+const StatsTiles: FC<{ ctx: PageContext; stats: Stats; total: number; filters: Filters }> = ({ ctx, stats, total, filters }) => {
   const { t, locale } = ctx;
   const avg = stats.averageIntervalDays == null ? null : interpolate(t.stats.days, { n: formatDays(stats.averageIntervalDays) });
   const longest = stats.longestGapDays == null ? null : interpolate(t.stats.days, { n: formatDays(stats.longestGapDays) });
@@ -383,7 +390,7 @@ const StatsTiles: FC<{ ctx: PageContext; stats: Stats; filters: Filters }> = ({ 
       <div class="stats" aria-describedby="stats-note">
         <div class="stat stat--sun">
           <span class="stat-label mono">{t.stats.resets}</span>
-          <span class="stat-value">{formatNumber(stats.total, locale)}</span>
+          <span class="stat-value">{formatNumber(total, locale)}</span>
         </div>
         <div class="stat stat--rose">
           <span class="stat-label mono">{t.stats.avgInterval}</span>
@@ -397,7 +404,7 @@ const StatsTiles: FC<{ ctx: PageContext; stats: Stats; filters: Filters }> = ({ 
         </div>
       </div>
       <p class="stats-note" id="stats-note">
-        {showing ? `${showing} ` : `${t.stats.scope} `}
+        {showing ? `${showing} ` : ''}{t.stats.scope}{' '}
         {stats.partialSample && stats.eligibleGaps > 0 ? `${interpolate(t.stats.partial, { eligible: stats.eligibleGaps, total: stats.totalGaps })} ` : ''}
         {interpolate(t.stats.coverage, { date: formatDate(ctx.content.coverageStart, locale) })}{' '}
         <a href={localizePath(locale, '/about')}>{t.stats.explain}</a>
@@ -468,6 +475,13 @@ const Calendar: FC<{ ctx: PageContext; grid: CalendarGrid; events: ResetEvent[] 
           {t.calendar.older}
         </span>
       </div>
+      {grid.unplaced.length > 0 ? <ul class="other-list">
+        {grid.unplaced.map((e) => <li>
+          <StatusChips e={e} t={t} />
+          <AbsoluteTime e={e} locale={locale} t={t} />
+          <a href={`#event-${e.id}`}>{localizedTitle(e, locale)}</a>
+        </li>)}
+      </ul> : null}
     </div>
   );
 };
@@ -486,7 +500,7 @@ const Archive: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, model }) => 
       {items.length === 0 ? <p class="notice">{t.archive.empty}</p> : null}
       <ol class="log" data-role="log">
         {first.map((e) => (
-          <LogItem ctx={ctx} e={e} sourceById={model.sourceById} />
+          <LogItem ctx={ctx} e={e} sourceById={model.sourceById} begCount={model.begTotals[e.id]} />
         ))}
       </ol>
       {rest.length > 0 ? (
@@ -497,7 +511,7 @@ const Archive: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, model }) => 
           <div data-role="log-extra" hidden>
             <ol class="log" style="margin-top:18px">
               {rest.map((e) => (
-                <LogItem ctx={ctx} e={e} sourceById={model.sourceById} />
+                <LogItem ctx={ctx} e={e} sourceById={model.sourceById} begCount={model.begTotals[e.id]} />
               ))}
             </ol>
           </div>

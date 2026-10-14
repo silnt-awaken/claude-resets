@@ -338,16 +338,17 @@
 
   // ---------- the card: redraw the meter from fresh figures, and keep it fresh while the page is open ----------
   var num = new Intl.NumberFormat(intl);
+  var cardUsd = new Intl.NumberFormat(intl, { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 });
   var target = parseFloat(card.getAttribute('data-target') || '0');
   function updateCard(f) {
     if (typeof f.raised_usd !== 'number') return;
     if (typeof f.target_usd === 'number') target = f.target_usd;
     var pct = target > 0 ? Math.min(100, Math.round((f.raised_usd / target) * 100)) : 0;
     var raisedEl = card.querySelector('[data-role="goal-raised"]');
-    if (raisedEl) raisedEl.textContent = t('raised', '{raised} of {target} USDC raised').replace('{raised}', num.format(Math.round(f.raised_usd))).replace('{target}', num.format(target));
+    if (raisedEl) raisedEl.textContent = t('raised', '{raised} raised of {target}').replace('{raised}', cardUsd.format(f.raised_usd)).replace('{target}', cardUsd.format(target));
     var meter = card.querySelector('.goal-meter');
     if (meter) {
-      meter.setAttribute('aria-valuenow', String(Math.round(f.raised_usd)));
+      meter.setAttribute('aria-valuenow', String(f.raised_usd));
       meter.setAttribute('aria-valuemax', String(target));
       if (raisedEl) meter.setAttribute('aria-label', raisedEl.textContent);
       var fill = meter.querySelector('.goal-meter-fill');
@@ -358,6 +359,39 @@
     log('card', f.raised_usd, '/', target, 'contributors', f.contributors);
   }
   var lastStatus = card.getAttribute('data-round-status') || 'none';
+  function updateContributors(status) {
+    if (!Array.isArray(status.contributor_list)) return;
+    var list = card.querySelector('[data-role="goal-contributors"]');
+    var empty = card.querySelector('[data-role="goal-contributors-empty"]');
+    if (!list) return;
+    list.replaceChildren();
+    status.contributor_list.forEach(function (entry, i) {
+      if (typeof entry.wallet !== 'string' || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(entry.wallet) || typeof entry.usdc !== 'number') return;
+      var li = document.createElement('li');
+      var n = document.createElement('span');
+      n.className = 'contributor-number';
+      n.setAttribute('aria-hidden', 'true');
+      n.textContent = String(i + 1);
+      var a = document.createElement('a');
+      a.href = cfg.explorer + '/account/' + entry.wallet;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.title = entry.wallet;
+      var label = document.createElement('span');
+      label.textContent = t('walletLabel', 'Wallet');
+      var wallet = document.createElement('code');
+      wallet.textContent = entry.wallet.slice(0, 6) + '…' + entry.wallet.slice(-4);
+      a.append(label, wallet);
+      var amount = document.createElement('strong');
+      amount.textContent = cardUsd.format(entry.usdc);
+      li.append(n, a, amount);
+      list.appendChild(li);
+    });
+    if (empty) {
+      empty.hidden = list.children.length > 0;
+      empty.textContent = status.contributors_available ? t('noContributors', 'No contributors in this round yet.') : t('contributorsUnavailable', 'The contributor list is temporarily unavailable.');
+    }
+  }
   function refreshCard() {
     if (document.hidden) return;
     fetch('/api/v1/goal', { headers: { accept: 'application/json' } })
@@ -367,6 +401,7 @@
       .then(function (s) {
         if (!s || !s.round) return;
         updateCard(s.round);
+        updateContributors(s);
         // A freeze or a draw changes the whole card; let the server render it.
         if (s.round.status !== lastStatus) {
           log('round status changed', lastStatus, '→', s.round.status);

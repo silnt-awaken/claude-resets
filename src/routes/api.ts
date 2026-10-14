@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { release } from '../domain/release';
 import { loadContent } from '../domain/content';
 import { parseFilters } from '../domain/filters';
 import { computeStatus, listResets, parseListOptions } from '../domain/service';
@@ -56,6 +57,12 @@ api.get('/v1/status', (c) => {
   const minute = Math.floor(now.getTime() / 60_000);
   return cachedJson(c, body, `status:${content.revision}:${filters.audience}:${filters.window}:${minute}`, 60);
 });
+
+api.get('/v1/build', (c) => c.json({
+  version_id: c.env.WORKER_VERSION?.id ?? null,
+  content_revision: loadContent().revision,
+  release,
+}, 200, { 'cache-control': 'no-store' }));
 
 api.get('/v1/resets', (c) => {
   const { content, response } = contentOr503(c);

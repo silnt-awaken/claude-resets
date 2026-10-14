@@ -2,6 +2,7 @@
 // Authenticated with CONTENT_PUBLISH_TOKEN (Bearer). Never linked from public pages.
 
 import { Hono } from 'hono';
+import { telegramAdmin } from './telegram';
 import { eventContentHash, findEvent, isQualifyingReset, loadContent } from '../domain/content';
 import { resetEventSchema } from '../domain/schema';
 import type { ResetEvent } from '../domain/types';
@@ -21,6 +22,8 @@ admin.use('*', async (c, next) => {
   if (!presented || !timingSafeEqual(presented, token)) return problem(c, 401, 'unauthorized', 'Missing or invalid publication token.');
   await next();
 });
+
+admin.route('/telegram', telegramAdmin);
 
 type Mode = 'publish' | 'backfill' | 'correct';
 type AlertPolicy = 'default' | 'none' | 'correction';

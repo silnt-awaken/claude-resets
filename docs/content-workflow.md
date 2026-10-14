@@ -1,5 +1,13 @@
 # Content workflow
 
+## Short notices
+
+Use `content/notices.json` for timely community reports or official feature announcements that do not qualify as a perk or reset. The homepage shows only the newest active notice in a collapsed, dismissible strip. Supply all five languages, an evidence link, and an official Claude action link. Use `sourceType: "official"` for a verified official announcement; omitted values retain the community report label. `actionLabel: "projects"` labels a Projects action, and optional `guideUrl` links to an official guide. Dismissal persists locally for that notice ID. Both server rendering and the client hide notices once `displayUntil` passes; future and inactive notices remain hidden.
+
+`displayUntil` is an editorial removal time, not the reported offer's deadline. If a deadline or eligibility is unconfirmed, say that explicitly and avoid a countdown. The October 8 discount report is removed at midnight Eastern (October 9, 04:00 UTC) to keep the homepage timely; the promotion's actual timezone remains unknown. Notices do not enter perks, reset statistics, feeds or push alerts. Run `npm run check`, then `npm run deploy`.
+
+The October 9 Projects notice cites the live @ClaudeDevs announcement and links to the Projects documentation. It distinguishes existing Pro/Max waitlist admissions from new applicants awaiting capacity. Its October 17, 04:00 UTC removal is editorial cleanup, not a beta-access deadline.
+
 Everything editorial is manual and local. Git holds the editorial inputs (`content/*.json`); the deployed Worker serves exactly the content bundled at deploy time; D1 holds the ledger of what was published and alerted so alerts never replay.
 
 Nothing here talks to X programmatically: you read the post, you record the facts, you copy a draft to X yourself.

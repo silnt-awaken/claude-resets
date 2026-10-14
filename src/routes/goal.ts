@@ -91,6 +91,8 @@ export interface GoalStatus {
   past_rounds: Array<{ id: number; title: string; status: string; raised_usd: number; winner: string | null; winner_wallet: string | null; draw_block: number | null; draw_hash: string | null; payout_tx: string | null; paid_at: string | null }>;
   sync: { synced_at: string | null; stale: boolean; error: string | null };
   progress: number; // 0..1
+  contributor_list: Array<{ wallet: string; usdc: number }>;
+  contributors_available: boolean;
 }
 
 function usd(units: bigint): number {
@@ -110,12 +112,17 @@ export async function goalStatus(env: Env, now: Date = new Date()): Promise<Goal
     past_rounds: [],
     sync: { synced_at: null, stale: false, error: null },
     progress: 0,
+    contributor_list: [],
+    contributors_available: false,
   };
   if (!env.DB) return status;
   try {
     const round = (await currentRound(env.DB)) ?? (await latestRound(env.DB));
     if (round) {
       const raised = await raisedUnits(env.DB, round.id);
+      const entries = await qualifyingEntries(env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets);
+      status.contributor_list = cfg.live ? entries.map((e) => ({ wallet: e.wallet, usdc: usd(e.units) })) : [];
+      status.contributors_available = cfg.live;
       status.round = {
         id: round.id,
         title: round.title,
@@ -124,7 +131,7 @@ export async function goalStatus(env: Env, now: Date = new Date()): Promise<Goal
         target_usd: round.target_usd,
         raised_usd: usd(raised),
         contributions: await contributionCount(env.DB, round.id),
-        contributors: (await qualifyingEntries(env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets)).length,
+        contributors: entries.length,
         frozen_at: round.frozen_at,
         draw_slot: round.draw_slot,
         draw_block: round.draw_block,

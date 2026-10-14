@@ -5,6 +5,7 @@ import type { ConfigVars } from './config';
 export interface Env extends ConfigVars {
   DB: D1Database;
   ASSETS: Fetcher;
+  WORKER_VERSION?: { id: string; tag: string; timestamp: string };
 }
 
 export { siteConfig, readiness, httpsUrlOrNull, supportProviderFor } from './config';

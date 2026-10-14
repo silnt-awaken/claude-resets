@@ -1,5 +1,19 @@
 # X drafts
 
+## October 8, 2026: banked reset and community begs
+
+Status: DRAFTED, not posted. Audience: Claude subscribers. Action: read the banked reset and tap beg on the current reset. Destination: https://clauderesets.com. Asset: the real reset-card screenshot supplied by Mike. The live reaction API showed 18 before this update; this is a reaction count, not a unique-person count, and its legacy history was not timestamped per reset. Recheck the count before posting if it changes.
+
+About two weeks since the last reset on the board. It was banked, so you choose when to use it.
+
+18 begs on the board so far 🙏
+
+Appreciate the extra room? Hit “beg” for the next one.
+
+https://clauderesets.com
+
+---
+
 All three are DRAFTED, not posted. Audience: Claude subscribers. Required asset: none. Destination: https://clauderesets.com. Next step: read the sourced offer, then check Claude Usage.
 
 ## 1. Recommended: control when you reset

@@ -1,0 +1,61 @@
+[
+  {
+    "id": "2026-10-08-max-20x-discount-report",
+    "active": true,
+    "startsAt": "2026-10-08T00:00:00Z",
+    "displayUntil": "2026-10-09T04:00:00Z",
+    "title": "Max 20x: 50% off for one month? Check your account",
+    "summary": "A screenshot shared by @JustLingonberry on October 8 shows 50% off Max 20x for one month. This is a community report; eligibility has not been independently confirmed. The poster says it ends at midnight on October 8, but the timezone is unknown. Check your Claude account for availability, the exact deadline and the renewal price before subscribing. Standard web pricing is $200/month.",
+    "sourceUrl": "https://pbs.twimg.com/media/HUIAiCSacAAeYbB.png",
+    "actionUrl": "https://claude.ai/settings/billing",
+    "translations": {
+      "zh-CN": {
+        "title": "Max 20x 一个月五折？查看你的账户",
+        "summary": "@JustLingonberry 于 10 月 8 日分享的截图显示，Max 20x 可享一个月五折优惠。这是社区报告，适用资格尚未得到独立确认。发帖者称优惠于 10 月 8 日午夜结束，但时区不明。订阅前请在 Claude 账户中确认是否适用、准确截止时间及续费价格。网页端标准价格为每月 200 美元。"
+      },
+      "zh-TW": {
+        "title": "Max 20x 一個月五折？查看你的帳戶",
+        "summary": "@JustLingonberry 於 10 月 8 日分享的截圖顯示，Max 20x 可享一個月五折優惠。這是社群回報，適用資格尚未獲得獨立確認。發文者稱優惠於 10 月 8 日午夜結束，但時區不明。訂閱前請在 Claude 帳戶中確認是否適用、確切截止時間及續訂價格。網頁版標準價格為每月 200 美元。"
+      },
+      "ja": {
+        "title": "Max 20x が1か月半額？アカウントを確認",
+        "summary": "10月8日に @JustLingonberry が共有したスクリーンショットには、Max 20x が1か月50%オフと表示されています。コミュニティからの報告で、対象条件は独立に確認できていません。投稿者は10月8日の深夜に終了すると述べていますが、タイムゾーンは不明です。契約前にClaudeのアカウントで対象条件、正確な期限、更新時の料金を確認してください。ウェブ版の通常料金は月額200ドルです。"
+      },
+      "ko": {
+        "title": "Max 20x 한 달 50% 할인? 계정을 확인하세요",
+        "summary": "@JustLingonberry가 10월 8일 공유한 스크린샷에는 Max 20x 한 달 50% 할인이 표시되어 있습니다. 커뮤니티 제보이며 대상 조건은 독립적으로 확인되지 않았습니다. 게시자는 10월 8일 자정에 끝난다고 했지만 시간대는 불명확합니다. 구독 전 Claude 계정에서 적용 여부, 정확한 마감 시간과 갱신 가격을 확인하세요. 웹 기본 요금은 월 200달러입니다."
+      }
+    }
+  },
+  {
+    "id": "2026-10-09-claude-code-projects-waitlist",
+    "active": true,
+    "startsAt": "2026-10-09T18:11:50Z",
+    "displayUntil": "2026-10-17T04:00:00Z",
+    "sourceType": "official",
+    "actionLabel": "projects",
+    "title": "Claude Code Projects: Pro and Max waitlist cleared",
+    "summary": "On October 9, @ClaudeDevs announced access for every Pro and Max subscriber already on the Claude Code Projects waitlist. Projects lets Claude coordinate related work in one ongoing conversation, with tasks running in parallel threads. Find Projects at claude.ai/code or in the desktop app's Code tab. New applicants can still join the waitlist; access opens as capacity allows. The feature remains in beta, and parallel threads draw from your existing plan usage.",
+    "sourceUrl": "https://x.com/ClaudeDevs/status/2108621476538781878",
+    "actionUrl": "https://claude.ai/code/projects/browse",
+    "guideUrl": "https://code.claude.com/docs/en/claude-projects",
+    "translations": {
+      "zh-CN": {
+        "title": "Claude Code Projects：Pro 和 Max 等候名单已获准加入",
+        "summary": "10 月 9 日，@ClaudeDevs 宣布，已在 Claude Code Projects 等候名单上的所有 Pro 和 Max 订阅者均已获准加入。Projects 让 Claude 在一段持续的对话中协调相关工作，各项任务在独立线程中并行运行。你可以在 claude.ai/code 或桌面应用的 Code 标签页中找到 Projects。新申请者仍可加入等候名单，后续将根据容量开放访问。该功能仍处于测试阶段，并行线程会使用你现有套餐的用量额度。"
+      },
+      "zh-TW": {
+        "title": "Claude Code Projects：Pro 與 Max 等候名單已獲准加入",
+        "summary": "10 月 9 日，@ClaudeDevs 宣布，已在 Claude Code Projects 等候名單上的所有 Pro 與 Max 訂閱者皆已獲准加入。Projects 讓 Claude 在一段持續的對話中協調相關工作，各項任務在獨立執行緒中並行運作。你可以在 claude.ai/code 或桌面應用程式的 Code 分頁中找到 Projects。新申請者仍可加入等候名單，後續將依容量開放存取。此功能仍處於測試階段，並行執行緒會使用你現有方案的用量額度。"
+      },
+      "ja": {
+        "title": "Claude Code Projects：Pro・Maxの待機リスト全員にアクセスを開放",
+        "summary": "10月9日、@ClaudeDevsは、Claude Code Projectsの待機リストにすでに登録していたPro・Max契約者全員にアクセスを開放したと発表しました。Projectsでは、Claudeが一つの継続的な会話で関連する作業を調整し、各タスクを別々のスレッドで並行実行します。claude.ai/codeまたはデスクトップアプリのCodeタブからProjectsを開けます。新規申込者は引き続き待機リストに登録でき、利用枠に応じてアクセスが順次開放されます。機能は引き続きベータ版で、並行スレッドは現在のプランの利用枠を消費します。"
+      },
+      "ko": {
+        "title": "Claude Code Projects: Pro·Max 대기 명단 전원에게 접근 허용",
+        "summary": "10월 9일 @ClaudeDevs는 Claude Code Projects 대기 명단에 이미 등록한 모든 Pro 및 Max 구독자에게 접근을 허용했다고 발표했습니다. Projects에서는 Claude가 하나의 지속적인 대화에서 관련 작업을 조율하고, 각 작업을 별도 스레드에서 병렬로 실행합니다. claude.ai/code 또는 데스크톱 앱의 Code 탭에서 Projects를 찾을 수 있습니다. 신규 신청자는 계속 대기 명단에 등록할 수 있으며, 수용 여력에 따라 접근이 허용됩니다. 기능은 여전히 베타 단계이며 병렬 스레드는 기존 요금제의 사용량 한도를 소모합니다."
+      }
+    }
+  }
+]

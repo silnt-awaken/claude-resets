@@ -1,7 +1,7 @@
 import type { FC } from 'hono/jsx';
 import type { ResetEvent, SourceAccount } from '../domain/types';
 import { formatDate, formatUtcDateTime, interpolate, localizePath } from '../i18n';
-import { AbsoluteTime, Avatar, RelativeTime, ScopeChips, SourceCard, localizedSummary, localizedTitle, planChipLabel } from './components';
+import { AbsoluteTime, Avatar, BegTotal, RelativeTime, ScopeChips, SourceCard, localizedSummary, localizedTitle, planChipLabel } from './components';
 import { ArrowIcon, CupIcon } from './icons';
 import { Layout, type PageContext } from './layout';
 import { ResetOfferCard } from './reset-offer';
@@ -222,7 +222,7 @@ export const NotFoundPage: FC<{ ctx: PageContext }> = ({ ctx }) => {
   );
 };
 
-export const ResetPage: FC<{ ctx: PageContext; e: ResetEvent; related: ResetEvent[]; sourceById: Map<string, SourceAccount> }> = ({ ctx, e, related, sourceById }) => {
+export const ResetPage: FC<{ ctx: PageContext; e: ResetEvent; related: ResetEvent[]; sourceById: Map<string, SourceAccount>; begCount?: number }> = ({ ctx, e, related, sourceById, begCount }) => {
   const { t, locale, cfg, now } = ctx;
   const title = localizedTitle(e, locale);
   const summary = localizedSummary(e, locale);
@@ -238,6 +238,7 @@ export const ResetPage: FC<{ ctx: PageContext; e: ResetEvent; related: ResetEven
         <span class="chip chip--sun">{t.kinds[e.kind]}</span>
         <span class="chip">{t.statuses[e.eventStatus]}</span>
         <ScopeChips e={e} t={t} />
+        <BegTotal ctx={ctx} eventId={e.id} count={begCount} />
         {e.correction && e.correction.kind === 'correction' && e.eventStatus === 'confirmed' ? <span class="chip chip--mint">{t.archive.corrected}</span> : null}
       </div>
       <div class="section card">
