@@ -1957,3 +1957,4 @@ th {
 .activity-meta .icon { width: 13px; height: 13px; }
 .goal-trust { margin: 18px 0; }
 @media (max-width: 480px) { .activity-meta time { display: inline-block; } .goal-live { font-size: .8rem; } }
+.site-owner-badge { display: inline-block; padding: 2px 8px; border: 1px solid var(--ink); border-radius: 999px; background: var(--sun); color: var(--on-sun); font-size: .72rem; font-weight: 750; line-height: 1.5; white-space: nowrap; }

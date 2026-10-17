@@ -13,7 +13,7 @@ try {
   await context.addInitScript(({ signature }) => localStorage.setItem('claude-resets:pending-contribution', JSON.stringify({ signature, at: Date.now() })), { signature: signature(3) });
   let staleRequest, confirmationRequest, reads = 0, confirmations = 0;
   const transfers = [1, 2, 3].map((n) => ({ signature: signature(n), wallet, usdc: 1, sent_at: `2026-10-${String(n).padStart(2, '0')}T16:00:00.000Z`, recorded_at: `2026-10-${String(n).padStart(2, '0')}T16:01:00.000Z` }));
-  const status = (count) => ({ as_of: new Date(Date.now() + count * 10000).toISOString(), contributors_available: true, contributor_list: [{ wallet, usdc: count }], recent_contributions: transfers.slice(0, count).reverse(), round: { id: roundId, status: 'open', raised_usd: count, contributions: count, contributors: 1, target_usd: 200 } });
+  const status = (count) => ({ site_owner_wallet: wallet, as_of: new Date(Date.now() + count * 10000).toISOString(), contributors_available: true, contributor_list: [{ wallet, usdc: count }], recent_contributions: transfers.slice(0, count).reverse(), round: { id: roundId, status: 'open', raised_usd: count, contributions: count, contributors: 1, target_usd: 200 } });
   await context.route('**/*', async (route) => {
     const request = route.request(), url = new URL(request.url());
     if (url.origin !== new URL(base).origin) return route.abort();
@@ -45,6 +45,7 @@ try {
   assert.match(await page.locator('[data-role="goal-raised"]').innerText(), /\$3 raised/);
   assert.match(await page.locator('[data-role="goal-contributors"]').innerText(), /\$3/);
   assert.equal(await page.locator('[data-role="goal-activity"] li').count(), 3);
+  assert.equal(await page.locator('[data-role="site-owner-badge"]').count(), 4);
   assert.equal(await page.locator('[data-signature="' + signature(3) + '"] time').getAttribute('datetime'), transfers[2].sent_at);
   assert.match(await page.locator('[data-signature="' + signature(3) + '"] time').innerText(), /Oct 3, 2026/);
   assert.equal(await page.evaluate(() => localStorage.getItem('claude-resets:pending-contribution')), null);
@@ -67,6 +68,9 @@ try {
     await page.goto(base + (locale === 'en' ? '' : '/' + locale) + '/goal');
     const messages = await page.locator('#goal-i18n').evaluate((el) => JSON.parse(el.textContent).activity);
     assert.match(await page.locator('.goal-activity h3').innerText(), new RegExp(messages.heading));
+    if (actual.site_owner_wallet && actual.recent_contributions.some((entry) => entry.wallet === actual.site_owner_wallet)) {
+      assert.equal(await page.locator('[data-role="goal-contributors"] [data-role="site-owner-badge"]').innerText(), messages.siteOwner);
+    }
     for (const width of [360, 390, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);

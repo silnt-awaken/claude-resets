@@ -1,10 +1,9 @@
 {
-  "id": "2026-10-17-contribution-activity",
-  "title": "Dated contribution receipts and consistent confirmation updates",
+  "id": "2026-10-17-site-owner-wallet",
+  "title": "Site owner contributions clearly labeled",
   "changes": [
-    "Confirmed transfers now update the total, wallet totals and receipt history together without waiting for a cached refresh.",
-    "Added a dated, public receipt for each contribution, including repeat donations from the same wallet.",
-    "Added clear pending confirmation states, reload recovery, status checks and custody information in all five languages."
+    "The site owner's contributor wallet is clearly labeled on its total and each individual receipt.",
+    "The badge is translated into all five site languages and stays visible after live updates."
   ],
   "announce": false
 }

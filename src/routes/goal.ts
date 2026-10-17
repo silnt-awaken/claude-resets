@@ -95,6 +95,7 @@ export interface GoalStatus {
   progress: number; // 0..1
   contributor_list: Array<{ wallet: string; usdc: number }>;
   contributors_available: boolean;
+  site_owner_wallet: string | null;
   recent_contributions: Array<{ signature: string; wallet: string; usdc: number; sent_at: string | null; recorded_at: string }>;
 }
 
@@ -118,6 +119,7 @@ export async function goalStatus(env: Env, now: Date = new Date()): Promise<Goal
     progress: 0,
     contributor_list: [],
     contributors_available: false,
+    site_owner_wallet: cfg.live ? cfg.ownerWallet : null,
     recent_contributions: [],
   };
   if (!env.DB) return status;

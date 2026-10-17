@@ -32,6 +32,8 @@ export interface ConfigVars {
   GOAL_EXPLORER_URL?: string;
   /** The operator's Solana wallet that receives contributions (base58). */
   GOAL_WALLET?: string;
+  /** Public contributor address identified by the site owner, separate from the receiving treasury. */
+  GOAL_OWNER_WALLET?: string;
   /** That wallet's USDC token account (the address transfers actually land in). */
   GOAL_USDC_ACCOUNT?: string;
   GOAL_USDC_MINT?: string;
@@ -99,6 +101,7 @@ export interface GoalConfig {
   rpcUrl: string;
   explorerUrl: string;
   wallet: string | null;
+  ownerWallet: string | null;
   usdcAccount: string | null;
   usdcMint: string;
   targetUsd: number;
@@ -124,6 +127,7 @@ export function goalConfig(env: ConfigVars): GoalConfig {
     rpcUrl: rpcList.length ? rpcList.join(',') : SOLANA.rpc,
     explorerUrl: httpsUrlOrNull(env.GOAL_EXPLORER_URL)?.replace(/\/$/, '') ?? SOLANA.explorer,
     wallet,
+    ownerWallet: isSolanaAddress(env.GOAL_OWNER_WALLET?.trim()) ? env.GOAL_OWNER_WALLET!.trim() : null,
     usdcAccount,
     usdcMint,
     targetUsd: positiveNumber(env.GOAL_TARGET_USD, 200),

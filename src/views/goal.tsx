@@ -65,7 +65,7 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
           <ul class="contributor-list" data-role="goal-contributors">
             {status.contributor_list.map((entry, i) => <li>
               <span class="contributor-number" aria-hidden="true">{i + 1}</span>
-              <a href={`${explorer}/account/${entry.wallet}`} title={entry.wallet} target="_blank" rel="noopener noreferrer"><span>{t.goal.walletLabel}</span> <code>{entry.wallet.slice(0, 6)}…{entry.wallet.slice(-4)}</code> <ArrowIcon /></a>
+              <a href={`${explorer}/account/${entry.wallet}`} title={entry.wallet} target="_blank" rel="noopener noreferrer"><span class={entry.wallet === status.site_owner_wallet ? 'site-owner-badge' : undefined} data-role={entry.wallet === status.site_owner_wallet ? 'site-owner-badge' : undefined}>{entry.wallet === status.site_owner_wallet ? activity.siteOwner : t.goal.walletLabel}</span> <code>{entry.wallet.slice(0, 6)}…{entry.wallet.slice(-4)}</code> <ArrowIcon /></a>
               <strong>{money(entry.usdc)}</strong>
             </li>)}
           </ul>
@@ -75,7 +75,7 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
           <h3>{activity.heading}</h3><p class="status-line">{activity.note}</p>
           <ol class="contribution-activity" data-role="goal-activity">
             {status.recent_contributions.map((entry) => <li data-signature={entry.signature}>
-              <div class="activity-transfer"><a href={`${explorer}/account/${entry.wallet}`} title={entry.wallet} target="_blank" rel="noopener noreferrer"><span>{t.goal.walletLabel}</span> <code>{entry.wallet.slice(0, 6)}…{entry.wallet.slice(-4)}</code></a><strong>{money(entry.usdc)}</strong></div>
+              <div class="activity-transfer"><a href={`${explorer}/account/${entry.wallet}`} title={entry.wallet} target="_blank" rel="noopener noreferrer"><span class={entry.wallet === status.site_owner_wallet ? 'site-owner-badge' : undefined} data-role={entry.wallet === status.site_owner_wallet ? 'site-owner-badge' : undefined}>{entry.wallet === status.site_owner_wallet ? activity.siteOwner : t.goal.walletLabel}</span> <code>{entry.wallet.slice(0, 6)}…{entry.wallet.slice(-4)}</code></a><strong>{money(entry.usdc)}</strong></div>
               <div class="activity-meta"><span>{activity.confirmed}</span><span>{entry.sent_at ? null : `${activity.indexed} `}<time datetime={entry.sent_at ?? entry.recorded_at} data-role="contribution-time">{formatUtcDateTime(entry.sent_at ?? entry.recorded_at, locale)}</time></span><a href={`${explorer}/tx/${entry.signature}`} target="_blank" rel="noopener noreferrer">{t.goal.sheet.receipt} <ArrowIcon /></a></div>
             </li>)}
           </ol>

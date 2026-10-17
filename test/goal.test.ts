@@ -437,6 +437,25 @@ describe('rounds', () => {
 });
 
 describe('contribution endpoints', () => {
+  it('labels only the configured site owner in wallet totals and receipts without changing draw entries', async () => {
+    const round = await openRound(db(), 'owner label', 200, new Date());
+    for (const [id, wallet] of [[70, A], [71, B]] as const) {
+      await db().prepare('INSERT INTO goal_contributions (signature, round_id, wallet, amount_units, slot, block_time, created_at) VALUES (?1, ?2, ?3, 1000000, ?4, NULL, ?5)').bind(sig(id), round.id, wallet, id, new Date().toISOString()).run();
+    }
+    const ownerEnv = { ...LIVE, GOAL_OWNER_WALLET: A };
+    const status = await goalStatus({ ...live(), ...ownerEnv });
+    expect(status.site_owner_wallet).toBe(A);
+    expect(status.round?.contributors).toBe(2);
+    expect(status.contributor_list).toEqual([{ wallet: A, usdc: 1 }, { wallet: B, usdc: 1 }]);
+    for (const path of ['/', '/goal', '/ja/goal']) {
+      const html = await (await request(path, {}, ownerEnv)).text();
+      expect(html.match(/data-role="site-owner-badge"/g)).toHaveLength(2);
+      expect(html).toContain(path.startsWith('/ja') ? 'サイト運営者' : 'Site owner');
+      const otherWallet = html.split(`title="${B}"`)[1]!.split('</a>')[0]!;
+      expect(otherWallet).not.toContain('site-owner-badge');
+    }
+    expect(goalConfig({ GOAL_OWNER_WALLET: 'invalid' }).ownerWallet).toBeNull();
+  });
   it('does not cache live goal data or pages containing donation figures', async () => {
     await openRound(db(), 'fresh figures', 200, new Date());
     for (const path of ['/api/v1/goal', '/', '/goal']) {

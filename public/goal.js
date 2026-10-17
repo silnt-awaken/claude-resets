@@ -383,6 +383,13 @@
     log('card', f.raised_usd, '/', target, 'contributors', f.contributors);
   }
   var lastStatus = card.getAttribute('data-round-status') || 'none';
+  function walletLabel(wallet, ownerWallet) {
+    var label = document.createElement('span');
+    var owner = !!ownerWallet && wallet === ownerWallet;
+    label.textContent = owner ? activityText('siteOwner') : t('walletLabel', 'Wallet');
+    if (owner) { label.className = 'site-owner-badge'; label.setAttribute('data-role', 'site-owner-badge'); }
+    return label;
+  }
   function updateContributors(status) {
     if (!Array.isArray(status.contributor_list)) return;
     var list = card.querySelector('[data-role="goal-contributors"]');
@@ -401,8 +408,7 @@
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
       a.title = entry.wallet;
-      var label = document.createElement('span');
-      label.textContent = t('walletLabel', 'Wallet');
+      var label = walletLabel(entry.wallet, status.site_owner_wallet);
       var wallet = document.createElement('code');
       wallet.textContent = entry.wallet.slice(0, 6) + '…' + entry.wallet.slice(-4);
       a.append(label, wallet);
@@ -427,7 +433,7 @@
       if (!/^[1-9A-HJ-NP-Za-km-z]{64,90}$/.test(entry.signature) || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(entry.wallet) || typeof entry.usdc !== 'number') return;
       var li = document.createElement('li'); li.setAttribute('data-signature', entry.signature);
       var transfer = document.createElement('div'); transfer.className = 'activity-transfer';
-      var wallet = document.createElement('a'); wallet.href = cfg.explorer + '/account/' + entry.wallet; wallet.title = entry.wallet; wallet.target = '_blank'; wallet.rel = 'noopener noreferrer'; wallet.textContent = t('walletLabel', 'Wallet') + ' ' + entry.wallet.slice(0, 6) + '…' + entry.wallet.slice(-4);
+      var wallet = document.createElement('a'); wallet.href = cfg.explorer + '/account/' + entry.wallet; wallet.title = entry.wallet; wallet.target = '_blank'; wallet.rel = 'noopener noreferrer'; wallet.append(walletLabel(entry.wallet, status.site_owner_wallet), ' ' + entry.wallet.slice(0, 6) + '…' + entry.wallet.slice(-4));
       var amount = document.createElement('strong'); amount.textContent = cardUsd.format(entry.usdc); transfer.append(wallet, amount);
       var meta = document.createElement('div'); meta.className = 'activity-meta';
       var confirmed = document.createElement('span'); confirmed.textContent = activityText('confirmed');
