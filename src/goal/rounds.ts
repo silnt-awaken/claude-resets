@@ -99,6 +99,30 @@ export async function contributionCount(db: D1Database, roundId: number): Promis
   return r?.n ?? 0;
 }
 
+export interface ContributionActivity {
+  signature: string;
+  wallet: string;
+  amount_units: number;
+  slot: number;
+  block_time: number | null;
+  created_at: string;
+}
+
+/** Totals, wallet aggregates and individual receipts from one transactional read. */
+export async function contributionSnapshot(db: D1Database, roundId: number, excluded: readonly string[] = []) {
+  const [totals, wallets, activity] = await db.batch([
+    db.prepare('SELECT COALESCE(SUM(amount_units), 0) AS units, COUNT(*) AS count FROM goal_contributions WHERE round_id = ?1').bind(roundId),
+    db.prepare('SELECT wallet, SUM(amount_units) AS units, MIN(slot) AS first_slot FROM goal_contributions WHERE round_id = ?1 GROUP BY wallet ORDER BY first_slot ASC, wallet ASC').bind(roundId),
+    db.prepare('SELECT signature, wallet, amount_units, slot, block_time, created_at FROM goal_contributions WHERE round_id = ?1 ORDER BY slot DESC, signature DESC LIMIT 20').bind(roundId),
+  ]);
+  const total = totals!.results[0] as { units: number; count: number };
+  const skip = new Set(excluded);
+  const entries = (wallets!.results as unknown as Array<{ wallet: string; units: number; first_slot: number }>)
+    .filter((row) => BigInt(row.units) >= MIN_CONTRIBUTION_UNITS && !skip.has(row.wallet))
+    .map((row) => ({ wallet: row.wallet, units: BigInt(row.units), firstSlot: row.first_slot }));
+  return { units: BigInt(total.units), count: total.count, entries, activity: activity!.results as unknown as ContributionActivity[] };
+}
+
 /**
  * The draw list: wallets whose contributions in the round add up to at least the minimum, operator
  * wallets excluded, ordered by first contribution slot then wallet. Deterministic from public data.

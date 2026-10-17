@@ -1,10 +1,10 @@
 {
-  "id": "2026-10-17-localized-tools-phantom-fix",
-  "title": "Reader tools in all five languages and a Phantom transfer fix",
+  "id": "2026-10-17-contribution-activity",
+  "title": "Dated contribution receipts and consistent confirmation updates",
   "changes": [
-    "Translated the complete troubleshooter, reset planner, live countdown and history analysis into all five site languages.",
-    "Language switches, internal links, metadata and the sitemap now lead to the matching translated tools.",
-    "Updated the injected Phantom integration to use a complete unsigned transaction and the current provider method."
+    "Confirmed transfers now update the total, wallet totals and receipt history together without waiting for a cached refresh.",
+    "Added a dated, public receipt for each contribution, including repeat donations from the same wallet.",
+    "Added clear pending confirmation states, reload recovery, status checks and custody information in all five languages."
   ],
   "announce": false
 }

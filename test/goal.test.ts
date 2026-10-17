@@ -437,6 +437,13 @@ describe('rounds', () => {
 });
 
 describe('contribution endpoints', () => {
+  it('does not cache live goal data or pages containing donation figures', async () => {
+    await openRound(db(), 'fresh figures', 200, new Date());
+    for (const path of ['/api/v1/goal', '/', '/goal']) {
+      const response = await request(path, {}, LIVE);
+      expect(response.headers.get('cache-control')).toBe('no-store');
+    }
+  });
   it('shows real contributors on the homepage and goal page, aggregating wallets and excluding ineligible entries', async () => {
     const round = await openRound(db(), 'reader goal', 200, new Date());
     for (const [i, wallet, units] of [[60, A, 1_000_000], [61, A, 1_500_000], [62, B, 500_000], [63, WALLET, 5_000_000]] as const) {
@@ -445,6 +452,10 @@ describe('contribution endpoints', () => {
     const status = await goalStatus(live());
     expect(status.contributor_list).toEqual([{ wallet: A, usdc: 2.5 }]);
     expect(status.round?.contributors).toBe(1);
+    expect(status.round?.contributions).toBe(4);
+    expect(status.recent_contributions).toHaveLength(4);
+    expect(status.recent_contributions.map((entry) => entry.signature)).toEqual([sig(63), sig(62), sig(61), sig(60)]);
+    expect(status.recent_contributions[0]).toMatchObject({ sent_at: null, recorded_at: expect.any(String) });
     for (const path of ['/', '/goal']) {
       const html = await (await request(path, {}, LIVE)).text();
       const list = html.split('data-role="goal-contributors"')[1]!.split('</ul>')[0]!;
@@ -453,6 +464,9 @@ describe('contribution endpoints', () => {
       expect(list).not.toContain(`/account/${B}`);
       expect(list).not.toContain(`/account/${WALLET}`);
       expect(html).toContain('Help a reader get Claude Max');
+      expect(html).toContain('Recent contributions');
+      expect(html).toContain(`/tx/${sig(60)}`);
+      expect(html).toContain('data-role="contribution-time"');
       expect(html).toContain('Card payments are not available here.');
       expect(html).toContain('One entry per wallet. Giving more does not improve your chance.');
       expect(html.replace(/<script[\s\S]*?<\/script>/g, '')).not.toContain('{target}');
@@ -558,6 +572,7 @@ describe('contribution endpoints', () => {
       const confirmed = await post({ signature: sig(40) });
       expect(confirmed.status).toBe(200);
       expect(confirmed.body).toMatchObject({ status: 'confirmed', wallet: A, usdc: 7, counted: true, excluded: false, round: round.id, contributors: 1, contributions: 1, raised_usd: 7, target_usd: 200 });
+      expect(confirmed.body.goal).toMatchObject({ contributor_list: [{ wallet: A, usdc: 7 }], recent_contributions: [{ signature: sig(40), wallet: A, usdc: 7, sent_at: new Date((1_789_000_000 + 1005) * 1000).toISOString() }], round: { raised_usd: 7, contributions: 1 } });
       const twice = await post({ signature: sig(40) });
       expect(twice.body).toMatchObject({ status: 'confirmed', wallet: A, usdc: 7, counted: true, excluded: false, raised_usd: 7, contributors: 1 }); // same figures when already recorded
       // An operator wallet is told so: on the meter, never in the draw.

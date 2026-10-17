@@ -11,7 +11,7 @@ import {
   DEFAULT_ROUND_TITLE,
   MIN_CONTRIBUTION_UNITS,
   cancelRound,
-  contributionCount,
+  contributionSnapshot,
   currentRound,
   findContribution,
   freezeRound,
@@ -64,6 +64,7 @@ const MIN_LAMPORTS_FOR_FEE = 50_000n;
 const STALE_AFTER_MS = 5 * 60_000;
 
 export interface GoalStatus {
+  as_of: string;
   enabled: boolean;
   network: { name: string; explorer: string };
   target_usd: number;
@@ -94,6 +95,7 @@ export interface GoalStatus {
   progress: number; // 0..1
   contributor_list: Array<{ wallet: string; usdc: number }>;
   contributors_available: boolean;
+  recent_contributions: Array<{ signature: string; wallet: string; usdc: number; sent_at: string | null; recorded_at: string }>;
 }
 
 function usd(units: bigint): number {
@@ -104,6 +106,7 @@ function usd(units: bigint): number {
 export async function goalStatus(env: Env, now: Date = new Date()): Promise<GoalStatus> {
   const cfg = siteConfig(env).goal;
   const status: GoalStatus = {
+    as_of: now.toISOString(),
     enabled: cfg.live,
     network: { name: SOLANA.name, explorer: cfg.explorerUrl },
     target_usd: cfg.targetUsd,
@@ -115,15 +118,18 @@ export async function goalStatus(env: Env, now: Date = new Date()): Promise<Goal
     progress: 0,
     contributor_list: [],
     contributors_available: false,
+    recent_contributions: [],
   };
   if (!env.DB) return status;
   try {
     const round = (await currentRound(env.DB)) ?? (await latestRound(env.DB));
     if (round) {
-      const raised = await raisedUnits(env.DB, round.id);
-      const entries = await qualifyingEntries(env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets);
+      const snapshot = await contributionSnapshot(env.DB, round.id, cfg.excludedWallets);
+      const raised = snapshot.units;
+      const entries = snapshot.entries;
       status.contributor_list = cfg.live ? entries.map((e) => ({ wallet: e.wallet, usdc: usd(e.units) })) : [];
       status.contributors_available = cfg.live;
+      status.recent_contributions = cfg.live ? snapshot.activity.map((c) => ({ signature: c.signature, wallet: c.wallet, usdc: usd(BigInt(c.amount_units)), sent_at: c.block_time === null ? null : new Date(c.block_time * 1000).toISOString(), recorded_at: c.created_at })) : [];
       status.round = {
         id: round.id,
         title: round.title,
@@ -131,7 +137,7 @@ export async function goalStatus(env: Env, now: Date = new Date()): Promise<Goal
         opened_at: round.opened_at,
         target_usd: round.target_usd,
         raised_usd: usd(raised),
-        contributions: await contributionCount(env.DB, round.id),
+        contributions: snapshot.count,
         contributors: entries.length,
         frozen_at: round.frozen_at,
         draw_slot: round.draw_slot,
@@ -282,7 +288,7 @@ goal.use('*', async (c, next) => {
 });
 
 goal.get('/', async (c) => {
-  return c.json(await goalStatus(c.env), 200, { 'cache-control': 'public, max-age=30', 'access-control-allow-origin': '*' });
+  return c.json(await goalStatus(c.env), 200, { 'cache-control': 'no-store', 'access-control-allow-origin': '*' });
 });
 
 /** The draw list for the current (or latest) round, in draw order, so anyone can recompute `hash mod entries`. */
@@ -385,12 +391,13 @@ goal.post('/contributions', async (c) => {
   const now = new Date();
   // Everything the sheet needs to update the card in place: the meter, the counts, and whether this wallet can win.
   const confirmed = async (wallet: string, units: bigint, counted: boolean) => {
-    const round = await currentRound(c.env.DB);
+    const snapshot = await goalStatus(c.env);
+    const round = snapshot.round;
     const figures = round
-      ? { round: round.id, target_usd: round.target_usd, raised_usd: usd(await raisedUnits(c.env.DB, round.id)), contributions: await contributionCount(c.env.DB, round.id), contributors: (await qualifyingEntries(c.env.DB, round.id, MIN_CONTRIBUTION_UNITS, cfg.excludedWallets)).length }
+      ? { round: round.id, target_usd: round.target_usd, raised_usd: round.raised_usd, contributions: round.contributions, contributors: round.contributors }
       : { round: null, target_usd: cfg.targetUsd, raised_usd: 0, contributions: 0, contributors: 0 };
     const excluded = wallet === cfg.wallet || cfg.excludedWallets.includes(wallet);
-    return c.json({ status: 'confirmed', signature, wallet, usdc: usd(units), counted, excluded, ...figures });
+    return c.json({ status: 'confirmed', signature, wallet, usdc: usd(units), counted, excluded, ...figures, goal: snapshot });
   };
   try {
     const round = await currentRound(c.env.DB);

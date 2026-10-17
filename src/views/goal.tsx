@@ -1,9 +1,10 @@
 import type { FC } from 'hono/jsx';
 import { ROADMAP, type PhaseStatus } from '../goal/roadmap';
 import type { GoalStatus } from '../routes/goal';
-import { formatNumber, interpolate, intlLocale, localizePath } from '../i18n';
+import { formatNumber, formatUtcDateTime, interpolate, intlLocale, localizePath } from '../i18n';
 import { ArrowIcon, CloseIcon } from './icons';
 import { Layout, type PageContext } from './layout';
+import { goalActivity } from '../i18n/goal-activity';
 
 function shortSig(a: string): string {
   return `${a.slice(0, 8)}…${a.slice(-6)}`;
@@ -12,6 +13,7 @@ function shortSig(a: string): string {
 /** Compact goal card for the tracker homepage. Honest states: not open / open / frozen / drawn / paid. */
 export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, status }) => {
   const { t, locale } = ctx;
+  const activity = goalActivity[locale];
   const round = status.round;
   const raised = round?.raised_usd ?? 0;
   const target = round?.target_usd ?? status.target_usd;
@@ -31,7 +33,7 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
   const raisedLabel = interpolate(t.goal.raised, { raised: money(raised), target: money(target) });
   return (
     <section class="section" aria-labelledby="goal-heading">
-      <div class="card card--sun goal-card" data-role="goal-card" data-round-status={round?.status ?? 'none'} data-target={String(target)}>
+      <div class="card card--sun goal-card" data-role="goal-card" data-round-id={round?.id ?? ''} data-contributions={round?.contributions ?? 0} data-as-of={status.as_of} data-round-status={round?.status ?? 'none'} data-target={String(target)}>
         <div class="goal-head">
           <div>
             <span class="mono">{t.goal.sub}</span>
@@ -39,6 +41,7 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
           </div>
           <span class="goal-target">{money(target)}<small>{t.goal.targetLabel}</small></span>
         </div>
+        <div class="goal-live" role="status" aria-live="polite"><span data-role="goal-live-status"></span> <a data-role="goal-pending-receipt" hidden target="_blank" rel="noopener noreferrer">{t.goal.sheet.receipt}</a> <button type="button" class="goal-recheck" data-role="goal-recheck">{activity.recheck}</button></div>
         <p class="goal-pitch">{interpolate(t.goal.pitch, { target: money(target) })}</p>
         <ol class="goal-steps">
           {t.goal.steps.map((step, i) => <li><span class="goal-step-number" aria-hidden="true">{i + 1}</span><div><strong>{interpolate(step.title, { target: money(target) })}</strong><p>{step.body}</p></div></li>)}
@@ -54,7 +57,7 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
             </span>
           ) : null}
         </div>
-        {status.enabled && status.sync.stale ? <p class="status-line">{t.goal.stale}</p> : null}
+        <p class="status-line" data-role="goal-sync-stale" hidden={!status.enabled || !status.sync.stale}>{t.goal.stale}</p>
         {stateLine ? <p class="notice notice--warn goal-state">{stateLine}</p> : null}
         <div class="goal-contributors">
           <h3>{t.goal.contributorsHeading}</h3>
@@ -68,6 +71,17 @@ export const GoalCard: FC<{ ctx: PageContext; status: GoalStatus }> = ({ ctx, st
           </ul>
           <p class="status-line" data-role="goal-contributors-empty" hidden={status.contributor_list.length > 0}>{status.enabled && !status.contributors_available ? t.goal.contributorsUnavailable : t.goal.noContributors}</p>
         </div>
+        <div class="goal-activity">
+          <h3>{activity.heading}</h3><p class="status-line">{activity.note}</p>
+          <ol class="contribution-activity" data-role="goal-activity">
+            {status.recent_contributions.map((entry) => <li data-signature={entry.signature}>
+              <div class="activity-transfer"><a href={`${explorer}/account/${entry.wallet}`} title={entry.wallet} target="_blank" rel="noopener noreferrer"><span>{t.goal.walletLabel}</span> <code>{entry.wallet.slice(0, 6)}…{entry.wallet.slice(-4)}</code></a><strong>{money(entry.usdc)}</strong></div>
+              <div class="activity-meta"><span>{activity.confirmed}</span><span>{entry.sent_at ? null : `${activity.indexed} `}<time datetime={entry.sent_at ?? entry.recorded_at} data-role="contribution-time">{formatUtcDateTime(entry.sent_at ?? entry.recorded_at, locale)}</time></span><a href={`${explorer}/tx/${entry.signature}`} target="_blank" rel="noopener noreferrer">{t.goal.sheet.receipt} <ArrowIcon /></a></div>
+            </li>)}
+          </ol>
+          <p class="status-line" data-role="goal-activity-empty" hidden={status.recent_contributions.length > 0}>{activity.empty}</p>
+        </div>
+        <p class="status-line goal-trust">{interpolate(activity.trust, { owner: ctx.cfg.ownerName })}</p>
         <div class="goal-payment-help">
           <strong>{t.goal.paymentHeading}</strong>
           <p>{t.goal.paymentNote}</p>

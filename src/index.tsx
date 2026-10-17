@@ -160,7 +160,9 @@ page('/', async (c, locale) => {
   const html = (<HomePage ctx={ctx} model={model} />).toString();
   const minute = Math.floor(ctx.now.getTime() / 60_000);
   const goalSeed = model.goal.round ? `${model.goal.round.status}:${model.goal.round.raised_usd}:${model.goal.round.contributions}` : 'none';
-  return htmlPage(c, ctx, html, `home:${locale}:${content.revision}:${query}:${minute}:${JSON.stringify(model.begTotals)}:${goalSeed}`, model.goal.enabled ? 20 : 60);
+  const response = htmlPage(c, ctx, html, `home:${locale}:${content.revision}:${query}:${minute}:${JSON.stringify(model.begTotals)}:${goalSeed}`, model.goal.enabled ? 0 : 60);
+  if (model.goal.enabled) response.headers.set('cache-control', 'no-store');
+  return response;
 });
 
 page('/tools', (c, locale) => {
@@ -177,7 +179,9 @@ page('/goal', async (c, locale) => {
   // No ads where readers send money.
   const ctx = pageContext(c, locale, '/goal', '', { ads: false });
   const status = await goalStatus(c.env, ctx.now);
-  return htmlPage(c, ctx, (<GoalPage ctx={ctx} status={status} />).toString(), `goal:${locale}:${JSON.stringify(status)}`, 30);
+  const response = htmlPage(c, ctx, (<GoalPage ctx={ctx} status={status} />).toString(), `goal:${locale}:${JSON.stringify(status)}`, 0);
+  response.headers.set('cache-control', 'no-store');
+  return response;
 });
 page('/perks', (c, locale) => {
   const ctx = pageContext(c, locale, '/perks');

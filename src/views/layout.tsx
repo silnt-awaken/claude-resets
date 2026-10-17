@@ -5,6 +5,7 @@ import type { Sponsor } from '../domain/types';
 import type { SiteConfig } from '../env';
 import { LOCALES, dict, formatDate, interpolate, localizePath, ogLocale, type Dict, type Locale } from '../i18n';
 import { toolDict } from '../i18n/tools';
+import { goalActivity } from '../i18n/goal-activity';
 import { CloseIcon, CupIcon, GitHubIcon, GlobeIcon, MoonIcon, ResetMark, RoadmapIcon, SunIcon, XIcon } from './icons';
 
 export interface PageContext {
@@ -318,5 +319,5 @@ const SponsorDialog: FC<{ ctx: PageContext }> = ({ ctx }) => {
 
 /** Localized strings for goal.js (the contribution sheet and its inline no-wallet help). */
 const GoalStrings: FC<{ ctx: PageContext }> = ({ ctx }) => (
-  <script type="application/json" id="goal-i18n" dangerouslySetInnerHTML={{ __html: JSON.stringify({ ...ctx.t.goal.sheet, ...ctx.t.goal.wallet, raised: ctx.t.goal.raised, entries: ctx.t.goal.entries, walletLabel: ctx.t.goal.walletLabel, noContributors: ctx.t.goal.noContributors, contributorsUnavailable: ctx.t.goal.contributorsUnavailable }).replace(/</g, '\u003c') }} />
+  <script type="application/json" id="goal-i18n" dangerouslySetInnerHTML={{ __html: JSON.stringify({ ...ctx.t.goal.sheet, ...ctx.t.goal.wallet, activity: goalActivity[ctx.locale], raised: ctx.t.goal.raised, entries: ctx.t.goal.entries, walletLabel: ctx.t.goal.walletLabel, noContributors: ctx.t.goal.noContributors, contributorsUnavailable: ctx.t.goal.contributorsUnavailable }).replace(/</g, '\u003c') }} />
 );

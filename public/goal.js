@@ -248,6 +248,21 @@
   var opener = null;
   var amount = 5;
   var busy = false;
+  var pendingTransfer = null;
+  var pendingKey = 'claude-resets:pending-contribution';
+  var liveStatus = card.querySelector('[data-role="goal-live-status"]');
+  var pendingReceipt = card.querySelector('[data-role="goal-pending-receipt"]');
+  var activityStrings = strings.activity || {};
+  function activityText(key, values) {
+    return (activityStrings[key] || '').replace(/\{(\w+)\}/g, function (match, name) { return values && values[name] !== undefined ? values[name] : match; });
+  }
+  function liveMessage(message) { if (liveStatus) liveStatus.textContent = message; }
+  function setPending(signature) {
+    pendingTransfer = signature;
+    try { if (signature) localStorage.setItem(pendingKey, JSON.stringify({ signature: signature, at: Date.now() })); else localStorage.removeItem(pendingKey); } catch (_) {}
+    if (pendingReceipt) { pendingReceipt.hidden = !signature; if (signature) pendingReceipt.href = cfg.explorer + '/tx/' + signature; }
+    if (signature) liveMessage(activityText('pending'));
+  }
   /** A connect reply waiting for the sign tap (the pay button becomes "Approve in Phantom"). */
   var pendingSign = null;
 
@@ -289,8 +304,9 @@
     rowFee.textContent = '—';
     rowTotal.textContent = usd.format(amount);
     payBtn.textContent = payLabel();
-    payBtn.disabled = !(amount >= cfg.min) || busy;
+    payBtn.disabled = !(amount >= cfg.min) || busy || !!pendingTransfer;
     if (amount > 0 && amount < cfg.min) say(t('minAmount', 'Minimum is $1.'));
+    else if (pendingTransfer) say(activityText('pending'));
     else if (!busy) say('');
   }
   function openSheet() {
@@ -400,25 +416,63 @@
       empty.textContent = status.contributors_available ? t('noContributors', 'No contributors in this round yet.') : t('contributorsUnavailable', 'The contributor list is temporarily unavailable.');
     }
   }
+  var timeFormat = new Intl.DateTimeFormat(intl, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
+  function localDate(iso) { var date = new Date(iso); return Number.isFinite(date.getTime()) ? timeFormat.format(date) : ''; }
+  card.querySelectorAll('[data-role="contribution-time"]').forEach(function (time) { time.textContent = localDate(time.getAttribute('datetime')); });
+  function updateActivity(status) {
+    var list = card.querySelector('[data-role="goal-activity"]');
+    if (!list || !Array.isArray(status.recent_contributions)) return;
+    var rows = [];
+    status.recent_contributions.forEach(function (entry) {
+      if (!/^[1-9A-HJ-NP-Za-km-z]{64,90}$/.test(entry.signature) || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(entry.wallet) || typeof entry.usdc !== 'number') return;
+      var li = document.createElement('li'); li.setAttribute('data-signature', entry.signature);
+      var transfer = document.createElement('div'); transfer.className = 'activity-transfer';
+      var wallet = document.createElement('a'); wallet.href = cfg.explorer + '/account/' + entry.wallet; wallet.title = entry.wallet; wallet.target = '_blank'; wallet.rel = 'noopener noreferrer'; wallet.textContent = t('walletLabel', 'Wallet') + ' ' + entry.wallet.slice(0, 6) + '…' + entry.wallet.slice(-4);
+      var amount = document.createElement('strong'); amount.textContent = cardUsd.format(entry.usdc); transfer.append(wallet, amount);
+      var meta = document.createElement('div'); meta.className = 'activity-meta';
+      var confirmed = document.createElement('span'); confirmed.textContent = activityText('confirmed');
+      var when = document.createElement('span'); if (!entry.sent_at) when.append(activityText('indexed') + ' ');
+      var time = document.createElement('time'); time.dateTime = entry.sent_at || entry.recorded_at; time.textContent = localDate(time.dateTime); time.setAttribute('data-role', 'contribution-time'); when.append(time);
+      var receipt = receiptLink(entry.signature); meta.append(confirmed, when, receipt); li.append(transfer, meta); rows.push(li);
+    });
+    list.replaceChildren.apply(list, rows);
+    var empty = card.querySelector('[data-role="goal-activity-empty"]'); if (empty) empty.hidden = rows.length > 0;
+  }
+  var renderedRound = Number(card.getAttribute('data-round-id'));
+  var renderedCount = Number(card.getAttribute('data-contributions'));
+  var renderedAt = card.getAttribute('data-as-of') || '';
+  function applyStatus(status) {
+    if (!status || !status.round || !Array.isArray(status.contributor_list) || !Array.isArray(status.recent_contributions)) return false;
+    var r = status.round;
+    // A slow request started before payment must never roll a confirmed snapshot backwards.
+    if (r.id < renderedRound || (r.id === renderedRound && (r.contributions < renderedCount || (r.contributions === renderedCount && status.as_of < renderedAt)))) return false;
+    updateCard(r); updateContributors(status); updateActivity(status);
+    var stale = card.querySelector('[data-role="goal-sync-stale"]'); if (stale && status.sync) stale.hidden = !status.sync.stale;
+    renderedRound = r.id; renderedCount = r.contributions; renderedAt = status.as_of;
+    card.setAttribute('data-round-id', String(r.id)); card.setAttribute('data-contributions', String(r.contributions)); card.setAttribute('data-as-of', status.as_of);
+    if (!pendingTransfer) liveMessage(activityText('updated', { time: localDate(status.as_of) }));
+    if (r.status !== lastStatus && !sheet.open && !busy) location.reload();
+    return true;
+  }
+  var refreshing = false;
   function refreshCard() {
-    if (document.hidden) return;
-    fetch('/api/v1/goal', { headers: { accept: 'application/json' } })
+    if (document.hidden || refreshing) return Promise.resolve();
+    refreshing = true;
+    if (!pendingTransfer) liveMessage(activityText('updating'));
+    return fetch('/api/v1/goal', { cache: 'no-store', signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined, headers: { accept: 'application/json' } })
       .then(function (r) {
-        return r.ok ? r.json() : null;
+        if (!r.ok) throw new Error('Goal status unavailable');
+        return r.json();
       })
       .then(function (s) {
-        if (!s || !s.round) return;
-        updateCard(s.round);
-        updateContributors(s);
-        // A freeze or a draw changes the whole card; let the server render it.
-        if (s.round.status !== lastStatus) {
-          log('round status changed', lastStatus, '→', s.round.status);
-          if (!sheet.open && !busy) location.reload();
-        }
+        if (s) applyStatus(s);
       })
-      .catch(function () {});
+      .catch(function () { if (!pendingTransfer) liveMessage(activityText('refreshFailed')); })
+      .then(function () { refreshing = false; });
   }
-  setInterval(refreshCard, 30000);
+  setInterval(refreshCard, 15000);
+  card.querySelectorAll('[data-role="goal-recheck"]').forEach(function (button) { button.addEventListener('click', function () { if (pendingTransfer && !busy) resumeConfirmation(pendingTransfer); else refreshCard(); }); });
+  refreshCard();
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) refreshCard();
   });
@@ -428,7 +482,7 @@
       if (r.status === 202) {
         if (tries <= 0) return null;
         return new Promise(function (res) {
-          setTimeout(res, 1500);
+          setTimeout(res, tries >= 37 ? 1000 : 3000);
         }).then(function () {
           return waitConfirmed(signature, tries - 1);
         });
@@ -437,10 +491,13 @@
     });
   }
   function reportResult(result, signature) {
-    if (!result) say(t('unknown', 'Status unknown. Check the receipt on the explorer.'));
+    if (!result) { say(activityText('pending')); liveMessage(activityText('pending')); }
     else if (result.status === 'confirmed') {
-      updateCard(result);
+      setPending(null);
+      var applied = result.goal && applyStatus(result.goal);
+      if (!applied) refreshCard();
       var paid = typeof result.usdc === 'number' ? result.usdc : amount;
+      liveMessage(applied ? activityText('received', { amount: cardUsd.format(paid) }) : t('confirmed', 'Confirmed.'));
       var key = result.excluded ? 'operatorWallet' : result.counted ? 'youreIn' : 'youreInNext';
       var line = t(key, '{amount} USDC has reached the goal wallet.').replace('{amount}', paid.toFixed(2));
       if (done && form) {
@@ -459,6 +516,8 @@
   function reportError(err) {
     var code = err && err.code;
     log('error', code, err && err.message);
+    if (pendingTransfer && (code === 'failed' || code === 'not_a_contribution')) { setPending(null); liveMessage(t('failed', 'The transaction failed.')); }
+    else if (pendingTransfer) { say(activityText('pending')); liveMessage(activityText('pending')); return; }
     if (code === 4001 || code === 'no_account' || code === 'rejected') say(t('rejected', 'The transfer was not approved.'));
     else if (code === 'no_wallet') showFallback();
     else if (code === 'insufficient') say(t('insufficient', 'Not enough USDC in this wallet.'));
@@ -472,12 +531,12 @@
   }
   function setBusy(on) {
     busy = on;
-    payBtn.disabled = on || amount < cfg.min;
+    payBtn.disabled = on || amount < cfg.min || !!pendingTransfer;
     payBtn.textContent = payLabel();
   }
 
   payBtn.addEventListener('click', function () {
-    if (busy || amount < cfg.min) return;
+    if (busy || pendingTransfer || amount < cfg.min) return;
     var p = provider();
     if (!p) {
       if (!handoffAvailable) {
@@ -528,6 +587,7 @@
         log('submitted', signature);
         say(t('submitted', 'Submitted. Waiting for the network…'));
         showReceipt(signature);
+        setPending(signature);
         return waitConfirmed(signature, 40).then(function (result) {
           reportResult(result, signature);
         });
@@ -593,6 +653,7 @@
           if (!signature) throw new Error('no signature');
           log('relayed', signature);
           showReceipt(signature);
+          setPending(signature);
           return waitConfirmed(signature, 40).then(function (result) {
             reportResult(result, signature);
           });
@@ -606,4 +667,12 @@
         });
     }
   }
+  function resumeConfirmation(signature) {
+    setBusy(true); showReceipt(signature);
+    return waitConfirmed(signature, 40).then(function (result) { reportResult(result, signature); }).catch(reportError).then(function () { setBusy(false); });
+  }
+  try {
+    var pending = JSON.parse(localStorage.getItem(pendingKey) || 'null');
+    if (pending && /^[1-9A-HJ-NP-Za-km-z]{64,90}$/.test(pending.signature) && Date.now() - pending.at < 86400000) { setPending(pending.signature); resumeConfirmation(pending.signature); }
+  } catch (_) {}
 })();

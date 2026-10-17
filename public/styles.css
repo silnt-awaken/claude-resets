@@ -1942,3 +1942,18 @@ th {
   .planner-fields { grid-template-columns: 1fr; }
   .limit-form select { font-size: 16px; }
 }
+
+/* Contribution receipts and explicit confirmation state. */
+.goal-live { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 12px; margin: 16px 0; font-size: .82rem; line-height: 1.5; }
+.goal-recheck { font: inherit; color: inherit; background: transparent; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.goal-activity { margin-top: 24px; padding-top: 20px; border-top: 1px solid currentColor; }
+.goal-activity h3 { font-size: 1.15rem; margin-bottom: 5px; }
+.contribution-activity { list-style: none; padding: 0; margin: 14px 0 0; }
+.contribution-activity li { padding: 14px 0; border-bottom: 1px solid var(--ink-3); }
+.activity-transfer { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.activity-transfer a { min-width: 0; overflow-wrap: anywhere; }
+.activity-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 8px; font-size: .78rem; line-height: 1.6; }
+.activity-meta > span:first-child { font-weight: 700; }
+.activity-meta .icon { width: 13px; height: 13px; }
+.goal-trust { margin: 18px 0; }
+@media (max-width: 480px) { .activity-meta time { display: inline-block; } .goal-live { font-size: .8rem; } }
