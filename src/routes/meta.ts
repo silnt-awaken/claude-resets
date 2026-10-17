@@ -24,6 +24,7 @@ meta.get('/sitemap.xml', (c) => {
     }
   };
   for (const p of pages) entry(p);
+  for (const path of ['/tools', '/reset-history']) urls.push(`  <url>\n    <loc>${cfg.siteUrl}${path}</loc>\n  </url>`);
   for (const e of publishedEvents(content.events)) entry(`/resets/${e.id}`, e.revisedAt);
   urls.push(`  <url>\n    <loc>${cfg.siteUrl}/api/docs</loc>\n  </url>`);
   urls.push(`  <url>\n    <loc>${cfg.siteUrl}/mcp/docs</loc>\n  </url>`);

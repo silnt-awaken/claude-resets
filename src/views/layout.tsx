@@ -41,16 +41,17 @@ interface LayoutProps {
   sponsors?: 'rails' | 'none';
   children?: unknown;
   ogImage?: boolean;
+  englishOnly?: boolean;
 }
 
-export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, sponsors = 'none', children }) => {
+export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, sponsors = 'none', children, englishOnly = false }) => {
   const { t, locale, cfg } = ctx;
   const canonical = absoluteUrl(ctx, locale);
   const active = sponsors === 'rails' ? activeSponsors(ctx.content.sponsors, ctx.now) : [];
   const left = active.filter((_, i) => i % 2 === 0);
   const right = active.filter((_, i) => i % 2 === 1);
-  // Sponsor placements exist only once sponsorship is actually open: a real sponsor or a contact address.
-  const showSponsors = sponsors === 'rails' && (active.length > 0 || !!cfg.supportContactEmail);
+  // Show real sponsors, without empty advertising placeholders on the tracker.
+  const showSponsors = sponsors === 'rails' && active.length > 0;
   return (
     <html lang={locale} data-theme="light">
       <head>
@@ -62,7 +63,7 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff4dd" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#17130f" />
         <link rel="canonical" href={canonical} />
-        {LOCALES.map((l) => (
+        {(englishOnly ? ['en'] as const : LOCALES).map((l) => (
           <link rel="alternate" hreflang={l} href={absoluteUrl(ctx, l)} />
         ))}
         <link rel="alternate" hreflang="x-default" href={absoluteUrl(ctx, 'en')} />
@@ -76,7 +77,7 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
         <meta property="og:image" content={`${cfg.siteUrl}/icons/og.png`} />
         <meta property="og:image:alt" content={t.meta.ogAlt} />
         <meta property="og:locale" content={ogLocale(locale)} />
-        {LOCALES.filter((l) => l !== locale).map((l) => (
+        {LOCALES.filter((l) => !englishOnly && l !== locale).map((l) => (
           <meta property="og:locale:alternate" content={ogLocale(l)} />
         ))}
         <meta name="twitter:card" content="summary" />
@@ -106,10 +107,10 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
           {t.nav.skip}
         </a>
         <div class="page">
-          <Masthead ctx={ctx} />
+          <Masthead ctx={ctx} englishOnly={englishOnly} />
           <main id="main">{children}</main>
           {showSponsors ? <SponsorRails ctx={ctx} left={left} right={right} /> : null}
-          <SiteFooter ctx={ctx} />
+          <SiteFooter ctx={ctx} englishOnly={englishOnly} />
         </div>
         {showSponsors ? <SponsorDialog ctx={ctx} /> : null}
         {cfg.goal.live ? <GoalStrings ctx={ctx} /> : null}
@@ -120,7 +121,7 @@ export const Layout: FC<LayoutProps> = ({ ctx, title, description, noindex, spon
   );
 };
 
-const Masthead: FC<{ ctx: PageContext }> = ({ ctx }) => {
+const Masthead: FC<{ ctx: PageContext; englishOnly: boolean }> = ({ ctx, englishOnly }) => {
   const { t, locale, cfg } = ctx;
   return (
     <header class="masthead">
@@ -136,7 +137,7 @@ const Masthead: FC<{ ctx: PageContext }> = ({ ctx }) => {
         </button>
         <nav class="language-menu" id="language-menu" aria-label={t.nav.language} data-open="false">
           {LOCALES.map((l) => (
-            <a href={`${localizePath(l, ctx.path)}${ctx.query}`} lang={l} hreflang={l} aria-current={l === locale ? 'page' : undefined}>
+            <a href={`${localizePath(l, englishOnly ? '/' : ctx.path)}${ctx.query}`} lang={l} hreflang={l} aria-current={l === locale ? 'page' : undefined}>
               {dict(l).name}
             </a>
           ))}
@@ -167,7 +168,7 @@ const Masthead: FC<{ ctx: PageContext }> = ({ ctx }) => {
   );
 };
 
-const SiteFooter: FC<{ ctx: PageContext }> = ({ ctx }) => {
+const SiteFooter: FC<{ ctx: PageContext; englishOnly: boolean }> = ({ ctx, englishOnly }) => {
   const { t, locale, cfg } = ctx;
   const owner = cfg.ownerXUrl ? (
     <a href={cfg.ownerXUrl} target="_blank" rel="noopener noreferrer">
@@ -183,7 +184,7 @@ const SiteFooter: FC<{ ctx: PageContext }> = ({ ctx }) => {
     <footer class="site-footer">
       <nav class="footer-langs" aria-label={t.nav.language}>
         {LOCALES.map((l) => (
-          <a href={`${localizePath(l, ctx.path)}${ctx.query}`} lang={l} hreflang={l} aria-current={l === locale ? 'page' : undefined}>
+          <a href={`${localizePath(l, englishOnly ? '/' : ctx.path)}${ctx.query}`} lang={l} hreflang={l} aria-current={l === locale ? 'page' : undefined}>
             {dict(l).name}
           </a>
         ))}
@@ -209,6 +210,8 @@ const SiteFooter: FC<{ ctx: PageContext }> = ({ ctx }) => {
         )}
       </p>
       <nav class="footer-links" aria-label="Site">
+        <a href="/tools" lang="en">{locale === 'en' ? 'Limit help & tools' : 'Tools (English)'}</a>
+        <a href="/reset-history" lang="en">{locale === 'en' ? 'History analysis' : 'Analysis (English)'}</a>
         <a href={localizePath(locale, '/perks')}>{t.nav.perks}</a>
         <a href={localizePath(locale, '/sources')}>{t.nav.sources}</a>
         <a href={localizePath(locale, '/about')}>{t.nav.about}</a>

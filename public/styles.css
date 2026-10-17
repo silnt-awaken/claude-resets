@@ -1907,3 +1907,38 @@ th {
 .roadmap-when { color: var(--ink-3); font-size: 0.9rem; }
 .roadmap-phase ul { margin: 0.5rem 0 0; }
 .roadmap-phase--later { opacity: 0.8; }
+
+/* Task-focused help and original archive analysis. */
+.help-teaser { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 24px; border: var(--border); border-radius: var(--radius); background: var(--card); }
+.help-teaser h2 { font-size: 1.4rem; }
+.help-teaser p { color: var(--ink-2); max-width: 44ch; margin-top: 5px; }
+.tool-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.help-teaser .tool-actions { flex-shrink: 0; flex-direction: column; align-items: flex-start; }
+.tool-nav { display: flex; flex-wrap: wrap; gap: 12px 22px; padding: 22px 0; font-size: .9rem; }
+.eyebrow { color: var(--ink-2); font: 12px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; margin: 12px 0; }
+.limit-form { display: grid; gap: 14px; margin-top: 18px; }
+.limit-form > label { font-weight: 650; }
+.limit-form select, .limit-form input[type='datetime-local'] { width: 100%; min-width: 0; max-width: 100%; padding: 12px; border: var(--border); border-radius: 9px; background: var(--paper); color: var(--ink); font: inherit; }
+.limit-form > .btn { justify-self: start; }
+.planner-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.planner-fields label { min-width: 0; font-weight: 650; display: grid; gap: 7px; }
+.planner-fields label span { font-weight: normal; font-size: .85rem; color: var(--ink-2); }
+.planner-remember { display: flex; align-items: center; gap: 10px; }
+.planner-remember input { width: 18px; height: 18px; }
+.tool-answer { margin-top: 22px; padding: 18px; background: var(--paper); border-left: 4px solid var(--ink); border-radius: 4px; scroll-margin-top: 20px; }
+.tool-answer h3 { margin-bottom: 8px; font-size: 1.2rem; }
+.tool-answer p { margin: 0 0 12px; }
+.limit-guide { display: grid; gap: 22px; margin: 22px 0 30px; }
+.limit-guide article { border-bottom: 1px solid var(--ink-3); padding-bottom: 20px; scroll-margin-top: 20px; }
+.limit-guide h3 { font-size: 1.15rem; margin-bottom: 8px; }
+.tool-table-wrap { overflow-x: auto; margin-top: 20px; border: var(--border); border-radius: var(--radius); }
+.tool-table { width: 100%; border-collapse: collapse; background: var(--card); }
+.tool-table caption { padding: 14px; text-align: left; color: var(--ink-2); font-size: .85rem; }
+.tool-table th, .tool-table td { padding: 14px 18px; text-align: left; border-top: 1px solid var(--ink-3); }
+.tool-table thead { background: var(--sun); color: var(--on-sun); }
+@media (max-width: 640px) {
+  .help-teaser { flex-direction: column; align-items: stretch; padding: 18px; }
+  .help-teaser .tool-actions { flex-direction: row; align-items: center; }
+  .planner-fields { grid-template-columns: 1fr; }
+  .limit-form select { font-size: 16px; }
+}

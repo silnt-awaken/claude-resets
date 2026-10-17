@@ -132,6 +132,7 @@ export const AboutPage: FC<{ ctx: PageContext }> = ({ ctx }) => {
       <h1 class="page-title">{t.about.pageTitle}</h1>
       <p class="page-intro">{t.about.intro}</p>
       <div class="section prose">
+        {ctx.locale === 'en' ? <section><h2>Who runs this tracker</h2><p>Mike maintains Claude Resets as an independent project. The archive, filters, and history calculations are built from public evidence; this site has no access to your Claude account and cannot change your limits.</p><p>Use the <a href="/tools">limit troubleshooter and private reset-time planner</a> when you need to work out what to do next, or read the <a href="/reset-history">analysis of the verified history</a> to understand what the announcement data can tell you.</p><h2>Editorial corrections</h2><p>To report a missing announcement or a mistake, <a href={`mailto:${cfg.supportContactEmail || 'silnt.awaken@gmail.com'}?subject=Claude%20Resets%20correction`}>contact Mike</a> with a public source URL, the affected page, and what needs changing. An account-specific reset timer is not evidence of a public reset. Corrections are recorded on event pages; additional posts about the same event are attached as sources rather than counted as extra resets.</p></section> : null}
         {t.about.sections.map((s) => (
           <>
             <h2>{s.heading}</h2>
@@ -177,6 +178,7 @@ export const PrivacyPage: FC<{ ctx: PageContext }> = ({ ctx }) => {
       <h1 class="page-title">{t.privacy.pageTitle}</h1>
       <p class="page-intro">{intro}</p>
       <div class="section prose">
+        {ctx.locale === 'en' ? <section><h2>Reset-time planner</h2><p>The optional planner on /tools calculates in your browser. Reset times are not submitted to this site. If you select “Remember these times,” they are saved in this browser’s local storage under claude-resets:planner:v1. Clear times removes them. No Claude login, account access, or API key is used.</p></section> : null}
         {cfg.ads.enabled ? (
           // Required by the AdSense program policies: disclose Google's advertising cookies and how to opt out.
           <>

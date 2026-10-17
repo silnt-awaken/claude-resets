@@ -25,6 +25,7 @@ import { HomePage, type HomeModel } from './views/home';
 import { makeContext, type PageContext } from './views/layout';
 import { AboutPage, NotFoundPage, PrivacyPage, ResetPage, SourcesPage, SupportPage } from './views/pages';
 import { PerksPage } from './views/perks';
+import { HistoryPage, ToolsPage, TOOL_REVISION } from './views/tools';
 import { telegramWebhook } from './routes/telegram';
 import { drainTelegram } from './telegram/delivery';
 
@@ -160,6 +161,17 @@ page('/', async (c, locale) => {
   const minute = Math.floor(ctx.now.getTime() / 60_000);
   const goalSeed = model.goal.round ? `${model.goal.round.status}:${model.goal.round.raised_usd}:${model.goal.round.contributions}` : 'none';
   return htmlPage(c, ctx, html, `home:${locale}:${content.revision}:${query}:${minute}:${JSON.stringify(model.begTotals)}:${goalSeed}`, model.goal.enabled ? 20 : 60);
+});
+
+// English editorial tools have one canonical URL, without untranslated locale copies.
+app.get('/tools', (c) => {
+  const ctx = pageContext(c, 'en', '/tools');
+  const issue = c.req.query('issue');
+  return htmlPage(c, ctx, (<ToolsPage ctx={ctx} issue={issue} />).toString(), `tools:${TOOL_REVISION}:${issue ?? ''}`, 60);
+});
+app.get('/reset-history', (c) => {
+  const ctx = pageContext(c, 'en', '/reset-history');
+  return htmlPage(c, ctx, (<HistoryPage ctx={ctx} />).toString(), `history:${TOOL_REVISION}:${ctx.content.revision}:${ctx.now.toISOString().slice(0, 10)}`, 60);
 });
 
 page('/goal', async (c, locale) => {

@@ -12,6 +12,7 @@ import type { GoalStatus } from '../routes/goal';
 import { PerkFlag, PerksSection } from './perks';
 import { AdSlot } from './ads';
 import { NoticeStrip } from './notices';
+import { ToolsTeaser } from './tools';
 
 export const CHECK_USAGE_URL = 'https://claude.ai/settings/usage';
 export const USAGE_HELP_URL = 'https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work';
@@ -61,6 +62,7 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
         <HeroCard ctx={ctx} model={model} />
       </section>
 
+      <ToolsTeaser ctx={ctx} />
       <FiltersForm ctx={ctx} filters={model.filters} />
       <StatsTiles ctx={ctx} stats={model.stats} total={model.filtered.length} filters={model.filters} />
       <AdSlot ctx={ctx} placement="home-mid" />

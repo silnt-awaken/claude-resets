@@ -189,14 +189,14 @@ describe('pages', () => {
     expect(home).toContain('rel="sponsored noopener noreferrer"');
   });
 
-  it('shows no sponsor placement until sponsorship is open, then at most one invitation', async () => {
+  it('shows no empty sponsor placement even when a sponsorship contact is configured', async () => {
     const closed = await (await request('/', {}, { SUPPORT_CONTACT_EMAIL: '' })).text();
     expect(closed).not.toContain('data-role="sponsor-open"');
     expect(closed).not.toContain('<dialog id="sponsor-dialog"');
     const open = await (await request('/', {}, { SUPPORT_CONTACT_EMAIL: 'hi@example.test' })).text();
-    expect(open.match(/data-role="sponsor-open"/g)?.length ?? 0).toBe(1);
-    expect(open).toContain('<dialog id="sponsor-dialog"');
-    expect(open).toContain('mailto:hi@example.test');
+    expect(open).not.toContain('data-role="sponsor-open"');
+    expect(open).not.toContain('<dialog id="sponsor-dialog"');
+    expect(open).not.toContain('Your product here');
   });
 
   it('links the source repository in the header and footer when configured', async () => {
