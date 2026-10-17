@@ -43,6 +43,18 @@
     return p && p.isPhantom ? p : null;
   }
   var account = null;
+  var transactionLoader = null;
+  function loadTransaction() {
+    if (window.ClaudeGoalTransaction) return Promise.resolve(window.ClaudeGoalTransaction);
+    if (!transactionLoader) transactionLoader = new Promise(function (resolve, reject) {
+      var script = document.createElement('script');
+      script.src = '/vendor/goal-transaction.js';
+      script.onload = function () { if (window.ClaudeGoalTransaction) resolve(window.ClaudeGoalTransaction); else reject(new Error('Transfer library unavailable')); };
+      script.onerror = function () { transactionLoader = null; script.remove(); reject(new Error('Transfer library unavailable')); };
+      document.head.appendChild(script);
+    });
+    return transactionLoader;
+  }
   function connect() {
     var p = provider();
     if (!p) return Promise.reject(Object.assign(new Error('no wallet'), { code: 'no_wallet' }));
@@ -180,11 +192,7 @@
         var sol = (r.body.fee_lamports || 0) / 1e9;
         rowFee.textContent = '≈ ' + sol.toFixed(6) + ' SOL';
         rowTotal.textContent = usd.format(h.amount) + ' + ' + sol.toFixed(6) + ' SOL';
-        var message = b58decode(r.body.message);
-        var tx = new Uint8Array(65 + message.length); // one empty signature slot, then the message
-        tx[0] = 1;
-        tx.set(message, 65);
-        var req = encryptRequest(nacl, h, { transaction: b58encode(tx), session: h.session });
+        var req = encryptRequest(nacl, h, { transaction: r.body.transaction, session: h.session });
         writeHandoff(Object.assign({}, h, { at: Date.now(), step: 'sign' }));
         log('handoff: sign', r.body.source, '→', r.body.destination);
         say(t('awaiting', 'Awaiting approval in Phantom'));
@@ -508,7 +516,11 @@
         rowTotal.textContent = usd.format(amount) + ' + ' + sol.toFixed(6) + ' SOL';
         say(t('awaiting', 'Awaiting approval in Phantom'));
         log('message built', r.body.source, '→', r.body.destination);
-        return p.request({ method: 'signAndSendTransaction', params: { message: r.body.message } });
+        // Use the current provider API with a real Transaction, not the legacy raw-message request.
+        return loadTransaction().then(function (codec) {
+          var transaction = codec.fromBase58(r.body.transaction);
+          return p.signAndSendTransaction(transaction);
+        });
       })
       .then(function (res) {
         var signature = res && res.signature;

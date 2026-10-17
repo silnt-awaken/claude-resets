@@ -163,15 +163,14 @@ page('/', async (c, locale) => {
   return htmlPage(c, ctx, html, `home:${locale}:${content.revision}:${query}:${minute}:${JSON.stringify(model.begTotals)}:${goalSeed}`, model.goal.enabled ? 20 : 60);
 });
 
-// English editorial tools have one canonical URL, without untranslated locale copies.
-app.get('/tools', (c) => {
-  const ctx = pageContext(c, 'en', '/tools');
+page('/tools', (c, locale) => {
+  const ctx = pageContext(c, locale, '/tools');
   const issue = c.req.query('issue');
-  return htmlPage(c, ctx, (<ToolsPage ctx={ctx} issue={issue} />).toString(), `tools:${TOOL_REVISION}:${issue ?? ''}`, 60);
+  return htmlPage(c, ctx, (<ToolsPage ctx={ctx} issue={issue} />).toString(), `tools:${locale}:${TOOL_REVISION}:${issue ?? ''}`, 60);
 });
-app.get('/reset-history', (c) => {
-  const ctx = pageContext(c, 'en', '/reset-history');
-  return htmlPage(c, ctx, (<HistoryPage ctx={ctx} />).toString(), `history:${TOOL_REVISION}:${ctx.content.revision}:${ctx.now.toISOString().slice(0, 10)}`, 60);
+page('/reset-history', (c, locale) => {
+  const ctx = pageContext(c, locale, '/reset-history');
+  return htmlPage(c, ctx, (<HistoryPage ctx={ctx} />).toString(), `history:${locale}:${TOOL_REVISION}:${ctx.content.revision}:${ctx.now.toISOString().slice(0, 10)}`, 60);
 });
 
 page('/goal', async (c, locale) => {

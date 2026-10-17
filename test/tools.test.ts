@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { __setContentForTests } from '../src/domain/content';
 import { makeEvent, snapshotFor } from './fixtures';
 import { request } from './helpers';
+import { LOCALES, localizePath } from '../src/i18n';
+import { toolDictionaries } from '../src/i18n/tools';
 
 afterEach(() => __setContentForTests(null));
 describe('reader tools', () => {
@@ -17,7 +19,7 @@ describe('reader tools', () => {
     expect(html).not.toContain('<script>');
     expect(html).toContain('Select a message above');
     expect(html).toContain('href="http://test.local/tools"');
-    expect(html).not.toContain('hreflang="ja" href="http://test.local/ja/tools"');
+    expect(html).toContain('hreflang="ja" href="http://test.local/ja/tools"');
   });
   it('keeps banked offers out of interval averages and shows reproducible history counts', async () => {
     __setContentForTests(snapshotFor([
@@ -28,14 +30,14 @@ describe('reader tools', () => {
     ]));
     const html = await (await request('/reset-history')).text();
     expect(html).toContain('3 reset announcements');
-    expect(html).toContain('2 applied resets and 1 banked offer.');
+    expect(html).toContain('2 applied resets and 1 banked offers.');
     expect(html).toContain('10.0 days');
     expect(html).toContain('using 1 of 1 consecutive pairs');
     expect(html).toContain('href="/resets/last"');
     expect(html).not.toContain('/resets/draft');
     expect(html).toContain('<td>2</td><td>1</td>');
   });
-  it('handles empty histories and links actual English tool pages from the sitemap and localized homepage', async () => {
+  it('handles empty histories and links every translated tool page from sitemap and homepage', async () => {
     __setContentForTests(snapshotFor([]));
     const html = await (await request('/reset-history')).text();
     expect(html).toContain('not enough precisely timed');
@@ -43,7 +45,39 @@ describe('reader tools', () => {
     const sitemap = await (await request('/sitemap.xml')).text();
     expect(sitemap).toContain('<loc>http://test.local/tools</loc>');
     expect(sitemap).toContain('<loc>http://test.local/reset-history</loc>');
-    expect(sitemap).not.toContain('/ja/tools');
-    expect(await (await request('/ja')).text()).toContain('href="/tools" lang="en"');
+    expect(sitemap).toContain('/ja/tools');
+    expect(await (await request('/ja')).text()).toContain('href="/ja/tools"');
+  });
+  it('renders complete localized tools, answers, metadata, privacy, history and language links', async () => {
+    for (const locale of LOCALES) {
+      const m = toolDictionaries[locale];
+      const url = localizePath(locale, '/tools');
+      const html = await (await request(`${url}?issue=weekly`)).text();
+      expect(html).toContain(`<html lang="${locale}"`);
+      expect(html).toContain(m.heading);
+      expect(html).toContain(m.issues.weekly.title);
+      expect(html).toContain(m.planner.remember);
+      expect(html).toContain(`action="${url}#next-step"`);
+      expect(html).toContain(`href="http://test.local${url}"`);
+      expect(html).toContain('href="/ko/tools"');
+      expect(html).not.toContain('English)');
+      const history = await (await request(localizePath(locale, '/reset-history'))).text();
+      expect(history).toContain(m.history.title);
+      expect(history).toContain(m.history.types);
+      const visible = history.replace(/<script[\s\S]*?<\/script>/g, '');
+      expect(visible).not.toMatch(/\{(start|end|total|applied|banked|event|date|average|eligible|pairs|longest|filter|sources|api|revision|about|contact)\}/);
+      expect(await (await request(localizePath(locale, '/privacy'))).text()).toContain(m.maintenance.privacy);
+    }
+  });
+  it('preserves the same dynamic tokens in every translation', () => {
+    function visit(base: unknown, translated: unknown) {
+      if (typeof base === 'string') {
+        expect(typeof translated).toBe('string');
+        expect((String(translated).match(/\{\w+\}/g) ?? []).sort()).toEqual((base.match(/\{\w+\}/g) ?? []).sort());
+      } else if (base && typeof base === 'object') {
+        for (const [key, value] of Object.entries(base)) visit(value, (translated as Record<string, unknown>)[key]);
+      }
+    }
+    for (const locale of LOCALES) visit(toolDictionaries.en, toolDictionaries[locale]);
   });
 });

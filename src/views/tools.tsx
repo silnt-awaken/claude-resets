@@ -1,70 +1,84 @@
 import type { FC } from 'hono/jsx';
 import { eventDay, qualifyingResets, resetBoard } from '../domain/content';
 import { computeStats, formatDays } from '../domain/stats';
+import { formatDate, formatNumber, localizePath } from '../i18n';
+import { toolDict } from '../i18n/tools';
+import { localizedTitle } from './components';
 import { Layout, type PageContext } from './layout';
 import { API_RATE_LIMITS_URL, CLAUDE_CODE_HELP_URL, CLAUDE_STATUS_URL, USAGE_HELP_URL } from './pages';
 
-export const TOOL_REVISION = '2026-10-17-tools-1';
+export const TOOL_REVISION = '2026-10-17-tools-2';
 const BEST_PRACTICES = 'https://support.claude.com/en/articles/9797557-usage-limit-best-practices';
 const CREDITS = 'https://support.claude.com/en/articles/12429409-manage-usage-credits-for-paid-claude-plans';
-const choices = {
-  session: { label: 'My session limit is used up', title: 'Check the session reset time', body: 'Open Settings → Usage in Claude and read the session timer. A weekly allowance can still have room while the session allowance is exhausted. Use the planner below to keep that time handy.', action: 'Open my usage', url: 'https://claude.ai/settings/usage' },
-  weekly: { label: 'My weekly limit is used up', title: 'Check the weekly timer separately', body: 'A session refresh does not clear a weekly limit. Read the weekly reset time in your account, including any separate model limit shown there. Waiting five hours may leave the weekly restriction in place.', action: 'Open my usage', url: 'https://claude.ai/settings/usage' },
-  length: { label: 'This conversation is too long', title: 'Carry a short handover into a new chat', body: 'A length limit concerns one conversation’s capacity. Save the goal, decisions, and next task, then start a new chat with that handover. A new chat does not replenish a used-up account allowance.', action: 'Read about length limits', url: USAGE_HELP_URL },
-  api: { label: 'My API request returns 429', title: 'Check the API response and Console', body: 'API limits are separate from the subscription reset board. Read the error and any retry-after header, then check your organization’s rate and spend limits in Console. Repeated retries will not fix a spend cap.', action: 'Read API limit documentation', url: API_RATE_LIMITS_URL },
-  outage: { label: 'Claude errors even though I have usage left', title: 'Check service status before assuming a reset is needed', body: 'Compare the exact error with Anthropic’s status page. An incident is different from exhausted usage. If status does not explain it, record the error, product, and time for support; never include an API key.', action: 'Open Claude status', url: CLAUDE_STATUS_URL },
-  banked: { label: 'I saw a banked reset announcement', title: 'Check whether your account can redeem it', body: 'A banked reset is a one-time offer you choose to use. Check the announcement’s eligible plans and expiry, then look in Settings → Usage. The announcement date is not proof that your own allowance has already changed.', action: 'Read the sourced announcement board', url: '/' },
-} as const;
+// Translations contain tokens, not executable HTML. JSX escapes each substituted value.
+export function rich(template: string, values: Record<string, unknown>) {
+  return template.split(/(\{\w+\})/g).map((part) => /^\{\w+\}$/.test(part) ? (values[part.slice(1, -1)] ?? part) : part);
+}
 
 export const ToolsTeaser: FC<{ ctx: PageContext }> = ({ ctx }) => {
-  const labels = { en: ['Hit a Claude limit?', 'Work out what is blocked, save your reset time, or explore the verified history.', 'Find my next step', 'Explore the history'], 'zh-CN': ['遇到 Claude 用量限制？', '排查限制、记录重置时间或查看历史分析（英文）。', '限制排查工具（英文）', '历史分析（英文）'], 'zh-TW': ['遇到 Claude 用量限制？', '排查限制、記錄重置時間或查看歷史分析（英文）。', '限制排查工具（英文）', '歷史分析（英文）'], ja: ['Claude の利用上限に達しましたか？', '上限の確認、リセット時刻の記録、履歴分析（英語）。', '上限確認ツール（英語）', '履歴分析（英語）'], ko: ['Claude 사용 한도에 도달했나요?', '한도 확인, 초기화 시간 기록, 이력 분석을 제공합니다 (영어).', '한도 확인 도구 (영어)', '이력 분석 (영어)'] };
-  const [heading, body, cta, history] = labels[ctx.locale];
-  return <section class="section help-teaser" aria-labelledby="limit-help-heading"><div><h2 id="limit-help-heading">{heading}</h2><p>{body}</p></div><div class="tool-actions"><a class="btn btn--sun" href="/tools" lang="en">{cta} →</a><a href="/reset-history" lang="en">{history} →</a></div></section>;
+  const m = toolDict(ctx.locale);
+  return <section class="section help-teaser" aria-labelledby="limit-help-heading">
+    <div><h2 id="limit-help-heading">{m.teaser.heading}</h2><p>{m.teaser.body}</p></div>
+    <div class="tool-actions"><a class="btn btn--sun" href={localizePath(ctx.locale, '/tools')}>{m.teaser.cta} →</a><a href={localizePath(ctx.locale, '/reset-history')}>{m.nav.history} →</a></div>
+  </section>;
 };
 
 export const ToolsPage: FC<{ ctx: PageContext; issue?: string }> = ({ ctx, issue }) => {
-  const selected = issue && Object.hasOwn(choices, issue) ? choices[issue as keyof typeof choices] : null;
-  return <Layout ctx={ctx} title="Claude limit help & reset-time planner | Claude Resets" description="Find the next step for a session, weekly, context or API limit, and keep your account’s reset time in a private local planner." englishOnly>
-    <nav class="tool-nav" aria-label="Tools"><a href="/">Reset board</a><a href="/reset-history">History analysis</a><a href="/about">How we verify</a></nav>
-    <p class="eyebrow">Practical help · English</p><h1 class="page-title">Hit a limit? Find your next step.</h1>
-    <p class="page-intro">First, identify what Claude is telling you. Your account’s timer and a public reset announcement answer different questions.</p>
-    <section class="section card" aria-labelledby="troubleshoot-heading"><h2 id="troubleshoot-heading">1. What are you seeing?</h2>
-      <form action="/tools#next-step" method="get" class="limit-form"><label for="issue">Choose the closest message</label><select name="issue" id="issue">{Object.entries(choices).map(([key, value]) => <option value={key} selected={issue === key}>{value.label}</option>)}</select><button class="btn btn--sun" type="submit">Show my next step →</button></form>
-      <div id="next-step" class="tool-answer" tabindex={-1}>{selected ? <><h3>{selected.title}</h3><p>{selected.body}</p><a href={selected.url}>{selected.action} →</a></> : <p>Select a message above. You can also read every case in the guide below.</p>}</div>
+  const { locale } = ctx;
+  const m = toolDict(locale);
+  const path = (p: string) => localizePath(locale, p);
+  const urls = { session: 'https://claude.ai/settings/usage', weekly: 'https://claude.ai/settings/usage', length: USAGE_HELP_URL, api: API_RATE_LIMITS_URL, outage: CLAUDE_STATUS_URL, banked: path('/') };
+  const choices = Object.entries(m.issues).map(([key, value]) => ({ key, ...value, url: urls[key as keyof typeof urls] }));
+  const selected = choices.find((choice) => choice.key === issue);
+  const correction = `mailto:${ctx.cfg.supportContactEmail || 'silnt.awaken@gmail.com'}?subject=Claude%20Resets%20tools%20correction`;
+  return <Layout ctx={ctx} title={`${m.title} | Claude Resets`} description={m.description}>
+    <nav class="tool-nav" aria-label={m.nav.label}><a href={path('/')}>{m.nav.board}</a><a href={path('/reset-history')}>{m.nav.history}</a><a href={path('/about')}>{m.nav.verify}</a></nav>
+    <p class="eyebrow">{m.eyebrow}</p><h1 class="page-title">{m.heading}</h1><p class="page-intro">{m.intro}</p>
+    <section class="section card" aria-labelledby="troubleshoot-heading"><h2 id="troubleshoot-heading">{m.question}</h2>
+      <form action={`${path('/tools')}#next-step`} method="get" class="limit-form"><label for="issue">{m.choose}</label><select name="issue" id="issue">{choices.map((choice) => <option value={choice.key} selected={issue === choice.key}>{choice.label}</option>)}</select><button class="btn btn--sun" type="submit">{m.show} →</button></form>
+      <div id="next-step" class="tool-answer" tabindex={-1}>{selected ? <><h3>{selected.title}</h3><p>{selected.body}</p><a href={selected.url}>{selected.action} →</a></> : <p>{m.select}</p>}</div>
     </section>
-    <section class="section card" aria-labelledby="planner-heading"><h2 id="planner-heading">2. Keep your reset time handy</h2><p>Copy the reset date and time shown in <a href="https://claude.ai/settings/usage">Claude → Settings → Usage</a>. If multiple limits block you, enter both: the later time is the earliest point when both entered limits have cleared.</p>
-      <p class="status-line">This planner cannot read your Claude account. Times you enter stay in this browser; nothing is sent to our server. It does not predict surprise resets.</p>
-      <form id="reset-planner" class="limit-form"><div class="planner-fields"><label for="session-reset">Session reset <span>(optional)</span><input type="datetime-local" id="session-reset" /></label><label for="weekly-reset">Weekly / model reset <span>(optional)</span><input type="datetime-local" id="weekly-reset" /></label></div><p id="planner-zone" class="status-line">Enter times in your device’s local time zone.</p><label class="planner-remember"><input type="checkbox" id="remember-reset" /> Remember these times on this browser</label><div class="tool-actions"><button class="btn btn--sun" type="submit">Calculate my wait</button><button class="btn" type="button" id="clear-planner">Clear times</button></div></form>
-      <div id="planner-result" class="tool-answer" role="status" aria-live="polite">Enter at least one time to calculate a wait.</div><noscript><p>The countdown needs JavaScript. Your authoritative reset time remains visible in Claude’s usage page.</p></noscript>
+    <section class="section card" aria-labelledby="planner-heading"><h2 id="planner-heading">{m.planner.heading}</h2>
+      <p>{rich(m.planner.intro, { usage: <a href="https://claude.ai/settings/usage">{m.planner.usage}</a> })}</p><p class="status-line">{m.planner.privacy}</p>
+      <form id="reset-planner" class="limit-form"><div class="planner-fields"><label for="session-reset">{m.planner.session}<span>{m.planner.optional}</span><input type="datetime-local" id="session-reset" /></label><label for="weekly-reset">{m.planner.weekly}<span>{m.planner.optional}</span><input type="datetime-local" id="weekly-reset" /></label></div><p id="planner-zone" class="status-line">{m.planner.zoneDefault}</p><label class="planner-remember"><input type="checkbox" id="remember-reset" /> {m.planner.remember}</label><div class="tool-actions"><button class="btn btn--sun" type="submit">{m.planner.calculate}</button><button class="btn" type="button" id="clear-planner">{m.planner.clear}</button></div></form>
+      <div id="planner-result" class="tool-answer" role="status" aria-live="polite">{m.planner.empty}</div><noscript><p>{m.planner.noJs}</p></noscript>
     </section>
-    <section class="section prose" aria-labelledby="guide-heading"><h2 id="guide-heading">Read the message before choosing a fix</h2><p>A fresh session, a new chat, and a public reset are different events. For example: if your session resets tonight but your weekly limit resets on Friday, the session refresh alone may not let you continue. If only a conversation is too long, waiting for Friday solves the wrong problem.</p>
-      <div class="limit-guide">{Object.entries(choices).map(([key, value]) => <article id={`guide-${key}`}><h3>{value.label}</h3><p>{value.body}</p><a href={value.url}>{value.action} →</a></article>)}</div>
-      <h2>A reset is not a fixed number of messages</h2><p>There is no reliable “messages left” conversion here. Workload and account limits vary. Check the actual usage meter before a large task rather than treating a historical average as spare capacity.</p>
-      <h2>Make the next session count</h2><p>Prepare a small handover: the goal, what is already done, and the specific result you need next. Attach only relevant files. For coding, specify the files and acceptance checks before asking for a broad repository investigation. These are ways to reduce unnecessary work, not a promise of extra allowance. See Anthropic’s <a href={BEST_PRACTICES}>usage best practices</a>.</p>
-      <h2>Claude Code and payment settings</h2><p>Pro and Max subscription use is shared across Claude and Claude Code. In Code, check which account and authentication method you are using before troubleshooting billing. An API key can put work on API billing instead. <a href={CLAUDE_CODE_HELP_URL}>Anthropic explains the two paths</a>.</p><p>If you choose paid usage credits, review the account’s spending settings first. A paid continuation is a billing choice, not a reset. Read the <a href={CREDITS}>official usage-credit instructions</a> before enabling it.</p>
+    <section class="section prose" aria-labelledby="guide-heading"><h2 id="guide-heading">{m.guide.heading}</h2><p>{m.guide.intro}</p>
+      <div class="limit-guide">{choices.map((choice) => <article id={`guide-${choice.key}`}><h3>{choice.label}</h3><p>{choice.body}</p><a href={choice.url}>{choice.action} →</a></article>)}</div>
+      <h2>{m.guide.countHeading}</h2><p>{m.guide.count}</p><h2>{m.guide.efficientHeading}</h2><p>{rich(m.guide.efficient, { best: <a href={BEST_PRACTICES}>{m.guide.best}</a> })}</p>
+      <h2>{m.guide.billingHeading}</h2><p>{rich(m.guide.billing, { code: <a href={CLAUDE_CODE_HELP_URL}>{m.guide.code}</a> })}</p><p>{rich(m.guide.credits, { credits: <a href={CREDITS}>{m.guide.creditLink}</a> })}</p>
     </section>
-    <section class="section prose"><h2>Sources and maintenance</h2><p>Written and maintained by Mike for Claude Resets. Official help pages checked October 17, 2026. The guidance above is our own troubleshooting sequence; linked Anthropic documentation and your account control current eligibility and limits.</p><p>Found a mismatch? <a href={`mailto:${ctx.cfg.supportContactEmail || 'silnt.awaken@gmail.com'}?subject=Claude%20Resets%20tools%20correction`}>Send a correction</a> with the affected page and public evidence. Do not send credentials or account screenshots containing private data.</p><ul><li><a href={USAGE_HELP_URL}>Usage versus length limits</a></li><li><a href={BEST_PRACTICES}>Usage best practices</a></li><li><a href={CLAUDE_CODE_HELP_URL}>Claude Code with Pro or Max</a></li><li><a href={API_RATE_LIMITS_URL}>API rate and spend limits</a></li></ul></section>
+    <section class="section prose"><h2>{m.maintenance.heading}</h2><p>{m.maintenance.body}</p><p>{rich(m.maintenance.correction, { contact: <a href={correction}>{m.maintenance.contact}</a> })}</p>
+      <ul><li><a href={USAGE_HELP_URL}>{m.maintenance.usage}</a></li><li><a href={BEST_PRACTICES}>{m.maintenance.best}</a></li><li><a href={CLAUDE_CODE_HELP_URL}>{m.maintenance.code}</a></li><li><a href={API_RATE_LIMITS_URL}>{m.maintenance.api}</a></li></ul>
+    </section>
+    <script type="application/json" id="planner-i18n" dangerouslySetInnerHTML={{ __html: JSON.stringify(m.planner).replace(/</g, '\\u003c') }} />
     <script src="/reset-planner.js" defer nonce={ctx.nonce ?? undefined}></script>
   </Layout>;
 };
 
 export const HistoryPage: FC<{ ctx: PageContext }> = ({ ctx }) => {
+  const { locale } = ctx;
+  const m = toolDict(locale);
+  const h = m.history;
+  const path = (p: string) => localizePath(locale, p);
+  const n = (value: number) => formatNumber(value, locale);
   const board = resetBoard(ctx.content.events, ctx.now);
   const applied = qualifyingResets(board);
   const stats = computeStats(applied, ctx.now);
   const monthly = new Map<string, { applied: number; banked: number }>();
   for (const e of board) { const month = eventDay(e).slice(0, 7); const row = monthly.get(month) ?? { applied: 0, banked: 0 }; row[e.resetOffer ? 'banked' : 'applied']++; monthly.set(month, row); }
   const latest = applied[0];
-  return <Layout ctx={ctx} title="What Claude reset history actually tells us | Claude Resets" description="Original analysis of the sourced Claude reset archive: applied and banked counts, monthly activity, audience differences and the limits of interval averages." englishOnly>
-    <nav class="tool-nav" aria-label="Tools"><a href="/">Reset board</a><a href="/tools">Limit help & planner</a><a href="/sources">Source directory</a></nav>
-    <p class="eyebrow">From the verified archive</p><h1 class="page-title">What the reset history actually tells us</h1><p class="page-intro">A record of public announcements can show what happened. It cannot tell you when your account will refresh next.</p>
-    <section class="section card prose"><h2>The collection at a glance</h2><p>From {ctx.content.coverageStart} through {ctx.now.toISOString().slice(0, 10)} (UTC), this archive contains <strong>{board.length} reset announcements</strong>: {applied.length} applied resets and {board.length - applied.length} banked {board.length - applied.length === 1 ? 'offer' : 'offers'}. Multiple source posts describing one reset are kept inside one event.</p><p>{latest ? <>The newest applied reset in this collection is <a href={`/resets/${latest.id}`}>{latest.title}</a> ({eventDay(latest)}). </> : null}A newer banked offer can be the headline on the board while the last applied reset is older. That is why the two dates need not match.</p></section>
-    <section class="section" aria-labelledby="monthly-heading"><h2 id="monthly-heading">Announcements by month</h2><p>Each row counts distinct events, not posts or affected users. Only months with recorded events appear; an absent month is not proof no reset happened.</p><div class="tool-table-wrap"><table class="tool-table"><caption>UTC announcement month · coverage begins {ctx.content.coverageStart}</caption><thead><tr><th scope="col">Month</th><th scope="col">Applied</th><th scope="col">Banked</th></tr></thead><tbody>{[...monthly.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([month, counts]) => <tr><th scope="row">{month}</th><td>{counts.applied}</td><td>{counts.banked}</td></tr>)}</tbody></table></div></section>
-    <section class="section prose"><h2>Why an average is not a countdown</h2><p>{stats.averageIntervalDays === null ? 'There are not enough precisely timed consecutive events to measure an average.' : <>The mean gap between measurable consecutive applied announcements is <strong>{formatDays(stats.averageIntervalDays)} days</strong>, using {stats.eligibleGaps} of {stats.totalGaps} consecutive pairs. The longest measured gap is {formatDays(stats.longestGapDays!)} days.</>} These are completed historical gaps. The unfinished wait since the newest event is excluded.</p><p>A date-only event blocks measurement on either side; we do not invent midnight timestamps or bridge the uncertainty. Banked offers never enter this interval calculation. The records also combine different audiences, so this average is not a personal Pro or Max reset schedule.</p>
-      <h2>Broad does not mean every limit changed</h2><p>Audience and limit window are separate fields. An announcement may cover all subscribers without saying whether it changed session, weekly, or model-specific usage. The board preserves “window not stated” where the source is silent. To investigate your own plan, <a href="/?audience=max&window=weekly">filter the board for Max and weekly announcements</a>, then read the scope and evidence on each event page.</p>
-      <h2>Banked versus applied, in everyday terms</h2><p>An applied reset describes an allowance change announced as already made. A banked reset is something eligible users can choose to redeem. Counting both on the same board makes the announcements easy to find, while labeling them prevents a saved offer from being mistaken for a fresh allowance.</p>
-      <h2>How to use this archive</h2><ol><li>Check your account’s current usage screen first. That is the evidence for your own remaining allowance.</li><li>Find the relevant announcement and check its date, eligible plans, limit windows, and any expiry.</li><li>Open the original source from the event page. Distinguish what the source states from our interpretation.</li><li>If the announcement and your account differ, save the public link and contact Anthropic support. This independent tracker cannot apply a reset.</li></ol>
-      <h2>Coverage and corrections</h2><p>This is a manually researched collection beginning April 16, 2026, not a complete account log or a survey of every Claude user. Sources are selected from the <a href="/sources">public source directory</a>. Unknown dates, unstated scope, corrections, and related posts remain visible. New research can change totals.</p><p>Computed from the same versioned dataset as the board and <a href="/api/docs">public API</a>; dataset revision <code>{ctx.content.revision}</code>. Analysis maintained by Mike. <a href="/about">Read the verification and calculation rules</a> or <a href={`mailto:${ctx.cfg.supportContactEmail || 'silnt.awaken@gmail.com'}?subject=Claude%20Resets%20history%20correction`}>send a sourced correction</a>.</p>
+  return <Layout ctx={ctx} title={`${h.title} | Claude Resets`} description={h.description}>
+    <nav class="tool-nav" aria-label={m.nav.label}><a href={path('/')}>{m.nav.board}</a><a href={path('/tools')}>{m.nav.tools}</a><a href={path('/sources')}>{m.nav.sources}</a></nav>
+    <p class="eyebrow">{h.eyebrow}</p><h1 class="page-title">{h.title}</h1><p class="page-intro">{h.intro}</p>
+    <section class="section card prose"><h2>{h.overview}</h2><p>{rich(h.counts, { start: formatDate(ctx.content.coverageStart, locale), end: formatDate(ctx.now.toISOString().slice(0, 10), locale), total: n(board.length), applied: n(applied.length), banked: n(board.length - applied.length) })}</p>
+      <p>{latest ? rich(h.latest, { event: <a href={path(`/resets/${latest.id}`)}>{localizedTitle(latest, locale)}</a>, date: formatDate(eventDay(latest), locale) }) : null} {h.difference}</p>
+    </section>
+    <section class="section" aria-labelledby="monthly-heading"><h2 id="monthly-heading">{h.monthly}</h2><p>{h.monthlyIntro}</p><div class="tool-table-wrap"><table class="tool-table"><caption>{rich(h.caption, { start: formatDate(ctx.content.coverageStart, locale) })}</caption><thead><tr><th scope="col">{h.month}</th><th scope="col">{h.applied}</th><th scope="col">{h.banked}</th></tr></thead><tbody>{[...monthly.entries()].sort(([a], [b]) => b.localeCompare(a)).map(([month, counts]) => <tr><th scope="row">{month}</th><td>{n(counts.applied)}</td><td>{n(counts.banked)}</td></tr>)}</tbody></table></div></section>
+    <section class="section prose"><h2>{h.averageHeading}</h2><p>{stats.averageIntervalDays === null ? h.insufficient : rich(h.average, { average: formatDays(stats.averageIntervalDays), eligible: n(stats.eligibleGaps), pairs: n(stats.totalGaps), longest: formatDays(stats.longestGapDays!) })} {h.completed}</p><p>{h.uncertainty}</p>
+      <h2>{h.scopeHeading}</h2><p>{rich(h.scope, { filter: <a href={`${path('/')}?audience=max&window=weekly`}>{h.filter}</a> })}</p>
+      <h2>{h.typesHeading}</h2><p>{h.types}</p><h2>{h.howHeading}</h2><ol>{h.steps.map((step) => <li>{step}</li>)}</ol>
+      <h2>{h.coverageHeading}</h2><p>{rich(h.coverage, { sources: <a href={path('/sources')}>{h.sources}</a> })}</p><p>{rich(h.dataset, { api: <a href={path('/api/docs')}>{h.api}</a>, revision: <code>{ctx.content.revision}</code>, about: <a href={path('/about')}>{h.about}</a>, contact: <a href={`mailto:${ctx.cfg.supportContactEmail || 'silnt.awaken@gmail.com'}?subject=Claude%20Resets%20history%20correction`}>{h.contact}</a> })}</p>
     </section>
   </Layout>;
 };

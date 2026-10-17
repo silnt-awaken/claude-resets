@@ -6,7 +6,8 @@
   "description": "Independent tracker for publicly announced Claude usage-limit resets.",
   "scripts": {
     "dev": "wrangler dev",
-    "build": "wrangler deploy --dry-run --outdir dist",
+    "build:wallet": "node scripts/build-wallet.mjs",
+    "build": "npm run build:wallet && wrangler deploy --dry-run --outdir dist",
     "deploy": "tsx scripts/deploy.ts",
     "telegram": "tsx scripts/telegram.ts",
     "telegram:connect": "tsx scripts/telegram-connect.ts",
@@ -41,7 +42,9 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.22.0",
     "@cloudflare/workers-types": "^5.20260917.0",
+    "@solana/web3.js": "1.99.0",
     "@types/node": "^22.20.3",
+    "esbuild": "0.28.1",
     "playwright": "^1.63.0",
     "tsx": "^4.23.0",
     "typescript": "^5.9.0",

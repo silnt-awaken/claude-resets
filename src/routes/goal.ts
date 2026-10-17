@@ -47,6 +47,7 @@ import {
   shortAddress,
   signaturesSince,
   associatedTokenAccount,
+  unsignedTransaction,
   type FetchLike,
 } from '../goal/solana';
 import { clientIp, problem, readJson, timingSafeEqual } from '../util/http';
@@ -330,7 +331,7 @@ goal.post('/tx', async (c) => {
     const message = buildTransferMessage({ payer: from, source: source.address, destination: cfg.usdcAccount!, mint: cfg.usdcMint, units, decimals: SOLANA.usdcDecimals, blockhash });
     const baseFee = (await feeForMessage(fetch, cfg.rpcUrl, message).catch(() => null)) ?? 5000;
     console.log('goal tx built', JSON.stringify({ from, units: units.toString(), source: source.address }));
-    return c.json({ message: base58Encode(message), from, source: source.address, destination: cfg.usdcAccount, units: units.toString(), usdc: cents / 100, fee_lamports: baseFee + PRIORITY_FEE_LAMPORTS, blockhash, last_valid_block_height: lastValidBlockHeight });
+    return c.json({ message: base58Encode(message), transaction: base58Encode(unsignedTransaction(message)), from, source: source.address, destination: cfg.usdcAccount, units: units.toString(), usdc: cents / 100, fee_lamports: baseFee + PRIORITY_FEE_LAMPORTS, blockhash, last_valid_block_height: lastValidBlockHeight });
   } catch (err) {
     console.error('goal tx failed', err instanceof Error ? err.message : err);
     return problem(c, 503, 'rpc_unavailable', 'Could not reach Solana right now. Try again in a moment.');

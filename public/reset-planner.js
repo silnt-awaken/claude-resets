@@ -9,20 +9,23 @@
   var result = document.getElementById('planner-result');
   var key = 'claude-resets:planner:v1';
   var active = false;
+  var messages = JSON.parse(document.getElementById('planner-i18n').textContent);
+  var locale = document.documentElement.lang || 'en';
+  function text(key, values) { return messages[key].replace(/\{(\w+)\}/g, function (match, name) { return values && values[name] !== undefined ? values[name] : match; }); }
   var zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  document.getElementById('planner-zone').textContent = 'Your device time zone: ' + zone + '. Enter the times shown by Claude in this zone.';
+  document.getElementById('planner-zone').textContent = text('zone', { zone: zone });
   function store() {
     try { if (remember.checked) localStorage.setItem(key, JSON.stringify({ session: session.value, weekly: weekly.value })); else localStorage.removeItem(key); } catch (_) { /* Planner still works when storage is unavailable. */ }
   }
   function render() {
     var entries = [{ label: 'Session', value: session.value }, { label: 'Weekly / model', value: weekly.value }].filter(function (x) { return x.value; });
-    if (!entries.length) { result.textContent = 'Enter at least one time to calculate a wait.'; return; }
+    if (!entries.length) { result.textContent = text('empty'); return; }
     var instants = entries.map(function (x) { return new Date(x.value).getTime(); });
-    if (instants.some(function (x) { return !Number.isFinite(x); })) { result.textContent = 'Check the dates and times and try again.'; return; }
+    if (instants.some(function (x) { return !Number.isFinite(x); })) { result.textContent = text('invalid'); return; }
     var ready = Math.max.apply(Math, instants);
     var minutes = Math.ceil((ready - Date.now()) / 60000);
-    var time = new Date(ready).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-    result.textContent = minutes <= 0 ? 'The entered reset times have passed. Recheck Claude for your actual available usage.' : 'Wait ' + Math.floor(minutes / 1440) + 'd ' + Math.floor(minutes % 1440 / 60) + 'h ' + minutes % 60 + 'm — ' + time + ' (' + zone + '). ' + (entries.length === 2 ? 'This is the later of the two times you entered.' : 'Only the entered limit is included; check any other limits in Claude.');
+    var time = new Date(ready).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+    result.textContent = minutes <= 0 ? text('passed') : text('wait', { days: Math.floor(minutes / 1440), hours: Math.floor(minutes % 1440 / 60), minutes: minutes % 60, time: time, zone: zone }) + ' ' + text(entries.length === 2 ? 'later' : 'single');
   }
   try { var saved = JSON.parse(localStorage.getItem(key) || 'null'); if (saved && typeof saved.session === 'string' && typeof saved.weekly === 'string') { session.value = saved.session; weekly.value = saved.weekly; remember.checked = true; active = true; render(); } } catch (_) { /* No stored times. */ }
   form.addEventListener('submit', function (e) { e.preventDefault(); active = true; store(); render(); });

@@ -478,6 +478,7 @@ describe('contribution endpoints', () => {
       const ok = await post({ from: A, amount: 5 });
       expect(ok.status).toBe(200);
       expect(ok.body.source).toBe(ataA); // the contributor's Associated Token Account
+      expect(base58Decode(ok.body.transaction as string)).toEqual(unsignedTransaction(base58Decode(ok.body.message as string)));
       expect(ok.body.destination).toBe(POOL_USDC);
       expect(ok.body.units).toBe('5000000');
       expect(ok.body.fee_lamports).toBe(6000);

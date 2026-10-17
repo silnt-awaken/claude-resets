@@ -6,6 +6,7 @@ import { ArrowIcon, CupIcon } from './icons';
 import { Layout, type PageContext } from './layout';
 import { ResetOfferCard } from './reset-offer';
 import { AdSlot } from './ads';
+import { toolDict } from '../i18n/tools';
 
 export const CLAUDE_STATUS_URL = 'https://status.claude.com/';
 export const USAGE_HELP_URL = 'https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work';
@@ -178,7 +179,7 @@ export const PrivacyPage: FC<{ ctx: PageContext }> = ({ ctx }) => {
       <h1 class="page-title">{t.privacy.pageTitle}</h1>
       <p class="page-intro">{intro}</p>
       <div class="section prose">
-        {ctx.locale === 'en' ? <section><h2>Reset-time planner</h2><p>The optional planner on /tools calculates in your browser. Reset times are not submitted to this site. If you select “Remember these times,” they are saved in this browser’s local storage under claude-resets:planner:v1. Clear times removes them. No Claude login, account access, or API key is used.</p></section> : null}
+        <section><h2>{toolDict(ctx.locale).maintenance.privacyHeading}</h2><p>{toolDict(ctx.locale).maintenance.privacy}</p></section>
         {cfg.ads.enabled ? (
           // Required by the AdSense program policies: disclose Google's advertising cookies and how to opt out.
           <>

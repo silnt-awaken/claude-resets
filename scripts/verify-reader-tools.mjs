@@ -46,6 +46,40 @@ try {
   await page.goto(`${base}/tools`);
   await page.getByRole('button', { name: 'Switch to dark mode' }).click();
   await page.screenshot({ path: `${output}/tools-dark.png`, fullPage: true });
+  for (const locale of ['en', 'zh-CN', 'zh-TW', 'ja', 'ko']) {
+    const prefix = locale === 'en' ? '' : '/' + locale;
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${base}${prefix}/tools`);
+    const messages = await page.locator('#planner-i18n').evaluate((el) => JSON.parse(el.textContent));
+    assert.equal(await page.locator('html').getAttribute('lang'), locale);
+    await page.locator('#issue').selectOption('weekly');
+    await page.locator('.limit-form button[type="submit"]').first().click();
+    await page.waitForURL(`${base}${prefix}/tools?issue=weekly#next-step`);
+    const localizedAnswer = await page.locator('#next-step').innerText();
+    if (locale !== 'en') assert.doesNotMatch(localizedAnswer, /Check the weekly timer|Read the weekly reset/);
+    await page.locator('#session-reset').fill('2099-01-01T15:00');
+    await page.locator('#weekly-reset').fill('2099-01-04T15:00');
+    await page.locator('#reset-planner button[type="submit"]').click();
+    assert.match(await page.locator('#planner-result').innerText(), new RegExp(messages.later.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.doesNotMatch(await page.locator('#planner-result').innerText(), /\{\w+\}/);
+    await page.locator('#clear-planner').click();
+    assert.equal(await page.locator('#planner-result').innerText(), messages.empty);
+    await page.locator('#session-reset').fill('2000-01-01T15:00');
+    await page.locator('#reset-planner button[type="submit"]').click();
+    assert.equal(await page.locator('#planner-result').innerText(), messages.passed);
+    await page.locator('#clear-planner').click();
+    await page.screenshot({ path: `${output}/tools-${locale}-390.png`, fullPage: true });
+    await page.locator('#language-menu').getByText('English', { exact: true }).evaluate((el) => {
+      if (el.getAttribute('href') !== '/tools') throw new Error('Language switch lost tools page');
+    });
+    for (const width of [360, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const route of ['/tools', '/reset-history']) {
+        await page.goto(`${base}${prefix}${route}`);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${locale}${route} overflow ${width}`);
+      }
+    }
+  }
   assert.deepEqual(errors, []);
   await context.close();
   const plain = await browser.newContext({ javaScriptEnabled: false });
@@ -53,5 +87,5 @@ try {
   await noJs.goto(`${base}/tools?issue=length`);
   assert.match(await noJs.locator('#next-step').innerText(), /new chat/);
   await plain.close();
-  console.log('PASS: all six issue paths are server-rendered (unit suite); browser checked weekly path, later-limit selection, past/empty inputs, opt-in storage, clear, reload, no-JS answer, four widths, dark mode, no browser errors.');
+  console.log('PASS: localized tools/history in all five languages; translated countdown, weekly form navigation, later-limit selection, past/empty inputs, opt-in storage, clear/reload, no-JS answer, language links, four widths, dark mode, no browser errors.');
 } finally { await browser.close(); }

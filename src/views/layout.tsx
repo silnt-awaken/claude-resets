@@ -4,6 +4,7 @@ import { activeSponsors } from '../domain/content';
 import type { Sponsor } from '../domain/types';
 import type { SiteConfig } from '../env';
 import { LOCALES, dict, formatDate, interpolate, localizePath, ogLocale, type Dict, type Locale } from '../i18n';
+import { toolDict } from '../i18n/tools';
 import { CloseIcon, CupIcon, GitHubIcon, GlobeIcon, MoonIcon, ResetMark, RoadmapIcon, SunIcon, XIcon } from './icons';
 
 export interface PageContext {
@@ -210,8 +211,8 @@ const SiteFooter: FC<{ ctx: PageContext; englishOnly: boolean }> = ({ ctx, engli
         )}
       </p>
       <nav class="footer-links" aria-label="Site">
-        <a href="/tools" lang="en">{locale === 'en' ? 'Limit help & tools' : 'Tools (English)'}</a>
-        <a href="/reset-history" lang="en">{locale === 'en' ? 'History analysis' : 'Analysis (English)'}</a>
+        <a href={localizePath(locale, '/tools')}>{toolDict(locale).nav.tools}</a>
+        <a href={localizePath(locale, '/reset-history')}>{toolDict(locale).nav.history}</a>
         <a href={localizePath(locale, '/perks')}>{t.nav.perks}</a>
         <a href={localizePath(locale, '/sources')}>{t.nav.sources}</a>
         <a href={localizePath(locale, '/about')}>{t.nav.about}</a>

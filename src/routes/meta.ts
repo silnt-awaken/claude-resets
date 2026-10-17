@@ -15,7 +15,7 @@ meta.get('/robots.txt', (c) => {
 meta.get('/sitemap.xml', (c) => {
   const cfg = siteConfig(c.env);
   const content = loadContent();
-  const pages = ['/', '/perks', '/sources', '/about', '/support', '/privacy'];
+  const pages = ['/', '/perks', '/sources', '/about', '/support', '/privacy', '/tools', '/reset-history'];
   const urls: string[] = [];
   const entry = (path: string, lastmod?: string) => {
     const alternates = LOCALES.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${cfg.siteUrl}${localizePath(l, path)}" />`).join('\n');
@@ -24,7 +24,6 @@ meta.get('/sitemap.xml', (c) => {
     }
   };
   for (const p of pages) entry(p);
-  for (const path of ['/tools', '/reset-history']) urls.push(`  <url>\n    <loc>${cfg.siteUrl}${path}</loc>\n  </url>`);
   for (const e of publishedEvents(content.events)) entry(`/resets/${e.id}`, e.revisedAt);
   urls.push(`  <url>\n    <loc>${cfg.siteUrl}/api/docs</loc>\n  </url>`);
   urls.push(`  <url>\n    <loc>${cfg.siteUrl}/mcp/docs</loc>\n  </url>`);

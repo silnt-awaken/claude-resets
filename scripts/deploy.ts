@@ -6,6 +6,9 @@ import { release } from '../src/domain/release';
 import { ROOT, adminRequest, parseArgs, readWranglerVars, resolveTarget } from './lib';
 
 const { flags } = parseArgs(process.argv.slice(2));
+const walletBuild = spawn(process.execPath, [path.join(ROOT, 'scripts/build-wallet.mjs')], { cwd: ROOT, env: process.env, stdio: 'inherit' });
+const walletExitCode = await new Promise<number>((resolve, reject) => { walletBuild.on('error', reject); walletBuild.on('close', (code) => resolve(code ?? 1)); });
+if (walletExitCode !== 0) process.exit(walletExitCode);
 const deploy = spawn(process.execPath, [path.join(ROOT, 'node_modules/wrangler/bin/wrangler.js'), 'deploy'], { cwd: ROOT, env: process.env, stdio: ['inherit', 'pipe', 'pipe'] });
 let output = '';
 deploy.stdout.on('data', (chunk: Buffer) => { output += chunk.toString(); process.stdout.write(chunk); });

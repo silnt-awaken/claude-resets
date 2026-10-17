@@ -1,10 +1,10 @@
 {
-  "id": "2026-10-17-reader-tools",
-  "title": "Practical Claude limit help and archive analysis",
+  "id": "2026-10-17-localized-tools-phantom-fix",
+  "title": "Reader tools in all five languages and a Phantom transfer fix",
   "changes": [
-    "Added a limit troubleshooter and private reset-time planner using times from your own Claude account.",
-    "Added original, reproducible archive analysis with monthly counts, sample sizes and clear limitations.",
-    "Made tools discoverable from every locale and documented editorial corrections and optional local storage."
+    "Translated the complete troubleshooter, reset planner, live countdown and history analysis into all five site languages.",
+    "Language switches, internal links, metadata and the sitemap now lead to the matching translated tools.",
+    "Updated the injected Phantom integration to use a complete unsigned transaction and the current provider method."
   ],
   "announce": false
 }
