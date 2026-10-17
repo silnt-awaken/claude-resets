@@ -1,5 +1,19 @@
 # X drafts
 
+## October 17, 2026: owner contributions and public receipts
+
+Status: DRAFTED, not posted. Audience: the existing Claude Resets community. Angle: visible owner participation and verifiable donation activity. Intended action: inspect the goal and optionally contribute from $1 in USDC on Solana. Destination: https://clauderesets.com/goal. Optional asset: the actual live goal-card capture, `outputs/goal-activity/en.png`; this is not the synthetic pending/confirmation screenshot. The post is 270 characters before URL shortening. The label, dated receipts and $200 target were publicly verified after release `2026-10-17-site-owner-wallet`.
+
+I’m contributing to the Claude Resets reader goal too.
+
+My wallet is now labeled “Site owner,” and every donation has a date and public receipt.
+
+We’re raising $200 to fund a reader’s month of Claude Max. Contributions start at $1 in USDC.
+
+https://clauderesets.com/goal
+
+---
+
 ## October 8, 2026: banked reset and community begs
 
 Status: DRAFTED, not posted. Audience: Claude subscribers. Action: read the banked reset and tap beg on the current reset. Destination: https://clauderesets.com. Asset: the real reset-card screenshot supplied by Mike. The live reaction API showed 18 before this update; this is a reaction count, not a unique-person count, and its legacy history was not timestamped per reset. Recheck the count before posting if it changes.

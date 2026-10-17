@@ -1,5 +1,11 @@
 # Verification and optional measurement
 
+## October 17, 2026: site owner contributions
+
+Confirmed in the public release after deployment: implementation `1ccb407`, Worker `f428a172-fa65-4dc5-a677-0ba7a94965bd`, release `2026-10-17-site-owner-wallet`. `/api/v1/goal` identifies the configured owner address and reports $3 from three $1 receipts. `/goal` renders four Site owner badges: one aggregate and three individual transfers. Live browser checks confirmed labels remain after asynchronous updates and are translated in all five locales at mobile/desktop widths. Tests covered another wallet retaining its normal label and the existing draw entries remaining unchanged.
+
+The X post in CONTENT.md is DRAFTED, not published. One organic post is the bounded proposed action. Hypothesis: visible owner participation and dated receipts make the goal easier to understand and verify. Optional 48-hour review after publication: inspect actual replies and any new contributor wallets; impressions and clicks are supporting information. Continue if readers understand the process; clarify if replies still show confusion. No conversion result is claimed, no tracking was added, and no follow-up was scheduled.
+
 September 22, 2026: deployed implementation commit `cfd1e49` as Cloudflare Worker version `f3774621-e28a-476e-826e-a1f3757655d1`. The public homepage was inspected in Chrome and shows the Opus 5.5 saved-reset card with October 22, 2026 expiry.
 
 Public checks returned HTTP 200 and the new event on [the homepage](https://clauderesets.com/), [the detail page](https://clauderesets.com/resets/2026-09-22-opus-5-5-reset), Korean homepage, RSS and JSON feeds. [The status API](https://clauderesets.com/api/v1/status) returned content revision `e484b7b2dab50265`, one reset offer expiring `2026-10-22`, and the unchanged 12 applied resets. Production publication ledger recorded revision 1 with content hash `83b69127142ae20a`; silent publication created no alert jobs.
