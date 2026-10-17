@@ -10,9 +10,10 @@ const SETTINGS: Partial<Env> = { TELEGRAM_ENABLED: 'true', TELEGRAM_BOT_TOKEN: '
 const bindings = () => ({ ...(env as unknown as Env), ...SETTINGS } as Env);
 const NOW = new Date('2026-10-08T20:00:00Z');
 const URL = 'https://x.com/clauderesets/status/2108313497389920459';
+const ORIGINAL_ANNOUNCE = release.announce;
 
 beforeEach(async () => { await clearDb(); });
-afterEach(() => { vi.restoreAllMocks(); });
+afterEach(() => { release.announce = ORIGINAL_ANNOUNCE; vi.restoreAllMocks(); });
 
 function webhook(user = 42, text = `/share ${URL}`, update = 100, type = 'private') {
   return { method: 'POST', headers: { 'content-type': 'application/json', 'x-telegram-bot-api-secret-token': SECRET }, body: JSON.stringify({ update_id: update, message: { from: { id: user }, chat: { id: user, type }, text } }) };
@@ -26,6 +27,7 @@ describe('Telegram publication boundaries', () => {
   });
 
   it('requires the private admin token and exact live build for release announcements', async () => {
+    release.announce = true;
     expect((await request('/admin/telegram/release', { method: 'POST' }, SETTINGS)).status).toBe(401);
     const body = { release_id: release.id, version_id: VERSION };
     expect((await request('/admin/telegram/release', adminInit({ ...body, release_id: 'old-release' }), SETTINGS)).status).toBe(409);
@@ -34,6 +36,17 @@ describe('Telegram publication boundaries', () => {
     expect((await json<{ queued: boolean }>('/admin/telegram/release', adminInit(body), SETTINGS)).body.queued).toBe(true);
     expect((await json<{ queued: boolean }>('/admin/telegram/release', adminInit(body), SETTINGS)).body.queued).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps silent editorial releases out of Telegram', async () => {
+    release.announce = false;
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    const body = { release_id: release.id, version_id: VERSION };
+    const response = await json<{ queued: boolean }>('/admin/telegram/release', adminInit(body), SETTINGS);
+    expect(response.status).toBe(200);
+    expect(response.body.queued).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await bindings().DB.prepare('SELECT COUNT(*) AS n FROM telegram_outbox').first('n')).toBe(0);
   });
 
   it('rejects forged webhooks and ignores strangers or group commands', async () => {

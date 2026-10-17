@@ -22,7 +22,8 @@
   {
     "id": "newer-than-sep-4",
     "url": "https://x.com/ClaudeDevs",
-    "note": "A web search on 2026-09-17 found no reset announcement newer than September 4, 2026 from the tracked accounts. X search is not automated; recheck manually before each publish.",
-    "status": "unresolved"
+    "note": "The September 22 saved-reset announcement supersedes the original September 4 checkpoint. Rechecked all seven tracked accounts in X Latest search on October 17, 2026 for reset or resets since September 23.",
+    "status": "resolved",
+    "resolution": "The latest confirmed grant remains the September 22 Opus 5.5 banked reset, recorded as 2026-09-22-opus-5-5-reset. No newer reset announcement was found in this review. The October 16 @amorriscode reset-button reply is conditional, not confirmation that a reset happened. X search coverage can be incomplete; recheck before future publications."
   }
 ]

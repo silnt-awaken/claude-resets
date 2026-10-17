@@ -16,12 +16,14 @@
     "affiliationEvidenceUrl": "https://x.com/claudeai/status/2044779666477646187",
     "affiliationEvidenceNote": "Introduced by Claude's official product account (@claudeai) on April 16, 2026.",
     "resetEvidenceUrls": [
+      "https://x.com/ClaudeDevs/status/2102438800836489554",
+      "https://x.com/ClaudeDevs/status/2102438803013333469",
       "https://x.com/ClaudeDevs/status/2094856679250919746",
       "https://x.com/ClaudeDevs/status/2064464557951852643",
       "https://x.com/ClaudeDevs/status/2055347539923308703"
     ],
-    "verificationMethod": "Introduction post and reset posts retrieved through X's public oEmbed endpoint on 2026-09-17; author names matched the handle.",
-    "lastReviewedAt": "2026-09-17",
+    "verificationMethod": "Introduction and historical reset posts retrieved through X's public oEmbed endpoint on 2026-09-17. The September 22 saved-reset thread was read directly on X on 2026-10-17; newer posts were searched for reset announcements.",
+    "lastReviewedAt": "2026-10-17",
     "active": true
   },
   {
@@ -40,9 +42,11 @@
     },
     "affiliationEvidenceUrl": "https://github.com/lydiahallie",
     "affiliationEvidenceNote": "Her GitHub profile links this X account. No more precise current job title is claimed here.",
-    "resetEvidenceUrls": ["https://x.com/lydiahallie/status/2095967323412930677"],
+    "resetEvidenceUrls": [
+      "https://x.com/lydiahallie/status/2095967323412930677"
+    ],
     "verificationMethod": "GitHub profile checked for the X link on 2026-09-17; reset post retrieved through X's public oEmbed endpoint.",
-    "lastReviewedAt": "2026-09-17",
+    "lastReviewedAt": "2026-10-17",
     "active": true,
     "limitations": "Job title not asserted; affiliation is stated by her own reset post wording (\"we've just reset\") and her public profiles."
   },
@@ -62,9 +66,11 @@
     },
     "affiliationEvidenceUrl": "https://www-cdn.anthropic.com/files/4zrzovbb/website/9ea9e1e39a9cddf7a79b164a0ae5341ae4006f01.pdf",
     "affiliationEvidenceNote": "Anthropic-hosted biography establishes affiliation; its 2025 role wording is not assumed to be current.",
-    "resetEvidenceUrls": ["https://x.com/alexalbert__/status/2064467657483829441"],
+    "resetEvidenceUrls": [
+      "https://x.com/alexalbert__/status/2064467657483829441"
+    ],
     "verificationMethod": "Reset post retrieved through X's public oEmbed endpoint on 2026-09-17; affiliation URL supplied by project research and not re-parsed.",
-    "lastReviewedAt": "2026-09-17",
+    "lastReviewedAt": "2026-10-17",
     "active": true,
     "limitations": "Current role wording unknown; treated as a team member, not the originating account."
   },
@@ -84,9 +90,11 @@
     },
     "affiliationEvidenceUrl": "https://www.linkedin.com/in/bcherny",
     "affiliationEvidenceNote": "Own professional profile supports the role.",
-    "resetEvidenceUrls": ["https://x.com/bcherny/status/2047375800945783056"],
+    "resetEvidenceUrls": [
+      "https://x.com/bcherny/status/2047375800945783056"
+    ],
     "verificationMethod": "Relay post retrieved through X's public oEmbed endpoint on 2026-09-17; its t.co link resolved to the ClaudeDevs reset post.",
-    "lastReviewedAt": "2026-09-17",
+    "lastReviewedAt": "2026-10-17",
     "active": true,
     "limitations": "Relays announcements; not established as an originating reset source."
   },
@@ -108,7 +116,7 @@
     "affiliationEvidenceNote": "claude.com links to this X account.",
     "resetEvidenceUrls": [],
     "verificationMethod": "claude.com footer link checked on 2026-09-17; introduction post retrieved through X's public oEmbed endpoint.",
-    "lastReviewedAt": "2026-09-17",
+    "lastReviewedAt": "2026-10-17",
     "active": true
   },
   {
@@ -127,9 +135,11 @@
     },
     "affiliationEvidenceUrl": "https://www.anthropic.com/",
     "affiliationEvidenceNote": "anthropic.com links to this X account.",
-    "resetEvidenceUrls": ["https://www.anthropic.com/claude-opus-5-5"],
+    "resetEvidenceUrls": [
+      "https://www.anthropic.com/claude-opus-5-5"
+    ],
     "verificationMethod": "anthropic.com footer link checked on 2026-09-17; official Opus 5.5 saved-reset announcement read in Chrome on 2026-09-22.",
-    "lastReviewedAt": "2026-09-22",
+    "lastReviewedAt": "2026-10-17",
     "active": true
   },
   {
@@ -150,7 +160,7 @@
     "affiliationEvidenceNote": "GitHub profile mentions Anthropic and links this X account.",
     "resetEvidenceUrls": [],
     "verificationMethod": "GitHub profile checked for the X link and Anthropic mention on 2026-09-17.",
-    "lastReviewedAt": "2026-09-17",
+    "lastReviewedAt": "2026-10-17",
     "active": true,
     "limitations": "Optional context only; no reset announcements attributed."
   }

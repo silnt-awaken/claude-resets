@@ -1,12 +1,10 @@
 {
-  "id": "2026-10-09-claude-code-projects-waitlist",
-  "title": "Claude Code Projects: Pro and Max waitlist cleared",
+  "id": "2026-10-17-reset-source-review",
+  "title": "Banked reset eligibility and October 22 deadline reverified",
   "changes": [
-    "ClaudeDevs has admitted every Pro and Max subscriber already on the Claude Code Projects waitlist.",
-    "Claude coordinates related tasks in one conversation, with work running in parallel threads. Projects is still in beta; new applicants join the waitlist as capacity allows.",
-    "Read the guide: https://code.claude.com/docs/en/claude-projects",
-    "Join the waitlist: https://claude.com/form/projects",
-    "Official announcement: https://x.com/ClaudeDevs/status/2108621476538781878"
+    "Rechecked the tracked Claude accounts on X; no reset announcement newer than September 22 was found.",
+    "The existing Opus 5.5 banked reset is for Pro, Max, and Team users, redeemable in Settings → Usage until October 22. Check Claude for the exact cutoff.",
+    "Added the original developer posts as evidence and refreshed all five translations. Reset totals are unchanged."
   ],
-  "announce": true
+  "announce": false
 }

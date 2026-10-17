@@ -30,7 +30,7 @@ describe('feeds', () => {
     expect(feed.items).toHaveLength(13);
     const first = feed.items[0]!;
     expect(first.id).toBe('https://example.test/resets/2026-09-22-opus-5-5-reset');
-    expect(first.external_url).toBe('https://www.anthropic.com/claude-opus-5-5');
+    expect(first.external_url).toBe('https://x.com/ClaudeDevs/status/2102438800836489554');
     expect(first.date_published.slice(0, 10)).toBe('2026-09-22');
     expect(first.date_modified).toBeTruthy();
   });
