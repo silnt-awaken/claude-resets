@@ -53,9 +53,10 @@ export function summarizeClaudeStatus(input: unknown, now = new Date()): ClaudeS
 export async function fetchClaudeStatus(): Promise<ClaudeServiceStatus> {
   const response = await fetch(CLAUDE_STATUS_SOURCE, {
     headers: { accept: 'application/json' },
-    redirect: 'error',
+    // Workers supports manual/follow; reject redirects through the HTTP status check below.
+    redirect: 'manual',
     signal: AbortSignal.timeout(4000),
   });
-  if (!response.ok) throw new Error('Claude status feed unavailable');
+  if (!response.ok) throw new Error(`Claude status feed HTTP ${response.status}`);
   return summarizeClaudeStatus(await response.json());
 }

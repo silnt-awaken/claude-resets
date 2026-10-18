@@ -44,7 +44,8 @@ api.get('/v1/claude-status', async (c) => {
     const response = c.json(status, 200, { 'cache-control': `public, max-age=${CLAUDE_STATUS_TTL}` });
     c.executionCtx.waitUntil(caches.default.put(CLAUDE_STATUS_CACHE, response.clone()).catch(() => {}));
     return response;
-  } catch {
+  } catch (error) {
+    console.warn('Claude status check failed', error instanceof Error ? error.message : 'Unknown error');
     return c.json({ state: 'unavailable', source_url: 'https://status.claude.com/' }, 503, { 'cache-control': 'no-store' });
   }
 });

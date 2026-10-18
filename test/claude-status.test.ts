@@ -73,12 +73,13 @@ describe('official Claude service status', () => {
     expect(await second.json()).toEqual(body);
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch.mock.calls[0]![0]).toBe(CLAUDE_STATUS_SOURCE);
-    expect(fetch.mock.calls[0]![1]).toMatchObject({ redirect: 'error' });
+    expect(fetch.mock.calls[0]![1]).toMatchObject({ redirect: 'manual' });
   });
 
-  it.each(['http', 'invalid', 'network'])('does not turn a %s failure into a healthy or cached result', async (failure) => {
+  it.each(['http', 'redirect', 'invalid', 'network'])('does not turn a %s failure into a healthy or cached result', async (failure) => {
     const fetch = vi.spyOn(globalThis, 'fetch');
     if (failure === 'http') fetch.mockResolvedValue(new Response('Unavailable', { status: 503 }));
+    else if (failure === 'redirect') fetch.mockResolvedValue(new Response(null, { status: 302, headers: { location: 'https://untrusted.example/' } }));
     else if (failure === 'invalid') fetch.mockResolvedValue(new Response('{"status":{"indicator":"none"}}'));
     else fetch.mockRejectedValue(new Error('timeout'));
     const response = await request('/api/v1/claude-status');
