@@ -13,6 +13,7 @@ import { PerkFlag, PerksSection } from './perks';
 import { AdSlot } from './ads';
 import { NoticeStrip } from './notices';
 import { ToolsTeaser } from './tools';
+import { ClaudeStatusCard } from './claude-status';
 
 export const CHECK_USAGE_URL = 'https://claude.ai/settings/usage';
 export const USAGE_HELP_URL = 'https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work';
@@ -63,6 +64,7 @@ export const HomePage: FC<{ ctx: PageContext; model: HomeModel }> = ({ ctx, mode
       </section>
 
       <ToolsTeaser ctx={ctx} />
+      <ClaudeStatusCard ctx={ctx} />
       <FiltersForm ctx={ctx} filters={model.filters} />
       <StatsTiles ctx={ctx} stats={model.stats} total={model.filtered.length} filters={model.filters} />
       <AdSlot ctx={ctx} placement="home-mid" />
@@ -196,15 +198,6 @@ const Actions: FC<{ ctx: PageContext }> = ({ ctx }) => {
       <a class="pill" href="/feed.xml" title={t.actions.feedTitle}>
         <RssIcon /> <span>{t.actions.feed}</span>
       </a>
-      {cfg.supportUrl ? (
-        <a class="pill pill--accent" href={cfg.supportUrl} target="_blank" rel="noopener noreferrer" title={t.actions.tipTitle}>
-          <CupIcon /> <span>{t.actions.tip}</span>
-        </a>
-      ) : (
-        <a class="pill pill--accent" href={localizePath(locale, '/support')} title={t.actions.tipTitle}>
-          <CupIcon /> <span>{t.actions.tip}</span>
-        </a>
-      )}
       <p class="action-hint" id="action-hint" data-role="action-hint" aria-live="polite" hidden></p>
     </div>
   );

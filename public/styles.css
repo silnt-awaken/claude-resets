@@ -1909,6 +1909,29 @@ th {
 .roadmap-phase--later { opacity: 0.8; }
 
 /* Task-focused help and original archive analysis. */
+.claude-status { padding: 20px 24px; }
+.claude-status-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px 24px; }
+.claude-status-head h2 { font-size: 1.4rem; }
+.claude-status-head > a { font-size: .85rem; }
+.claude-status-intro { color: var(--ink-2); font-size: .9rem; max-width: 60ch; margin-top: 4px; }
+.claude-status-summary { display: flex; align-items: center; gap: 9px; font-weight: 750; margin: 16px 0 12px; }
+.claude-status-summary::before { content: ''; flex: 0 0 10px; height: 10px; border: 1px solid var(--ink); border-radius: 50%; background: var(--ink-3); }
+.claude-status[data-state='operational'] .claude-status-summary::before { background: var(--mint); }
+.claude-status[data-state='issues'] .claude-status-summary::before { background: var(--accent); }
+.claude-status[data-state='maintenance'] .claude-status-summary::before { background: var(--sun); }
+.claude-status-services { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; list-style: none; padding: 0; }
+.claude-status-services li { border: 1px solid var(--ink-3); border-radius: 8px; padding: 9px 12px; min-width: 0; }
+.claude-status-services strong, .claude-status-services span { display: block; overflow-wrap: anywhere; }
+.claude-status-services strong { font-size: .85rem; }
+.claude-status-services span { font-size: .8rem; color: var(--ink-2); margin-top: 2px; }
+.claude-status-services li:not([data-state='operational']):not([data-state='unknown']) { background: var(--sun); color: var(--on-sun); }
+.claude-status-services li:not([data-state='operational']):not([data-state='unknown']) span { color: inherit; }
+.claude-status-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 8px 18px; flex-wrap: wrap; margin-top: 12px; }
+.claude-status-foot .status-line { margin: 0; }
+.claude-status-foot button { font-size: .8rem; }
+.claude-status [data-status-incidents] { margin-top: 14px; font-size: .9rem; overflow-wrap: anywhere; }
+.claude-status [hidden] { display: none; }
+@media (max-width: 640px) { .claude-status { padding: 18px; } .claude-status-services li { padding: 8px; } }
 .help-teaser { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 24px; border: var(--border); border-radius: var(--radius); background: var(--card); }
 .help-teaser h2 { font-size: 1.4rem; }
 .help-teaser p { color: var(--ink-2); max-width: 44ch; margin-top: 5px; }

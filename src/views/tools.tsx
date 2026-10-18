@@ -5,9 +5,10 @@ import { formatDate, formatNumber, localizePath } from '../i18n';
 import { toolDict } from '../i18n/tools';
 import { localizedTitle } from './components';
 import { Layout, type PageContext } from './layout';
+import { ClaudeStatusCard } from './claude-status';
 import { API_RATE_LIMITS_URL, CLAUDE_CODE_HELP_URL, CLAUDE_STATUS_URL, USAGE_HELP_URL } from './pages';
 
-export const TOOL_REVISION = '2026-10-17-tools-2';
+export const TOOL_REVISION = '2026-10-18-live-status';
 const BEST_PRACTICES = 'https://support.claude.com/en/articles/9797557-usage-limit-best-practices';
 const CREDITS = 'https://support.claude.com/en/articles/12429409-manage-usage-credits-for-paid-claude-plans';
 // Translations contain tokens, not executable HTML. JSX escapes each substituted value.
@@ -34,6 +35,7 @@ export const ToolsPage: FC<{ ctx: PageContext; issue?: string }> = ({ ctx, issue
   return <Layout ctx={ctx} title={`${m.title} | Claude Resets`} description={m.description}>
     <nav class="tool-nav" aria-label={m.nav.label}><a href={path('/')}>{m.nav.board}</a><a href={path('/reset-history')}>{m.nav.history}</a><a href={path('/about')}>{m.nav.verify}</a></nav>
     <p class="eyebrow">{m.eyebrow}</p><h1 class="page-title">{m.heading}</h1><p class="page-intro">{m.intro}</p>
+    <ClaudeStatusCard ctx={ctx} />
     <section class="section card" aria-labelledby="troubleshoot-heading"><h2 id="troubleshoot-heading">{m.question}</h2>
       <form action={`${path('/tools')}#next-step`} method="get" class="limit-form"><label for="issue">{m.choose}</label><select name="issue" id="issue">{choices.map((choice) => <option value={choice.key} selected={issue === choice.key}>{choice.label}</option>)}</select><button class="btn btn--sun" type="submit">{m.show} →</button></form>
       <div id="next-step" class="tool-answer" tabindex={-1}>{selected ? <><h3>{selected.title}</h3><p>{selected.body}</p><a href={selected.url}>{selected.action} →</a></> : <p>{m.select}</p>}</div>

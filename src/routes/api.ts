@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { CLAUDE_STATUS_CACHE, CLAUDE_STATUS_TTL, fetchClaudeStatus } from '../claude-status';
 import { release } from '../domain/release';
 import { loadContent } from '../domain/content';
 import { parseFilters } from '../domain/filters';
@@ -33,6 +34,20 @@ function contentOr503(c: Parameters<typeof problem>[0]) {
     return { content: null, response: problem(c, 503, 'content_unavailable', 'Reset data is temporarily unavailable.') };
   }
 }
+
+api.get('/v1/claude-status', async (c) => {
+  const cached = await caches.default.match(CLAUDE_STATUS_CACHE);
+  // Cache API responses have immutable headers; middleware adds CORS/security headers.
+  if (cached) return new Response(cached.body, cached);
+  try {
+    const status = await fetchClaudeStatus();
+    const response = c.json(status, 200, { 'cache-control': `public, max-age=${CLAUDE_STATUS_TTL}` });
+    c.executionCtx.waitUntil(caches.default.put(CLAUDE_STATUS_CACHE, response.clone()).catch(() => {}));
+    return response;
+  } catch {
+    return c.json({ state: 'unavailable', source_url: 'https://status.claude.com/' }, 503, { 'cache-control': 'no-store' });
+  }
+});
 
 api.get('/v1/status', (c) => {
   const { content, response } = contentOr503(c);

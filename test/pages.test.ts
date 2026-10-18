@@ -132,7 +132,7 @@ describe('pages', () => {
 
   it('shows the support destination everywhere when configured and an honest state when not', async () => {
     const configured = await (await request('/', {}, { SUPPORT_URL: 'https://buymeacoffee.com/example' })).text();
-    expect(configured.match(/https:\/\/buymeacoffee\.com\/example/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(configured.match(/https:\/\/buymeacoffee\.com\/example/g)?.length).toBe(2);
     expect(configured).toContain('rel="noopener noreferrer"');
     const support = await (await request('/support', {}, { SUPPORT_URL: 'https://buymeacoffee.com/example' })).text();
     expect(support).toContain('Hosted by Buy Me a Coffee');
