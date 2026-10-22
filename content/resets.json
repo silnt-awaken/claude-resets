@@ -1,5 +1,88 @@
 [
   {
+    "id": "2026-10-21-claude-duet-reset",
+    "kind": "credit",
+    "editorialStatus": "published",
+    "verificationStatus": "verified",
+    "eventStatus": "confirmed",
+    "title": "Claude Duet: one full limit reset when you are admitted",
+    "summary": "Pro and Max subscribers with a US Claude account who are admitted to the Claude Duet research preview get one full limit reset, covering both the five-hour session and weekly limits. Use it by November 30, 2026 from Settings → Usage on the web or desktop (\"Reset for free\"). Admission is by waitlist in waves; Duet itself draws on the same plan limits as chat, including background work.",
+    "originalLanguage": "en",
+    "translations": {
+      "zh-CN": {
+        "title": "Claude Duet：获准加入即可获得一次完整额度重置",
+        "summary": "拥有美国 Claude 账户、获准加入 Claude Duet 研究预览的 Pro 和 Max 订阅者，可获得一次完整额度重置，同时恢复 5 小时会话额度和每周额度。请在 2026 年 11 月 30 日前，在网页版或桌面版的「设置 → 使用情况」中点击「免费重置」使用。加入需通过等候名单分批进行；Duet 本身与聊天共用套餐额度，后台工作同样计入。"
+      },
+      "zh-TW": {
+        "title": "Claude Duet：獲准加入即可獲得一次完整額度重置",
+        "summary": "擁有美國 Claude 帳戶、獲准加入 Claude Duet 研究預覽的 Pro 與 Max 訂閱者，可獲得一次完整額度重置，同時恢復 5 小時工作階段額度與每週額度。請於 2026 年 11 月 30 日前，在網頁版或桌面版的「設定 → 使用情況」中點選「免費重置」使用。加入需透過等候名單分批進行；Duet 本身與聊天共用方案額度，背景工作同樣計入。"
+      },
+      "ja": {
+        "title": "Claude Duet：参加が認められると上限を1回フルリセット",
+        "summary": "米国のClaudeアカウントを持ち、Claude Duetリサーチプレビューへの参加が認められたPro・Max契約者は、5時間のセッション上限と週間上限の両方を戻せるフルリセットを1回受け取れます。2026年11月30日までに、ウェブ版またはデスクトップ版の「設定 → 使用状況」で「無料でリセット」から使用してください。参加は待機リストから段階的に認められます。Duet自体もチャットと同じプランの上限を消費し、バックグラウンド作業も含まれます。"
+      },
+      "ko": {
+        "title": "Claude Duet: 참여 승인 시 한도 전체 초기화 1회",
+        "summary": "미국 Claude 계정을 보유하고 Claude Duet 리서치 프리뷰 참여가 승인된 Pro 및 Max 구독자는 5시간 세션 한도와 주간 한도를 모두 되돌리는 전체 한도 초기화를 1회 받습니다. 2026년 11월 30일까지 웹 또는 데스크톱의 설정 → 사용량에서 \"무료로 초기화\"를 눌러 사용하세요. 참여는 대기 명단을 통해 단계적으로 승인됩니다. Duet 자체도 채팅과 같은 요금제 한도를 사용하며 백그라운드 작업도 포함됩니다."
+      }
+    },
+    "translationStatus": "authored",
+    "time": {
+      "precision": "exact",
+      "announcedAt": "2026-10-21T19:09:37Z"
+    },
+    "effectiveAt": null,
+    "effectiveNote": "Granted on admission to the Claude Duet research preview and applied only when the subscriber redeems it in Claude. No automatic account reset is asserted.",
+    "resetOffer": {
+      "expiresOn": "2026-11-30"
+    },
+    "allocation": "subscription_usage",
+    "audience": {
+      "scope": "limited",
+      "statement": "Pro and Max subscribers with a US Claude account admitted to the Claude Duet research preview",
+      "plans": [
+        "pro",
+        "max"
+      ]
+    },
+    "windows": [
+      "five_hour",
+      "weekly"
+    ],
+    "sources": [
+      {
+        "url": "https://support.claude.com/en/articles/17631495-get-started-with-claude-duet",
+        "sourceId": "anthropicai",
+        "handle": "AnthropicAI",
+        "displayName": "Anthropic",
+        "kind": "web_page",
+        "role": "original",
+        "excerpt": "When you’re admitted to the Claude Duet research preview, you get one full limit reset",
+        "evidenceSummary": "The official Claude Duet help article grants admitted users one full limit reset covering five-hour session and weekly limits, available until November 30, 2026, and limits the preview to US Pro and Max accounts via waitlist.",
+        "verificationMethod": "Read the official support article directly on 2026-10-22. Redemption steps come from the linked official article on limit resets (support.claude.com/en/articles/17007452). The exact expiry time is shown in Settings → Usage.",
+        "verifiedAt": "2026-10-22"
+      },
+      {
+        "url": "https://x.com/claudeai/status/2112984669943968099",
+        "sourceId": "claudeai",
+        "handle": "claudeai",
+        "displayName": "Claude",
+        "kind": "x_post",
+        "role": "original",
+        "postedAt": "2026-10-21T19:09:37Z",
+        "excerpt": "Claude Duet is an early research preview, available through a waitlist on Pro and Max plans in the US.",
+        "evidenceSummary": "The official @claudeai launch thread confirms the Duet research preview, its waitlist and its Pro/Max US eligibility.",
+        "verificationMethod": "Post text confirmed via search results on 2026-10-22; UTC timestamp decoded from the post ID.",
+        "verifiedAt": "2026-10-22"
+      }
+    ],
+    "firstPublishedAt": "2026-10-22T10:14:17Z",
+    "revisedAt": "2026-10-22T10:14:17Z",
+    "revision": 1,
+    "alertRevision": 1,
+    "notes": "Duet launched October 21, 2026. The reset is per-account on admission, which happens in waves, so many readers will not have it yet. Expiry is the stated date only; check Claude for the exact cutoff."
+  },
+  {
     "id": "2026-09-22-opus-5-5-reset",
     "kind": "credit",
     "editorialStatus": "published",

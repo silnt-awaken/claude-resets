@@ -14,10 +14,10 @@ function cookieFrom(res: Response): string {
 }
 
 describe('beg reaction', () => {
-  it('preserves the legacy live counter on the current banked reset', async () => {
+  it('keeps the legacy counter on the Opus 5.5 card and starts the Duet reset at zero', async () => {
     await (env as unknown as Env).DB.prepare("UPDATE reactions SET count = 18 WHERE key = 'beg'").run();
     const state = await json<{ eventId: string; count: number; totals: Record<string, number> }>('/api/v1/reactions');
-    expect(state.body).toMatchObject({ eventId: '2026-09-22-opus-5-5-reset', count: 18, totals: { '2026-09-22-opus-5-5-reset': 18 } });
+    expect(state.body).toMatchObject({ eventId: '2026-10-21-claude-duet-reset', count: 0, totals: { '2026-09-22-opus-5-5-reset': 18, '2026-10-21-claude-duet-reset': 0 } });
   });
 
   it('starts a new reset at zero, preserves 18 on the previous card, resets the cooldown, and refuses stale-page reactions', async () => {

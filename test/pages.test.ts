@@ -42,7 +42,7 @@ describe('pages', () => {
     expect(html).toContain('data-role="cg"');
     expect(html).toContain('data-role="log"');
     expect(html).toContain('data-role="log-extra"');
-    expect(html).toContain('Show all 13 resets');
+    expect(html).toContain('Show all 14 resets');
     expect(html).toContain('Tip for coffee');
     expect(html).toContain('not affiliated with or endorsed by Anthropic');
     expect(html).toContain('https://claude.ai/settings/usage');
@@ -72,7 +72,7 @@ describe('pages', () => {
   it('persists filters in the URL and applies them to hero, stats, calendar and archive', async () => {
     const html = await (await request('/?audience=max&window=weekly')).text();
     expect(html).toContain('data-event-id="2026-09-04-max-weekly"');
-    expect(html).toContain('Show all 11 resets');
+    expect(html).toContain('Show all 12 resets');
     expect(html).toContain('href="/zh-CN?audience=max&amp;window=weekly"');
     const ja = await (await request('/ja?audience=max')).text();
     expect(ja).toContain('<html lang="ja"');
