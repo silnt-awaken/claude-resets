@@ -1,5 +1,30 @@
 # X drafts
 
+## October 22, 2026: Claude Duet admission reset
+
+Status: DRAFTED, not posted. Audience: Claude subscribers. Angle: Duet preview members get one full reset of 5-hour and weekly limits, usable until Nov 30, 2026; the Opus 5.5 saved reset expires the same day as posting. Destination: https://clauderesets.com. Source: https://support.claude.com/en/articles/17631495-get-started-with-claude-duet. Both fit X's weighted 280 count (arrows count as 2).
+
+### 1. Recommended: last call + what's next
+
+Last call: the Opus 5.5 saved reset expires today. Settings → Usage.
+
+Another one is coming for some of you: Claude Duet preview members get one full reset of 5-hour + weekly limits, usable until Nov 30.
+
+Details + official source:
+https://clauderesets.com
+
+### 2. Duet only
+
+Got into the Claude Duet preview? You get one free full reset of your 5-hour AND weekly limits.
+
+Use it anytime before Nov 30: Settings → Usage → "Reset for free" (web or desktop).
+
+US Pro/Max via waitlist. Duet uses your plan limits too.
+
+https://clauderesets.com
+
+---
+
 ## October 17, 2026: owner contributions and public receipts
 
 Status: DRAFTED, not posted. Audience: the existing Claude Resets community. Angle: visible owner participation and verifiable donation activity. Intended action: inspect the goal and optionally contribute from $1 in USDC on Solana. Destination: https://clauderesets.com/goal. Optional asset: the actual live goal-card capture, `outputs/goal-activity/en.png`; this is not the synthetic pending/confirmation screenshot. The post is 270 characters before URL shortening. The label, dated receipts and $200 target were publicly verified after release `2026-10-17-site-owner-wallet`.
