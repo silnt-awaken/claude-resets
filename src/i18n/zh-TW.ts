@@ -236,6 +236,7 @@ export const zhTW: Dict = {
     pro: 'Pro',
     max: 'Max',
     team: 'Team',
+    ultra: 'Ultra',
     enterprise: 'Enterprise',
   },
   sources: {

@@ -1,5 +1,30 @@
 # X drafts
 
+## November 9, 2026: Fable 5.2 launch resets
+
+Status: DRAFTED, not posted. Audience: Claude subscribers. Angle: Fable 5.2 launched with free Fable limit resets. Max, Ultra and Team Premium get 1–3 by tenure, usable until Mar 8, 2027. Pro and Team Standard get a week of Fable plus 1 reset that expires Nov 16. Destination: https://clauderesets.com. Sources: https://x.com/ClaudeDevs/status/2119868704544711108 and https://support.claude.com/en/articles/17506494-claude-fable-5-2-launch-offers. Both fit X's weighted 280 count (259 and 260; arrows count as 2).
+
+### 1. Recommended: who gets what
+
+Fable 5.2 is out with free Fable limit resets:
+
+Max/Ultra/Team Premium: 1–3 by tenure (<6 mo: 1, 6–12: 2, 12+: 3). Use by Mar 8, 2027.
+Pro/Team Standard: a week of Fable + 1 reset. Use by Nov 16.
+
+Settings → Usage → "Reset for free"
+
+https://clauderesets.com
+
+### 2. Pro and Team Standard urgency (post before Nov 16)
+
+On Pro or Team Standard? Fable 5.2 is inside your plan until Nov 16 (up to half your weekly limit), plus one free Fable reset that expires the same day.
+
+Pick Fable in the model picker; it burns limits faster. Reset: Settings → Usage.
+
+https://clauderesets.com
+
+---
+
 ## October 22, 2026: Claude Duet admission reset
 
 Status: DRAFTED, not posted. Audience: Claude subscribers. Angle: Duet preview members get one full reset of 5-hour and weekly limits, usable until Nov 30, 2026; the Opus 5.5 saved reset expires the same day as posting. Destination: https://clauderesets.com. Source: https://support.claude.com/en/articles/17631495-get-started-with-claude-duet. Both fit X's weighted 280 count (arrows count as 2).

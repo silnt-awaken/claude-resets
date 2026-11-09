@@ -40,7 +40,7 @@ const eventTimeSchema = z
     if (t.precision === 'exact' && t.announcedOn) ctx.addIssue({ code: 'custom', message: 'exact precision must not also carry announcedOn' });
   });
 
-const planSchema = z.enum(['free', 'pro', 'max', 'team', 'enterprise']);
+const planSchema = z.enum(['free', 'pro', 'max', 'ultra', 'team', 'enterprise']);
 
 const audienceSchema = z.object({
   scope: z.enum(['broad', 'limited', 'unspecified']),
@@ -268,15 +268,20 @@ export function validateContent(raw: RawContent): ValidationResult {
 
   const sourceIds = new Set(sources.data.map((s) => s.id));
   const seenIds = new Set<string>();
-  const seenUrls = new Map<string, string>();
+  const seenUrls = new Map<string, string[]>();
+  const byId = new Map(events.data.map((x) => [x.id, x]));
+  // One announcement can grant distinct offers (different audiences or expiries). Those records may share
+  // evidence only when each names the other in relatedEventIds; otherwise a shared URL means a double count.
+  const linked = (a: string, b: string) => !!byId.get(a)?.relatedEventIds?.includes(b) && !!byId.get(b)?.relatedEventIds?.includes(a);
   for (const e of events.data) {
     if (seenIds.has(e.id)) errors.push(`resets.json: duplicate event id ${e.id}`);
     seenIds.add(e.id);
     for (const s of e.sources) {
       if (!sourceIds.has(s.sourceId)) errors.push(`${e.id}: unknown sourceId ${s.sourceId} (add it to sources.json)`);
-      const prior = seenUrls.get(s.url);
-      if (prior && prior !== e.id) errors.push(`${e.id}: source URL ${s.url} is already used by ${prior}; one real-world event must not be recorded twice`);
-      seenUrls.set(s.url, e.id);
+      const priors = seenUrls.get(s.url) ?? [];
+      const unlinked = priors.find((p) => p !== e.id && !linked(p, e.id));
+      if (unlinked) errors.push(`${e.id}: source URL ${s.url} is already used by ${unlinked}; one real-world event must not be recorded twice (link sibling offers with relatedEventIds on both)`);
+      if (!priors.includes(e.id)) seenUrls.set(s.url, [...priors, e.id]);
     }
     for (const rel of e.relatedEventIds ?? []) {
       if (!events.data.some((x) => x.id === rel)) errors.push(`${e.id}: relatedEventIds references unknown event ${rel}`);

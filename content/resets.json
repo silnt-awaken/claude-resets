@@ -1,5 +1,205 @@
 [
   {
+    "id": "2026-11-09-fable-5-2-resets",
+    "kind": "credit",
+    "editorialStatus": "published",
+    "verificationStatus": "verified",
+    "eventStatus": "confirmed",
+    "title": "Fable 5.2: one to three Fable resets for Max, Ultra and Team Premium",
+    "summary": "To mark the Fable 5.2 launch, Max and Ultra subscribers, premium seats on Team plans and premium seats on legacy seat-based Enterprise plans get one to three Fable limit resets, based on how long they have paid: under six months gets one, six to 12 months two, more than 12 months three. A Fable reset gives back the weekly usage spent on Fable models (weekly usage on other models stays) and, if your account has a five-hour limit, refills all of it. Use them by March 8, 2027 from Settings → Usage → Limit resets (\"Reset for free\"). Paid billing must have been in place before November 9, 2026 at 10:00 am PT.",
+    "originalLanguage": "en",
+    "translations": {
+      "zh-CN": {
+        "title": "Fable 5.2：Max、Ultra 及 Team 高级席位可获 1 至 3 次 Fable 额度重置",
+        "summary": "为庆祝 Fable 5.2 发布，Max 和 Ultra 订阅者、Team 套餐的高级席位以及旧版按席位计费 Enterprise 套餐的高级席位，可根据付费订阅时长获得 1 至 3 次 Fable 额度重置：不足 6 个月 1 次，6 至 12 个月 2 次，超过 12 个月 3 次。Fable 重置会返还每周额度中用于 Fable 模型的用量（其他模型的每周用量不变）；如果你的账户有 5 小时额度，则会将其全部恢复。请在 2027 年 3 月 8 日前，在「设置 → 使用情况 → 额度重置」中点击「免费重置」使用。付费账单须在 2026 年 11 月 9 日太平洋时间上午 10:00 前已生效。"
+      },
+      "zh-TW": {
+        "title": "Fable 5.2：Max、Ultra 及 Team 進階席位可獲 1 至 3 次 Fable 額度重置",
+        "summary": "為慶祝 Fable 5.2 推出，Max 與 Ultra 訂閱者、Team 方案的進階席位，以及舊版按席位計費 Enterprise 方案的進階席位，可依付費訂閱時間獲得 1 至 3 次 Fable 額度重置：未滿 6 個月 1 次，6 至 12 個月 2 次，超過 12 個月 3 次。Fable 重置會退還每週額度中用於 Fable 模型的用量（其他模型的每週用量不變）；若你的帳戶有 5 小時額度，則會將其全部恢復。請於 2027 年 3 月 8 日前，在「設定 → 使用情況 → 額度重置」中點選「免費重置」使用。付費帳單須於 2026 年 11 月 9 日太平洋時間上午 10:00 前已生效。"
+      },
+      "ja": {
+        "title": "Fable 5.2：Max・Ultra・Team プレミアムシートに Fable リセットを1〜3回",
+        "summary": "Fable 5.2 のリリースを記念して、Max・Ultra 契約者、Team プランのプレミアムシート、旧来のシート制 Enterprise プランのプレミアムシートは、有料契約期間に応じて Fable の上限リセットを1〜3回受け取れます（6か月未満は1回、6〜12か月は2回、12か月超は3回）。Fable リセットは週間上限のうち Fable モデルに使った分を戻し（他のモデルの週間使用量はそのまま）、5時間上限があるアカウントではそれをすべて回復します。2027年3月8日までに「設定 → 使用状況 → 上限リセット」で「無料でリセット」から使用してください。2026年11月9日午前10時（太平洋時間）より前に有料の請求が始まっている必要があります。"
+      },
+      "ko": {
+        "title": "Fable 5.2: Max·Ultra·Team 프리미엄 좌석에 Fable 초기화 1~3회",
+        "summary": "Fable 5.2 출시를 기념해 Max 및 Ultra 구독자, Team 요금제 프리미엄 좌석, 기존 좌석 기반 Enterprise 요금제 프리미엄 좌석은 유료 구독 기간에 따라 Fable 한도 초기화를 1~3회 받습니다(6개월 미만 1회, 6~12개월 2회, 12개월 초과 3회). Fable 초기화는 주간 한도 중 Fable 모델에 사용한 양을 되돌려 주며(다른 모델의 주간 사용량은 그대로), 5시간 한도가 있는 계정은 이를 전부 회복합니다. 2027년 3월 8일까지 설정 → 사용량 → 한도 초기화에서 \"무료로 초기화\"를 눌러 사용하세요. 2026년 11월 9일 오전 10시(태평양 시간) 이전에 유료 결제가 시작된 계정만 해당됩니다."
+      }
+    },
+    "translationStatus": "authored",
+    "time": {
+      "precision": "exact",
+      "announcedAt": "2026-11-09T19:04:19Z"
+    },
+    "effectiveAt": null,
+    "effectiveNote": "Applied only when the subscriber redeems a Fable reset in Claude. On the weekly limit it restores only usage spent on Fable models. No automatic account reset is asserted.",
+    "resetOffer": {
+      "expiresOn": "2027-03-08"
+    },
+    "allocation": "subscription_usage",
+    "audience": {
+      "scope": "limited",
+      "statement": "Max and Ultra subscribers, premium seats on Team plans, and premium seats on legacy seat-based Enterprise plans, with paid billing in place before November 9, 2026 at 10:00 am PT",
+      "plans": [
+        "max",
+        "ultra",
+        "team",
+        "enterprise"
+      ],
+      "exclusions": "Free plan; standard seats on legacy seat-based Enterprise plans; self-serve, usage-based and HIPAA-ready Enterprise plans. Team standard seats get the separate Pro offer."
+    },
+    "windows": [
+      "five_hour",
+      "weekly"
+    ],
+    "sources": [
+      {
+        "url": "https://x.com/ClaudeDevs/status/2119868704544711108",
+        "sourceId": "claudedevs",
+        "handle": "ClaudeDevs",
+        "displayName": "ClaudeDevs",
+        "kind": "x_post",
+        "role": "original",
+        "postedAt": "2026-11-09T19:04:19Z",
+        "excerpt": "We're giving Ultra and Team Premium users Fable resets based on how long you've subscribed",
+        "evidenceSummary": "The official @ClaudeDevs launch thread announces one to three Fable resets by subscription length (<6 mo: 1, 6–12 mo: 2, >12 mo: 3), usable anytime by March 8.",
+        "verificationMethod": "Read the @ClaudeDevs Fable 5.2 launch thread directly on X on 2026-11-09; UTC timestamp decoded from the post ID.",
+        "verifiedAt": "2026-11-09"
+      },
+      {
+        "url": "https://support.claude.com/en/articles/17506494-claude-fable-5-2-launch-offers",
+        "sourceId": "anthropicai",
+        "handle": "AnthropicAI",
+        "displayName": "Anthropic",
+        "kind": "web_page",
+        "role": "original",
+        "excerpt": "These resets expire on March 8, 2027 at 11:59 pm PT.",
+        "evidenceSummary": "The official help article lists Max, Ultra, Team premium and legacy seat-based Enterprise premium seats, the tenure tiers, the billing cutoff, what a Fable reset restores, and the March 8, 2027 expiry.",
+        "verificationMethod": "Read the official help article directly on 2026-11-09: plan table, tenure tiers, billing cutoff, how a Fable reset works, expiry times, redemption steps and exclusions.",
+        "verifiedAt": "2026-11-09"
+      },
+      {
+        "url": "https://www.anthropic.com/claude-fable-and-mythos-5-2",
+        "sourceId": "anthropicai",
+        "handle": "AnthropicAI",
+        "displayName": "Anthropic",
+        "kind": "web_page",
+        "role": "original",
+        "excerpt": "Plans and seats that include Fable models get one to three Fable resets based on how long they’ve subscribed",
+        "evidenceSummary": "The official Fable 5.2 launch post confirms the tenure-based Fable resets for plans and seats that include Fable models.",
+        "verificationMethod": "Read the official Fable 5.2 launch post directly on 2026-11-09; it links to the launch-offers help article for details.",
+        "verifiedAt": "2026-11-09"
+      }
+    ],
+    "firstPublishedAt": "2026-11-09T20:24:45Z",
+    "revisedAt": "2026-11-09T20:24:45Z",
+    "revision": 1,
+    "alertRevision": 1,
+    "relatedEventIds": [
+      "2026-11-09-fable-5-2-pro-reset"
+    ],
+    "notes": "Fable 5.2 launched November 9, 2026. The X post names Ultra and Team Premium; the help article also includes Max plans and legacy seat-based Enterprise premium seats, and gives the cutoff as March 8, 2027 at 11:59 pm PT. Tenure counts from the first paid bill (the organization’s on Team and Enterprise). Verified Ultra accounts have no five-hour limit, so a reset only affects their weekly limit. The same announcement grants Pro and Team standard seats a separate offer recorded as 2026-11-09-fable-5-2-pro-reset."
+  },
+  {
+    "id": "2026-11-09-fable-5-2-pro-reset",
+    "kind": "credit",
+    "editorialStatus": "published",
+    "verificationStatus": "verified",
+    "eventStatus": "confirmed",
+    "title": "Fable 5.2: a week of Fable plus one Fable reset for Pro and Team Standard",
+    "summary": "Pro subscribers and standard seats on Team plans can use every Fable model within their plan through November 16, 2026 at 11:59 pm PT, for up to 50% of their weekly usage limits, and get one Fable limit reset. The reset gives back weekly usage spent on Fable models and refills the whole five-hour limit. It expires with the week, so use it by November 16 from Settings → Usage → Limit resets (\"Reset for free\"). Paid billing must have been in place before November 9, 2026 at 10:00 am PT. After the week, Fable runs on usage credits again.",
+    "originalLanguage": "en",
+    "translations": {
+      "zh-CN": {
+        "title": "Fable 5.2：Pro 和 Team 标准席位可用 Fable 一周，另获 1 次 Fable 额度重置",
+        "summary": "Pro 订阅者和 Team 套餐标准席位可在 2026 年 11 月 16 日太平洋时间晚上 11:59 前，在套餐内使用所有 Fable 模型，最多占每周用量额度的 50%，并获得 1 次 Fable 额度重置。该重置会返还每周额度中用于 Fable 模型的用量，并将 5 小时额度全部恢复。重置随这一周一同到期，请在 11 月 16 日前于「设置 → 使用情况 → 额度重置」中点击「免费重置」使用。付费账单须在 2026 年 11 月 9 日太平洋时间上午 10:00 前已生效。一周结束后，Fable 将恢复按用量积分计费。"
+      },
+      "zh-TW": {
+        "title": "Fable 5.2：Pro 與 Team 標準席位可用 Fable 一週，另獲 1 次 Fable 額度重置",
+        "summary": "Pro 訂閱者與 Team 方案標準席位可於 2026 年 11 月 16 日太平洋時間晚上 11:59 前，在方案內使用所有 Fable 模型，最多占每週用量額度的 50%，並獲得 1 次 Fable 額度重置。此重置會退還每週額度中用於 Fable 模型的用量，並將 5 小時額度全部恢復。重置隨這一週一同到期，請於 11 月 16 日前在「設定 → 使用情況 → 額度重置」中點選「免費重置」使用。付費帳單須於 2026 年 11 月 9 日太平洋時間上午 10:00 前已生效。一週結束後，Fable 將恢復以用量點數計費。"
+      },
+      "ja": {
+        "title": "Fable 5.2：Pro・Team スタンダードシートは Fable を1週間利用でき、Fable リセットも1回",
+        "summary": "Pro 契約者と Team プランのスタンダードシートは、2026年11月16日午後11時59分（太平洋時間）まで、週間利用上限の最大50%までプラン内ですべての Fable モデルを使え、Fable の上限リセットも1回受け取れます。このリセットは週間上限のうち Fable モデルに使った分を戻し、5時間上限をすべて回復します。リセットはこの1週間の終了とともに失効するため、11月16日までに「設定 → 使用状況 → 上限リセット」で「無料でリセット」から使用してください。2026年11月9日午前10時（太平洋時間）より前に有料の請求が始まっている必要があります。期間終了後、Fable は再び利用クレジットでの課金に戻ります。"
+      },
+      "ko": {
+        "title": "Fable 5.2: Pro·Team 스탠다드 좌석은 Fable 1주일 이용과 Fable 초기화 1회",
+        "summary": "Pro 구독자와 Team 요금제 스탠다드 좌석은 2026년 11월 16일 오후 11시 59분(태평양 시간)까지 주간 사용 한도의 최대 50% 범위에서 요금제 안의 모든 Fable 모델을 사용할 수 있으며, Fable 한도 초기화 1회도 받습니다. 이 초기화는 주간 한도 중 Fable 모델에 사용한 양을 되돌리고 5시간 한도를 전부 회복합니다. 초기화는 이 1주일과 함께 만료되므로 11월 16일까지 설정 → 사용량 → 한도 초기화에서 \"무료로 초기화\"를 눌러 사용하세요. 2026년 11월 9일 오전 10시(태평양 시간) 이전에 유료 결제가 시작된 계정만 해당됩니다. 기간이 끝나면 Fable은 다시 사용량 크레딧으로 과금됩니다."
+      }
+    },
+    "translationStatus": "authored",
+    "time": {
+      "precision": "exact",
+      "announcedAt": "2026-11-09T19:04:19Z"
+    },
+    "effectiveAt": null,
+    "effectiveNote": "Applied only when the subscriber redeems the Fable reset in Claude. On the weekly limit it restores only usage spent on Fable models. No automatic account reset is asserted.",
+    "resetOffer": {
+      "expiresOn": "2026-11-16"
+    },
+    "allocation": "subscription_usage",
+    "audience": {
+      "scope": "limited",
+      "statement": "Pro subscribers and standard seats on Team plans, with paid billing in place before November 9, 2026 at 10:00 am PT",
+      "plans": [
+        "pro",
+        "team"
+      ],
+      "exclusions": "Free plan; Enterprise standard seats, self-serve, usage-based and HIPAA-ready Enterprise plans. Team premium seats get the separate tenure-based offer."
+    },
+    "windows": [
+      "five_hour",
+      "weekly"
+    ],
+    "sources": [
+      {
+        "url": "https://x.com/ClaudeDevs/status/2119868704544711108",
+        "sourceId": "claudedevs",
+        "handle": "ClaudeDevs",
+        "displayName": "ClaudeDevs",
+        "kind": "x_post",
+        "role": "original",
+        "postedAt": "2026-11-09T19:04:19Z",
+        "excerpt": "Pro and Team Standard get a week to try Fable 5.2, up to half your weekly limit, plus one reset.",
+        "evidenceSummary": "The official @ClaudeDevs launch thread gives Pro and Team Standard a week of Fable 5.2 within half the weekly limit, plus one reset.",
+        "verificationMethod": "Read the @ClaudeDevs Fable 5.2 launch thread directly on X on 2026-11-09; UTC timestamp decoded from the post ID.",
+        "verifiedAt": "2026-11-09"
+      },
+      {
+        "url": "https://support.claude.com/en/articles/17506494-claude-fable-5-2-launch-offers",
+        "sourceId": "anthropicai",
+        "handle": "AnthropicAI",
+        "displayName": "Anthropic",
+        "kind": "web_page",
+        "role": "original",
+        "excerpt": "You also get one Fable limit reset if you meet the billing cutoff above. The reset expires on November 16, 2026 at 11:59 pm PT.",
+        "evidenceSummary": "The official help article confirms the week of included Fable models through November 16, 2026 at 11:59 pm PT, the 50% weekly cap, the one Fable reset, its November 16 expiry and the billing cutoff.",
+        "verificationMethod": "Read the official help article directly on 2026-11-09: plan table, tenure tiers, billing cutoff, how a Fable reset works, expiry times, redemption steps and exclusions.",
+        "verifiedAt": "2026-11-09"
+      },
+      {
+        "url": "https://www.anthropic.com/claude-fable-and-mythos-5-2",
+        "sourceId": "anthropicai",
+        "handle": "AnthropicAI",
+        "displayName": "Anthropic",
+        "kind": "web_page",
+        "role": "original",
+        "excerpt": "Fable is included for up to 50% of weekly usage limits for Pro plans and standard seats on the Team plan",
+        "evidenceSummary": "The official Fable 5.2 launch post confirms the included Fable usage for Pro plans and Team standard seats.",
+        "verificationMethod": "Read the official Fable 5.2 launch post directly on 2026-11-09; it links to the launch-offers help article for details.",
+        "verifiedAt": "2026-11-09"
+      }
+    ],
+    "firstPublishedAt": "2026-11-09T20:24:45Z",
+    "revisedAt": "2026-11-09T20:24:45Z",
+    "revision": 1,
+    "alertRevision": 1,
+    "relatedEventIds": [
+      "2026-11-09-fable-5-2-resets"
+    ],
+    "notes": "Shares its announcement with 2026-11-09-fable-5-2-resets but is a separate offer: different plans and a much earlier expiry (November 16, 2026 at 11:59 pm PT). The default model does not change; readers must pick a Fable model in the model picker. Fable models draw down limits faster than other models."
+  },
+  {
     "id": "2026-10-21-claude-duet-reset",
     "kind": "credit",
     "editorialStatus": "published",

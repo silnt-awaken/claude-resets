@@ -8,7 +8,7 @@ import { AUDIENCE_FILTERS, WINDOW_FILTERS } from '../domain/filters';
 import { roundDays, type Stats } from '../domain/stats';
 import type { ResetEvent, SourceAccount } from '../domain/types';
 
-const planEnum = z.enum(['free', 'pro', 'max', 'team', 'enterprise']);
+const planEnum = z.enum(['free', 'pro', 'max', 'ultra', 'team', 'enterprise']);
 
 export const resetSummarySchema = z
   .object({

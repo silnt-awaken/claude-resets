@@ -237,6 +237,7 @@ export const en = {
     pro: 'Pro',
     max: 'Max',
     team: 'Team',
+    ultra: 'Ultra',
     enterprise: 'Enterprise',
   },
   sources: {

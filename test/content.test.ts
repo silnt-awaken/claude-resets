@@ -87,6 +87,18 @@ describe('classification fixtures', () => {
     if (!result.ok) expect(result.errors.join('\n')).toMatch(/already used/);
   });
 
+  it('lets sibling offers from one announcement share evidence only when both link each other', () => {
+    const review = { lastSourceReviewAt: '2026-09-01T00:00:00Z', note: '' };
+    const sources = snapshotFor([]).sources;
+    const a = { ...relayed, relatedEventIds: ['sibling'] };
+    const oneWay = makeEvent({ id: 'sibling', at: '2026-06-09T22:00:00Z', sources: [{ ...relayed.sources[0]! }] });
+    const oneSided = validateContent({ events: [a, oneWay], sources, sponsors: [], perks: [], research: [], review });
+    expect(oneSided.ok).toBe(false);
+    if (!oneSided.ok) expect(oneSided.errors.join('\n')).toMatch(/already used/);
+    const both = validateContent({ events: [a, { ...oneWay, relatedEventIds: [relayed.id] }], sources, sponsors: [], perks: [], research: [], review });
+    expect(both.ok).toBe(true);
+  });
+
   it('rejects an announced event without a schedule and a retraction without a reason', () => {
     const bad1 = makeEvent({ eventStatus: 'announced' });
     const bad2 = makeEvent({ eventStatus: 'retracted' });

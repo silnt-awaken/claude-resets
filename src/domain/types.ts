@@ -18,7 +18,7 @@ export type EventStatus = 'announced' | 'confirmed' | 'cancelled' | 'retracted';
 
 export type ResetWindow = 'five_hour' | 'weekly' | 'other' | 'unspecified';
 export type AudienceScope = 'broad' | 'limited' | 'unspecified';
-export type Plan = 'free' | 'pro' | 'max' | 'team' | 'enterprise';
+export type Plan = 'free' | 'pro' | 'max' | 'ultra' | 'team' | 'enterprise';
 /** Plans as stated by the source. 'all' = "all users/everyone"; 'subscribers' = all paid plans; 'unspecified' = not stated. */
 export type PlanStatement = 'all' | 'subscribers' | 'unspecified' | Plan[];
 
