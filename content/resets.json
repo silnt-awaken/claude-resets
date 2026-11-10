@@ -1,5 +1,83 @@
 [
   {
+    "id": "2026-11-10-full-reset-pro-max-ultra-team",
+    "kind": "credit",
+    "editorialStatus": "published",
+    "verificationStatus": "verified",
+    "eventStatus": "confirmed",
+    "title": "One free full reset for Pro, Max, Ultra and Team, across all models and limits",
+    "summary": "All Pro, Max, Ultra and Team users have been given one free full reset across all models and limits. Use it anytime before December 10, 2026 at 2:00 PM PT from Settings → Usage or at clau.de/reset. Anthropic says it recently fixed a few small issues that used more limits than intended, and that the Fable resets did little for people who had already hit their weekly limits on all models. Not everyone was affected, but every user on these plans gets the reset.",
+    "originalLanguage": "en",
+    "translations": {
+      "zh-CN": {
+        "title": "Pro、Max、Ultra 和 Team 用户获赠 1 次免费完整重置，覆盖所有模型和额度",
+        "summary": "所有 Pro、Max、Ultra 和 Team 用户均已获得 1 次免费完整重置，适用于所有模型和所有额度。请在 2026 年 12 月 10 日太平洋时间下午 2:00 前，随时在「设置 → 使用情况」或 clau.de/reset 中使用。Anthropic 表示，近期修复了几个导致额度消耗超出预期的小问题，而且 Fable 重置对已用完所有模型每周额度的用户帮助不大。虽然并非所有人都受到影响，但这些套餐的所有用户都会获得这次重置。"
+      },
+      "zh-TW": {
+        "title": "Pro、Max、Ultra 與 Team 用戶獲贈 1 次免費完整重置，涵蓋所有模型與額度",
+        "summary": "所有 Pro、Max、Ultra 與 Team 用戶皆已獲得 1 次免費完整重置，適用於所有模型與所有額度。請於 2026 年 12 月 10 日太平洋時間下午 2:00 前，隨時在「設定 → 使用情況」或 clau.de/reset 中使用。Anthropic 表示，近期修正了幾個導致額度消耗超出預期的小問題，而且 Fable 重置對已用完所有模型每週額度的用戶幫助不大。雖然並非所有人都受到影響，但這些方案的所有用戶都會獲得這次重置。"
+      },
+      "ja": {
+        "title": "Pro・Max・Ultra・Team の全員に無料のフルリセットを1回、全モデル・全上限が対象",
+        "summary": "すべての Pro・Max・Ultra・Team ユーザーに、全モデル・全上限を対象とする無料のフルリセットが1回付与されました。2026年12月10日午後2時（太平洋時間）までの好きなときに、「設定 → 使用状況」または clau.de/reset から使用できます。Anthropic によると、想定より多く上限を消費するいくつかの小さな問題を最近修正したこと、また Fable リセットは全モデルの週間上限にすでに達していた人にはあまり役立たなかったことが理由です。影響を受けたのは一部のユーザーですが、これらのプランの全員が対象です。"
+      },
+      "ko": {
+        "title": "Pro·Max·Ultra·Team 사용자 전원에게 모든 모델·한도 대상 무료 전체 초기화 1회",
+        "summary": "모든 Pro, Max, Ultra, Team 사용자에게 모든 모델과 모든 한도를 대상으로 하는 무료 전체 초기화가 1회 지급되었습니다. 2026년 12월 10일 오후 2시(태평양 시간) 전까지 언제든 설정 → 사용량 또는 clau.de/reset에서 사용하세요. Anthropic은 최근 의도보다 한도를 더 많이 소모하던 몇 가지 작은 문제를 수정했으며, Fable 초기화가 이미 모든 모델의 주간 한도에 도달한 사용자에게는 큰 도움이 되지 않았다고 설명했습니다. 모두가 영향을 받은 것은 아니지만 해당 요금제 사용자 전원이 초기화를 받습니다."
+      }
+    },
+    "translationStatus": "authored",
+    "time": {
+      "precision": "exact",
+      "announcedAt": "2026-11-10T21:59:58Z"
+    },
+    "effectiveAt": null,
+    "effectiveNote": "Applied only when the user redeems it in Claude. No automatic account reset is asserted.",
+    "resetOffer": {
+      "expiresOn": "2026-12-10"
+    },
+    "allocation": "subscription_usage",
+    "audience": {
+      "scope": "limited",
+      "statement": "All Pro, Max, Ultra, and Team users",
+      "plans": [
+        "pro",
+        "max",
+        "ultra",
+        "team"
+      ],
+      "exclusions": "Free and Enterprise plans are not named in the announcement."
+    },
+    "windows": [
+      "five_hour",
+      "weekly"
+    ],
+    "sources": [
+      {
+        "url": "https://x.com/ClaudeDevs/status/2120275296637321476",
+        "sourceId": "claudedevs",
+        "handle": "ClaudeDevs",
+        "displayName": "ClaudeDevs",
+        "kind": "x_post",
+        "role": "original",
+        "postedAt": "2026-11-10T21:59:58Z",
+        "excerpt": "We've given all Pro, Max, Ultra, and Team users one free full reset, across all models and limits.",
+        "evidenceSummary": "The official @ClaudeDevs post grants one free full reset across all models and limits to all Pro, Max, Ultra and Team users, usable before December 10 at 2:00 PM PT, as compensation for issues that used more limits than intended.",
+        "verificationMethod": "Read the original post directly on X on 2026-11-10; UTC timestamp decoded from the post ID. The clau.de/reset redemption link is quoted from the post.",
+        "verifiedAt": "2026-11-10"
+      }
+    ],
+    "firstPublishedAt": "2026-11-10T22:13:44Z",
+    "revisedAt": "2026-11-10T22:13:44Z",
+    "revision": 1,
+    "alertRevision": 1,
+    "relatedEventIds": [
+      "2026-11-09-fable-5-2-resets",
+      "2026-11-09-fable-5-2-pro-reset"
+    ],
+    "notes": "Announced November 10, 2026, the day after the Fable 5.2 resets, and separate from them: it covers all models and both the five-hour and weekly limits. The cutoff is December 10, 2026 at 2:00 PM PT (22:00 UTC). No help-center article was found at the time of writing."
+  },
+  {
     "id": "2026-11-09-fable-5-2-resets",
     "kind": "credit",
     "editorialStatus": "published",
@@ -205,25 +283,25 @@
     "editorialStatus": "published",
     "verificationStatus": "verified",
     "eventStatus": "confirmed",
-    "title": "Claude Duet: one full limit reset when you are admitted",
-    "summary": "Pro and Max subscribers with a US Claude account who are admitted to the Claude Duet research preview get one full limit reset, covering both the five-hour session and weekly limits. Use it by November 30, 2026 from Settings → Usage on the web or desktop (\"Reset for free\"). Admission is by waitlist in waves; Duet itself draws on the same plan limits as chat, including background work.",
+    "title": "Claude Duet: full limit resets for preview members (three on Pro, one on Max and Ultra)",
+    "summary": "Pro, Max and Ultra subscribers with a US Claude account who are admitted to the Claude Duet research preview get full limit resets: three on Pro, one on Max and Ultra. Each one refills both the five-hour session and weekly limits when you use it from Settings → Usage on the web or desktop (\"Reset for free\"). Unused resets expire on December 15, 2026. Admission is by waitlist in waves; Duet itself draws on the same plan limits as chat, including background work.",
     "originalLanguage": "en",
     "translations": {
       "zh-CN": {
-        "title": "Claude Duet：获准加入即可获得一次完整额度重置",
-        "summary": "拥有美国 Claude 账户、获准加入 Claude Duet 研究预览的 Pro 和 Max 订阅者，可获得一次完整额度重置，同时恢复 5 小时会话额度和每周额度。请在 2026 年 11 月 30 日前，在网页版或桌面版的「设置 → 使用情况」中点击「免费重置」使用。加入需通过等候名单分批进行；Duet 本身与聊天共用套餐额度，后台工作同样计入。"
+        "title": "Claude Duet：预览成员可获完整额度重置（Pro 3 次，Max 和 Ultra 1 次）",
+        "summary": "拥有美国 Claude 账户、获准加入 Claude Duet 研究预览的 Pro、Max 和 Ultra 订阅者可获得完整额度重置：Pro 3 次，Max 和 Ultra 各 1 次。在网页版或桌面版的「设置 → 使用情况」中点击「免费重置」使用后，每次都会同时恢复 5 小时会话额度和每周额度。未使用的重置将于 2026 年 12 月 15 日到期。加入需通过等候名单分批进行；Duet 本身与聊天共用套餐额度，后台工作同样计入。"
       },
       "zh-TW": {
-        "title": "Claude Duet：獲准加入即可獲得一次完整額度重置",
-        "summary": "擁有美國 Claude 帳戶、獲准加入 Claude Duet 研究預覽的 Pro 與 Max 訂閱者，可獲得一次完整額度重置，同時恢復 5 小時工作階段額度與每週額度。請於 2026 年 11 月 30 日前，在網頁版或桌面版的「設定 → 使用情況」中點選「免費重置」使用。加入需透過等候名單分批進行；Duet 本身與聊天共用方案額度，背景工作同樣計入。"
+        "title": "Claude Duet：預覽成員可獲完整額度重置（Pro 3 次，Max 與 Ultra 1 次）",
+        "summary": "擁有美國 Claude 帳戶、獲准加入 Claude Duet 研究預覽的 Pro、Max 與 Ultra 訂閱者可獲得完整額度重置：Pro 3 次，Max 與 Ultra 各 1 次。在網頁版或桌面版的「設定 → 使用情況」中點選「免費重置」使用後，每次都會同時恢復 5 小時工作階段額度與每週額度。未使用的重置將於 2026 年 12 月 15 日到期。加入需透過等候名單分批進行；Duet 本身與聊天共用方案額度，背景工作同樣計入。"
       },
       "ja": {
-        "title": "Claude Duet：参加が認められると上限を1回フルリセット",
-        "summary": "米国のClaudeアカウントを持ち、Claude Duetリサーチプレビューへの参加が認められたPro・Max契約者は、5時間のセッション上限と週間上限の両方を戻せるフルリセットを1回受け取れます。2026年11月30日までに、ウェブ版またはデスクトップ版の「設定 → 使用状況」で「無料でリセット」から使用してください。参加は待機リストから段階的に認められます。Duet自体もチャットと同じプランの上限を消費し、バックグラウンド作業も含まれます。"
+        "title": "Claude Duet：プレビュー参加者に上限のフルリセット（Pro は3回、Max・Ultra は1回）",
+        "summary": "米国の Claude アカウントを持ち、Claude Duet リサーチプレビューへの参加が認められた Pro・Max・Ultra 契約者は、上限のフルリセットを受け取れます（Pro は3回、Max・Ultra は1回）。ウェブ版またはデスクトップ版の「設定 → 使用状況」で「無料でリセット」から使うと、そのたびに5時間のセッション上限と週間上限の両方が戻ります。未使用のリセットは2026年12月15日に失効します。参加は待機リストから段階的に認められます。Duet 自体もチャットと同じプランの上限を消費し、バックグラウンド作業も含まれます。"
       },
       "ko": {
-        "title": "Claude Duet: 참여 승인 시 한도 전체 초기화 1회",
-        "summary": "미국 Claude 계정을 보유하고 Claude Duet 리서치 프리뷰 참여가 승인된 Pro 및 Max 구독자는 5시간 세션 한도와 주간 한도를 모두 되돌리는 전체 한도 초기화를 1회 받습니다. 2026년 11월 30일까지 웹 또는 데스크톱의 설정 → 사용량에서 \"무료로 초기화\"를 눌러 사용하세요. 참여는 대기 명단을 통해 단계적으로 승인됩니다. Duet 자체도 채팅과 같은 요금제 한도를 사용하며 백그라운드 작업도 포함됩니다."
+        "title": "Claude Duet: 프리뷰 참여자에게 한도 전체 초기화 (Pro 3회, Max·Ultra 1회)",
+        "summary": "미국 Claude 계정을 보유하고 Claude Duet 리서치 프리뷰 참여가 승인된 Pro, Max, Ultra 구독자는 한도 전체 초기화를 받습니다(Pro 3회, Max·Ultra 1회). 웹 또는 데스크톱의 설정 → 사용량에서 \"무료로 초기화\"를 눌러 사용할 때마다 5시간 세션 한도와 주간 한도가 모두 회복됩니다. 사용하지 않은 초기화는 2026년 12월 15일에 만료됩니다. 참여는 대기 명단을 통해 단계적으로 승인됩니다. Duet 자체도 채팅과 같은 요금제 한도를 사용하며 백그라운드 작업도 포함됩니다."
       }
     },
     "translationStatus": "authored",
@@ -232,17 +310,18 @@
       "announcedAt": "2026-10-21T19:09:37Z"
     },
     "effectiveAt": null,
-    "effectiveNote": "Granted on admission to the Claude Duet research preview and applied only when the subscriber redeems it in Claude. No automatic account reset is asserted.",
+    "effectiveNote": "Granted to admitted Claude Duet research preview members and applied only when the subscriber redeems a reset in Claude. No automatic account reset is asserted.",
     "resetOffer": {
-      "expiresOn": "2026-11-30"
+      "expiresOn": "2026-12-15"
     },
     "allocation": "subscription_usage",
     "audience": {
       "scope": "limited",
-      "statement": "Pro and Max subscribers with a US Claude account admitted to the Claude Duet research preview",
+      "statement": "Pro, Max, and Ultra subscribers with a US Claude account admitted to the Claude Duet research preview",
       "plans": [
         "pro",
-        "max"
+        "max",
+        "ultra"
       ]
     },
     "windows": [
@@ -257,10 +336,10 @@
         "displayName": "Anthropic",
         "kind": "web_page",
         "role": "original",
-        "excerpt": "When you’re admitted to the Claude Duet research preview, you get one full limit reset",
-        "evidenceSummary": "The official Claude Duet help article grants admitted users one full limit reset covering five-hour session and weekly limits, available until November 30, 2026, and limits the preview to US Pro and Max accounts via waitlist.",
-        "verificationMethod": "Read the official support article directly on 2026-10-22. Redemption steps come from the linked official article on limit resets (support.claude.com/en/articles/17007452). The exact expiry time is shown in Settings → Usage.",
-        "verifiedAt": "2026-10-22"
+        "excerpt": "Unused limit resets expire on December 15, 2026.",
+        "evidenceSummary": "The official Claude Duet help article, updated November 10, 2026, gives admitted Pro users three full limit resets and Max and Ultra users one, each refilling five-hour session and weekly limits, expiring December 15, 2026; the preview is for US Pro, Max and Ultra accounts via waitlist.",
+        "verificationMethod": "Re-read the official support article directly on 2026-11-10 after it was updated. When first read on 2026-10-22 it gave one reset per admitted user, expiring November 30, 2026. The exact expiry time is shown in Settings → Usage.",
+        "verifiedAt": "2026-11-10"
       },
       {
         "url": "https://x.com/claudeai/status/2112984669943968099",
@@ -277,10 +356,15 @@
       }
     ],
     "firstPublishedAt": "2026-10-22T10:14:17Z",
-    "revisedAt": "2026-10-22T10:14:17Z",
-    "revision": 1,
+    "revisedAt": "2026-11-10T22:13:44Z",
+    "revision": 2,
     "alertRevision": 1,
-    "notes": "Duet launched October 21, 2026. The reset is per-account on admission, which happens in waves, so many readers will not have it yet. Expiry is the stated date only; check Claude for the exact cutoff."
+    "notes": "Duet launched October 21, 2026. On November 10, 2026 the official article was updated: three resets on Pro, one on Max and Ultra, Ultra eligible, expiry moved from November 30 to December 15, 2026. Admission happens in waves, so many readers will not have it yet. Expiry is the stated date only; check Claude for the exact cutoff.",
+    "correction": {
+      "kind": "correction",
+      "reason": "Anthropic updated the Claude Duet help article on November 10, 2026: Pro now gets three full limit resets and Max and Ultra one, Ultra plans are eligible, and unused resets expire December 15, 2026 instead of November 30.",
+      "at": "2026-11-10T22:13:44Z"
+    }
   },
   {
     "id": "2026-09-22-opus-5-5-reset",
